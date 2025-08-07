@@ -1,0 +1,83 @@
+---
+title: 'Utilities'
+description: 'Utility commands and configuration'
+---
+
+## suga generate
+
+Generate client libraries for your Suga application.
+
+```bash
+suga generate
+```
+
+**Options:**
+- `--language` - Target language for client library
+- `--output` - Output directory
+
+**Examples:**
+```bash
+# Generate TypeScript client
+suga generate --language typescript --output ./client
+
+# Generate Python client  
+suga generate --language python --output ./python-client
+```
+
+## suga config
+
+Manage CLI configuration settings.
+
+```bash
+suga config [subcommand]
+```
+
+**Subcommands:**
+- `get` - Get a configuration value
+- `set` - Set a configuration value  
+- `list` - List all configuration
+
+**Examples:**
+```bash
+# View all settings
+suga config list
+
+# Set a value
+suga config set editor vscode
+
+# Get a specific value
+suga config get editor
+```
+
+**Configuration location:** `~/.suga/config.yaml`
+
+## suga version
+
+Display the Suga CLI version.
+
+```bash
+suga version
+```
+
+## suga completion
+
+Generate shell autocompletion scripts.
+
+```bash
+suga completion [shell]
+```
+
+**Supported shells:**
+- `bash`
+- `zsh`
+- `fish`
+- `powershell`
+
+**Examples:**
+```bash
+# Generate bash completion
+suga completion bash > /etc/bash_completion.d/suga
+
+# Generate zsh completion
+suga completion zsh > ~/.zsh/completions/_suga
+```

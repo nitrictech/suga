@@ -1,0 +1,49 @@
+---
+title: 'Development'
+description: 'Commands for local development and building'
+---
+
+## suga dev
+
+Run your application in development mode with hot reloading.
+
+```bash
+suga dev
+```
+
+**Features:**
+- Local development server
+- Hot reloading on file changes
+- Local endpoints for testing
+- Real-time error reporting
+
+## suga build
+
+Build your application and generate Terraform modules.
+
+```bash
+suga build
+```
+
+**Build process:**
+1. Validates your configuration
+2. Compiles your services
+3. Generates Terraform modules
+4. Outputs infrastructure-as-code ready for deployment
+
+**Output:**
+Generated files are placed in the build output directory, ready for deployment with Terraform.
+
+## suga edit
+
+Open the visual application editor for infrastructure design.
+
+```bash
+suga edit
+```
+
+**Features:**
+- Visual infrastructure design interface
+- Drag-and-drop components
+- Real-time validation
+- Export to code

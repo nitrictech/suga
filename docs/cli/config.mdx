@@ -1,0 +1,34 @@
+---
+title: 'config'
+description: 'Manage CLI configuration'
+---
+
+Manage the CLI configuration.
+
+```bash
+suga config [flags]
+suga config [command]
+```
+
+By default, displays the current configuration values.
+
+## Subcommands
+
+- `set` - Set a configuration value
+
+## Flags
+
+- `--list` - List all available configuration keys and their descriptions
+
+## Examples
+
+```bash
+# Display current configuration
+suga config
+
+# List all available configuration keys
+suga config --list
+
+# Set a configuration value
+suga config set key value
+```

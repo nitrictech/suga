@@ -1,0 +1,107 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Suga Platform",
+  "colors": {
+    "primary": "#25B355",
+    "light": "#2BC65F",
+    "dark": "#25B355"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index",
+              "quickstart"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "CLI Reference", 
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "cli/introduction",
+              "cli/installation"
+            ]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/access-token",
+              "cli/build", 
+              "cli/completion",
+              "cli/config",
+              "cli/dev",
+              "cli/edit",
+              "cli/generate",
+              "cli/init",
+              "cli/login",
+              "cli/logout",
+              "cli/new",
+              "cli/templates",
+              "cli/version"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Suga Home",
+          "href": "https://suga.io",
+          "icon": "house"
+        },
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/nitrictech/suga",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/logo/suga-light.svg",
+    "dark": "/logo/suga-dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@suga.io"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://app.suga.io"
+    }
+  },
+  "contextual": {
+    "options": [
+     "copy",
+     "view",
+     "chatgpt",
+     "claude",
+     "perplexity",
+     "mcp",
+     "cursor",
+     "vscode"
+   ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/nitric_io",
+      "github": "https://github.com/nitrictech/suga",
+      "linkedin": "https://www.linkedin.com/company/nitrictech"
+    }
+  }
+}

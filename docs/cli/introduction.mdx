@@ -1,0 +1,53 @@
+---
+title: 'Introduction'
+description: 'Get started with the Suga CLI'
+---
+
+## Overview
+
+The Suga CLI is a powerful tool for building, developing, and managing cloud-native applications with the Suga platform.
+
+## Quick Start
+
+```bash
+# Install the CLI
+brew install nitrictech/tap/suga
+
+# Create a new project
+suga new my-app
+
+# Start development
+cd my-app
+suga dev
+```
+
+## Commands Overview
+
+| Command | Description |
+|---------|-------------|
+| `suga new` | Create a new project from a template |
+| `suga init` | Initialize a project in current directory |
+| `suga dev` | Start development server with hot reloading |
+| `suga build` | Build application and generate Terraform |
+| `suga edit` | Open visual infrastructure editor |
+| `suga login` | Authenticate with your Suga account |
+| `suga logout` | Log out from your account |
+| `suga templates` | List available project templates |
+| `suga generate` | Generate client libraries |
+| `suga config` | Manage CLI configuration |
+| `suga completion` | Generate shell autocompletion |
+
+## Global Options
+
+- `--help` - Show help for any command
+- `--version` - Display CLI version
+
+## Getting Help
+
+```bash
+# Help for any command
+suga [command] --help
+
+# General help
+suga help
+```

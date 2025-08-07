@@ -1,0 +1,30 @@
+---
+title: 'completion'
+description: 'Generate shell autocompletion scripts'
+---
+
+Generate shell autocompletion scripts.
+
+```bash
+suga completion [shell]
+```
+
+## Supported Shells
+
+- `bash`
+- `zsh`
+- `fish`
+- `powershell`
+
+## Examples
+
+```bash
+# Generate bash completion
+suga completion bash > /etc/bash_completion.d/suga
+
+# Generate zsh completion
+suga completion zsh > ~/.zsh/completions/_suga
+
+# Generate fish completion
+suga completion fish > ~/.config/fish/completions/suga.fish
+```

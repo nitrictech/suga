@@ -1,0 +1,30 @@
+---
+title: 'build'
+description: 'Build your application and generate Terraform modules'
+---
+
+Build your application and generate Terraform modules.
+
+```bash
+suga build
+```
+
+## Build Process
+
+1. Validates your configuration
+2. Compiles your services
+3. Generates Terraform modules
+4. Outputs infrastructure-as-code ready for deployment
+
+## Output
+
+Generated files are placed in the build output directory, ready for deployment with Terraform.
+
+## Example
+
+```bash
+suga build
+# Building application...
+# Generating Terraform modules...
+# Build complete: terraform/
+```
