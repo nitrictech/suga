@@ -9,9 +9,11 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "tabs": [
+    "dropdowns": [
       {
-        "tab": "Documentation",
+        "dropdown": "Documentation",
+        "description": "Learn how to use Suga",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Getting Started",
@@ -23,7 +25,9 @@
         ]
       },
       {
-        "tab": "CLI Reference", 
+        "dropdown": "CLI Reference", 
+        "description": "Reference for the Suga CLI",
+        "icon": "terminal",
         "groups": [
           {
             "group": "Getting Started",
@@ -56,9 +60,9 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Suga Home",
+          "anchor": "Website",
           "href": "https://suga.io",
-          "icon": "house"
+          "icon": "globe"
         },
         {
           "anchor": "GitHub",
