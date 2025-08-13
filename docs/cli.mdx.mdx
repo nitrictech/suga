@@ -1,0 +1,737 @@
+---
+title: "Nitric CLI"
+description: "Complete guide to the Nitric CLI commands and workflows"
+---
+
+# Nitric CLI
+
+The Nitric CLI provides everything you need to build, test, and deploy cloud-native applications.
+
+## Quick Start
+
+Get a working API running locally in under 5 minutes.
+
+### Prerequisites
+
+- [Nitric CLI installed](#installation)
+- Docker (for local development)
+- Node.js 18+, Python 3.9+, or Go 1.21+
+
+**For cloud deployment (optional):**
+
+- [Terraform CLI](https://terraform.io/downloads)
+- Cloud provider CLI:
+  - [AWS CLI](https://aws.amazon.com/cli/) for AWS deployments
+  - [Google Cloud CLI](https://cloud.google.com/sdk/gcloud) for GCP deployments
+  - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/) for Azure deployments
+
+### Getting Started
+
+<AccordionGroup>
+  <Accordion icon="folder" title="1. Create Your Project">
+    ```bash
+    nitric new my-first-app
+    ```
+    
+    Select a template when prompted.
+    
+    <Tip>Use `nitric templates` to see all available templates</Tip>
+  </Accordion>
+  
+  <Accordion icon="download" title="2. Install Dependencies">
+    ```bash
+    cd my-first-app
+
+    # For Node.js/TypeScript projects
+    npm install
+
+    # For Python projects
+    pip install -r requirements.txt
+
+    # For Go projects
+    go mod tidy
+    ```
+  </Accordion>
+  
+  <Accordion icon="eye" title="3. Review Your Project">
+    ```bash
+    nitric edit
+    ```
+    
+    Open the visual configuration editor to explore your project's resources and structure.
+    
+    **Alternatively**, you can review the `nitric.yaml` file directly to see your application configuration:
+    
+    ```bash
+    cat nitric.yaml
+    ```
+    
+    <Note>Project structure varies by template and language</Note>
+  </Accordion>
+</AccordionGroup>
+
+### Development and Testing
+
+<AccordionGroup>
+  <Accordion icon="play" title="4. Start Development">
+    ```bash
+    nitric dev
+    ```
+    
+    Your app is now running at `http://localhost:3000` (or next available port 3000-3999) with hot reload enabled.
+    
+    <Tip>Use `nitric edit` to open the visual configuration editor</Tip>
+  </Accordion>
+  
+  <Accordion icon="code" title="5. Test Your API">
+    ```bash
+    # Test the hello endpoint
+    curl http://localhost:3000/hello
+    # {"message": "Hello World"}
+    ```
+  </Accordion>
+  
+  <Accordion icon="hammer" title="6. Make Changes (Hot Reload)">
+    Edit your code and see changes instantly:
+    
+    ```typescript
+    // services/api.ts
+    api.get("/hello", async (ctx) => {
+      return ctx.res.json({
+        message: "Hello from Nitric! 🚀",
+      });
+    });
+    ```
+    
+    Save the file — your changes are live immediately.
+    
+    <Note>Hot reload works automatically - no manual restarts needed</Note>
+  </Accordion>
+</AccordionGroup>
+
+### Production Deployment
+
+<AccordionGroup>
+  <Accordion icon="gear" title="7. Configure Deployment Target">
+    First, add a target to your `nitric.yaml`:
+    
+    ```yaml
+    # nitric.yaml
+    targets:
+      - nitric/aws@latest # or nitric/gcp@latest, nitric/azure@latest
+    ```
+  </Accordion>
+  
+  <Accordion icon="hammer" title="8. Build for Production">
+    ```bash
+    nitric build
+    ```
+    
+    This generates Terraform files in `.nitric/stacks/my-first-app-aws-xyz/`
+    
+    <Note>The generated Terraform files can be deployed using standard Terraform workflows</Note>
+  </Accordion>
+  
+  <Accordion icon="cloud" title="9. Setup Cloud Credentials">
+    Before deploying, configure credentials for your chosen provider:
+    
+    **AWS:**
+    ```bash
+    # Option 1: AWS CLI
+    aws configure
+
+    # Option 2: Environment variables
+    export AWS_ACCESS_KEY_ID=your-access-key
+    export AWS_SECRET_ACCESS_KEY=your-secret-key
+    export AWS_DEFAULT_REGION=us-east-1
+    ```
+    
+    **Google Cloud:**
+    ```bash
+    gcloud auth application-default login
+    ```
+    
+    **Azure:**
+    ```bash
+    az login
+    ```
+  </Accordion>
+  
+  <Accordion icon="rocket" title="10. Deploy with Terraform">
+    ```bash
+    # Navigate to the generated stack
+    cd .nitric/stacks/my-first-app-aws-xyz
+
+    # Initialize Terraform
+    terraform init -upgrade
+
+    # Preview what will be created
+    terraform plan
+
+    # Deploy to your cloud provider
+    terraform apply
+    ```
+    
+    <Tip>Use `terraform plan` to preview changes before applying</Tip>
+  </Accordion>
+</AccordionGroup>
+
+**What you just accomplished:**
+
+- ✅ Full-stack app running locally
+- ✅ Hot reload development
+- ✅ Generated Terraform infrastructure code
+- ✅ Deployed to your chosen cloud provider (with proper credentials)
+
+---
+
+## Core Commands
+
+<CardGroup cols={2}>
+
+<Card title="nitric dev" icon="play" href="#nitric-dev">
+  Run your application locally with hot reload and instant feedback
+</Card>
+
+<Card title="nitric build" icon="hammer" href="#nitric-build">
+  Generate Terraform infrastructure code for your deployment target
+</Card>
+
+<Card title="nitric new" icon="folder" href="#nitric-new">
+  Create a new Nitric project from scratch or from a template
+</Card>
+
+<Card title="nitric generate" icon="code" href="#nitric-generate">
+  Generate type-safe client libraries for your APIs in multiple languages
+</Card>
+
+</CardGroup>
+
+### `nitric dev`
+
+Run your application locally with hot reload and instant feedback.
+
+```bash
+nitric dev
+```
+
+**Features:**
+
+- **Zero config** — Works out of the box
+- **Hot reload** — Changes apply instantly
+- **Production parity** — Same behavior as deployed app
+- **Local cloud services** — Storage and pub/sub simulation
+
+**Example:**
+
+```bash
+nitric dev
+# Starts local development environment
+# Services run with hot reload at http://localhost:3000-3999
+```
+
+### `nitric build`
+
+Generate Terraform infrastructure code for your deployment target.
+
+```bash
+nitric build
+```
+
+**What actually happens**:
+
+<!-- Source: cli/pkg/app/nitric.go:455-488 - Target selection and build -->
+
+1. Checks `targets` in your `nitric.yaml`
+2. If multiple targets, prompts you to choose one
+3. Generates Terraform for the selected target
+4. Outputs to a stack directory
+
+**First, define targets in nitric.yaml:**
+
+```yaml
+targets:
+  - nitric/aws@latest # AWS provider
+  - nitric/gcp@latest # Google Cloud provider
+  - nitric/azure@latest # Azure provider
+```
+
+<AccordionGroup>
+  <Accordion icon="check" title="Example with single target">
+    ```bash
+    nitric build
+    # ✓ Terraform generated successfully
+    #   output written to ./.nitric/stacks/my-app-aws-12345
+    ```
+  </Accordion>
+  
+  <Accordion icon="list" title="Example with multiple targets">
+    ```bash
+    nitric build
+    # ? Select a build target:
+    #   > nitric/aws@latest
+    #     nitric/gcp@latest
+    #     nitric/azure@latest
+    # ✓ Terraform generated successfully
+    #   output written to ./.nitric/stacks/my-app-aws-12345
+    ```
+  </Accordion>
+  
+  <Accordion icon="warning" title="If no targets are defined">
+    ```bash
+    nitric build
+    # No targets specified in nitric.yaml, run nitric edit to add a target
+    ```
+  </Accordion>
+</AccordionGroup>
+
+**What you get**:
+
+- Cloud-specific Terraform configuration files
+- Ready-to-deploy stack in `.nitric/stacks/` directory
+- Provider-specific resource definitions (AWS, GCP, or Azure)
+
+**Prerequisites for deployment**:
+
+- Cloud provider account (AWS, GCP, or Azure)
+- Terraform CLI installed
+- Cloud provider CLI installed and configured:
+  - AWS CLI (`aws configure`) for AWS deployments
+  - Google Cloud CLI (`gcloud auth application-default login`) for GCP
+  - Azure CLI (`az login`) for Azure deployments
+
+---
+
+## Project Management
+
+<CardGroup cols={2}>
+
+<Card title="nitric new" icon="folder" href="#nitric-new">
+  Create a new Nitric project from scratch or from a template
+</Card>
+
+<Card title="nitric init" icon="plus" href="#nitric-init">
+  Add Nitric to an existing application
+</Card>
+
+<Card title="nitric templates" icon="layer-group" href="#nitric-templates">
+  Browse available project templates from the community and your team
+</Card>
+
+<Card title="nitric edit" icon="pen-to-square" href="#nitric-edit">
+  Open the visual configuration editor for your project
+</Card>
+
+</CardGroup>
+
+### `nitric new`
+
+Create a new Nitric project from scratch or from a template.
+
+```bash
+nitric new [project-name] [flags]
+```
+
+**Flags:**
+
+- `-f, --force` — Overwrite existing directory
+
+<AccordionGroup>
+  <Accordion icon="terminal" title="Interactive Setup">
+    ```bash
+    nitric new
+    # Prompts for project name and template selection
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### `nitric init`
+
+Add Nitric to an existing application.
+
+```bash
+nitric init
+```
+
+**What happens:**
+
+1. Creates `nitric.yaml` configuration
+2. Detects your runtime automatically
+3. Sets up resource definitions
+4. Preserves your existing code structure
+
+**Example:**
+
+```bash
+nitric init
+# Creates nitric.yaml and sets up resource definitions
+```
+
+### `nitric templates`
+
+Browse available project templates from the community and your team.
+
+```bash
+nitric templates
+```
+
+<Note>Requires `nitric login` to access team templates</Note>
+
+---
+
+## Code Generation
+
+### `nitric generate`
+
+Generate type-safe client libraries for your APIs in multiple languages.
+
+```bash
+nitric generate [flags]
+```
+
+<AccordionGroup>
+  <Accordion icon="code" title="TypeScript">
+    ```bash
+    nitric generate --ts --ts-out ./sdk/typescript
+    ```
+  </Accordion>
+  
+  <Accordion icon="code" title="Python">
+    ```bash
+    nitric generate --python --python-out ./sdk/python
+    ```
+  </Accordion>
+  
+  <Accordion icon="code" title="Go">
+    ```bash
+    nitric generate --go --go-out ./sdk/go --go-package-name myclient
+    ```
+  </Accordion>
+  
+  <Accordion icon="code" title="JavaScript">
+    ```bash
+    nitric generate --js --js-out ./sdk/javascript
+    ```
+  </Accordion>
+  
+  <Accordion icon="code" title="Multiple Languages">
+    ```bash
+    nitric generate \
+      --ts --ts-out ./web/sdk \
+      --python --python-out ./ml/sdk \
+      --go --go-out ./backend/sdk
+    ```
+  </Accordion>
+</AccordionGroup>
+
+**Use Cases:**
+
+- **Frontend integration** — Type-safe API calls
+- **Microservice communication** — Service-to-service SDKs
+- **Third-party access** — Public API clients
+- **Testing** — Generated test clients
+
+---
+
+## Authentication
+
+<CardGroup cols={2}>
+
+<Card title="nitric login" icon="user" href="#nitric-login">
+  Connect to Nitric Platform for team features and premium templates
+</Card>
+
+<Card title="nitric logout" icon="user-slash" href="#nitric-logout">
+  Sign out from Nitric Platform
+</Card>
+
+<Card title="nitric access-token" icon="key" href="#nitric-access-token">
+  Retrieve your current access token for CI/CD pipelines
+</Card>
+
+<Card title="nitric config" icon="gear" href="#nitric-config">
+  View and modify CLI configuration settings
+</Card>
+
+</CardGroup>
+
+### `nitric login`
+
+Connect to Nitric Platform for team features and premium templates.
+
+```bash
+nitric login
+```
+
+**Features unlocked:**
+
+- Team template library
+- Shared configurations
+- Deployment history
+- Team collaboration
+
+### `nitric logout`
+
+Sign out from Nitric Platform.
+
+```bash
+nitric logout
+```
+
+### `nitric access-token`
+
+Retrieve your current access token for CI/CD pipelines.
+
+```bash
+nitric access-token
+```
+
+**CI/CD Example:**
+
+```yaml
+# GitHub Actions
+- name: Build with Nitric
+  env:
+    NITRIC_TOKEN: ${{ secrets.NITRIC_TOKEN }}
+  run: |
+    nitric build
+    # Manual deployment step required
+```
+
+---
+
+## Configuration
+
+### `nitric config`
+
+View and modify CLI configuration settings.
+
+```bash
+nitric config
+```
+
+**Common Settings:**
+
+- API endpoints
+- Default region
+- Template sources
+- Logging preferences
+
+### `nitric version`
+
+Display the current CLI version.
+
+```bash
+nitric version
+```
+
+**Output:**
+
+```bash
+nitric version
+# Nitric CLI v1.0.0
+```
+
+### `nitric edit`
+
+Open the visual configuration editor for your project.
+
+```bash
+nitric edit
+```
+
+**Features:**
+
+- Visual resource designer
+- Deployment configuration
+- Environment management
+- Service connections
+
+---
+
+## Environment Variables
+
+Configure the CLI behavior with environment variables:
+
+| Variable        | Description                                          | Default                     |
+| --------------- | ---------------------------------------------------- | --------------------------- |
+| `NITRIC_HOST`   | API server host                                      | `localhost`                 |
+| `NITRIC_PORT`   | API server port                                      | Auto-allocated 50051-50999 |
+| `LOG_LEVEL`     | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info`                      |
+| `NITRIC_CONFIG` | Custom config file path                              | `~/.nitric/config.yaml`     |
+| `NITRIC_TOKEN`  | Authentication token for CI/CD                       | -                           |
+
+**Example:**
+
+```bash
+LOG_LEVEL=debug nitric dev
+```
+
+---
+
+## Common Workflows
+
+<AccordionGroup>
+  <Accordion icon="folder" title="Starting a New Project">
+    ```bash
+    # 1. Create project
+    nitric new todo-api
+
+    # 2. Navigate to project
+    cd todo-api
+
+    # 3. Start development
+    nitric dev
+
+    # 4. Make changes (hot reload active)
+    # Edit your code...
+
+    # 5. Build for production
+    nitric build
+
+    # 6. Deploy manually to your cloud provider
+    ```
+  </Accordion>
+  
+  <Accordion icon="plus" title="Adding to Existing Project">
+    ```bash
+    # 1. Initialize Nitric
+    nitric init
+
+    # 2. Add cloud resources to your code
+    # import { api, bucket } from '@nitric/sdk'
+
+    # 3. Run locally
+    nitric dev
+
+    # 4. Generate client SDKs
+    nitric generate --ts --ts-out ./client
+    ```
+  </Accordion>
+  
+  <Accordion icon="users" title="Team Collaboration">
+    ```bash
+    # 1. Login to platform
+    nitric login
+
+    # 2. View team templates
+    nitric templates
+
+    # 3. Create from team template
+    nitric new payment-service
+    ```
+  </Accordion>
+  
+  <Accordion icon="rocket" title="CI/CD Pipeline">
+    ```bash
+    #!/bin/bash
+    # deploy.sh
+
+    # Authenticate with Nitric (if needed)
+    export NITRIC_TOKEN=$CI_NITRIC_TOKEN
+
+    # Generate Terraform infrastructure
+    nitric build
+
+    # Generate SDKs
+    nitric generate \
+      --ts --ts-out ./web/sdk \
+      --python --python-out ./api/sdk
+
+    # Deploy with Terraform
+    cd .nitric/stacks/*/  # Navigate to generated stack
+
+    # Setup cloud credentials (AWS example)
+    export AWS_ACCESS_KEY_ID=$CI_AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY=$CI_AWS_SECRET_ACCESS_KEY
+    export AWS_DEFAULT_REGION=us-east-1
+
+    # Initialize and deploy
+    terraform init -upgrade
+    terraform plan
+    terraform apply -auto-approve
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Troubleshooting
+
+### Debug Commands
+
+```bash
+# Check CLI installation
+nitric version
+
+# Verify authentication
+nitric access-token
+
+# View configuration
+nitric config
+
+# Check service logs
+cat .nitric/logs/api.log
+```
+
+<AccordionGroup>
+  <Accordion icon="warning" title="Port Already in Use">
+    ```bash
+    # Nitric will automatically find next available port in 3000-3999 range
+    nitric dev
+    ```
+  </Accordion>
+  
+  <Accordion icon="search" title="Template Not Found">
+    ```bash
+    # Login to access team templates
+    nitric login
+
+    # Clear template cache
+    rm -rf ~/.nitric/templates/
+    ```
+  </Accordion>
+  
+  <Accordion icon="hammer" title="Build Failures">
+    ```bash
+    # Verbose logging
+    LOG_LEVEL=debug nitric build
+
+    # Clean build
+    rm -rf .nitric/
+    nitric build
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Exit Codes
+
+| Code  | Description          |
+| ----- | -------------------- |
+| `0`   | Success              |
+| `1`   | General error        |
+| `2`   | Configuration error  |
+| `130` | Interrupted (Ctrl+C) |
+
+---
+
+## Getting Help
+
+### Command Help
+
+Every command includes detailed help:
+
+```bash
+# General help
+nitric help
+
+# Command-specific help
+nitric dev --help
+nitric generate --help
+```
+
+<Note>
+  Some commands mentioned in other documentation (`nitric deploy`, `nitric template publish`) are not available in the current CLI implementation. Use `nitric build` followed by manual cloud provider deployment.
+</Note>
