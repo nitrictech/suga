@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-description: "The Suga CLI provides everything you need to build, test, and deploy cloud-native applications."
+description: "The Suga CLI provides everything you need to build, test, and deploy cloud-native applications with automatic infrastructure generation."
 ---
 
 ## Get started with Suga in minutes
@@ -12,7 +12,7 @@ Deploy your first application on the Suga platform in just a few steps.
 </Note>
 
 <AccordionGroup>
-  <Accordion title="Step1: Setup" defaultOpen={false} icon="rocket">
+  <Accordion title="Step1: Setup" defaultOpen="false" icon="rocket">
     **Create and initialize your project:**
 
     ```bash
@@ -67,17 +67,23 @@ Deploy your first application on the Suga platform in just a few steps.
     # Login to platform
     nitric login
     ```
-    
+
     ```bash
     ⚡ Nitric Logging in...
-
+    
     ✓ Logged in as User
     ```
-    
+
+    **Open visual editor to review architecture**
 
     ```bash
-    # Open visual editor to design resources
     nitric edit
+    ```
+
+    ```bash
+    ⚡ Nitric Editor
+    Opening visual editor at http://localhost:3001
+    Press Ctrl+C to stop the editor
     ```
 
     ![review.png](/docs/nitricedit.png)
@@ -87,7 +93,7 @@ Deploy your first application on the Suga platform in just a few steps.
     </Note>
   </Accordion>
   <Accordion title="Step 3: Develop" icon="code">
-    **Build and test your application locally:**
+    **Run your application locally:**
 
     ```bash
     # Start development server with hot reload
@@ -111,15 +117,15 @@ Deploy your first application on the Suga platform in just a few steps.
     Use Ctrl-C to exit
     ```
 
+    <Tip>
+      Services automatically restart when you update your application code
+    </Tip>
+    **Test your application**
+
     ```bash
-    # Test your API
     curl http://localhost:3000/hello
     # {"message": "Hello World"}
     ```
-
-    <Tip>
-      Services automatically restart when you change code files
-    </Tip>
   </Accordion>
   <Accordion title="Step 4: Deploy" icon="cloud">
     **Configure deployment target and deploy to production:**
@@ -145,44 +151,97 @@ Deploy your first application on the Suga platform in just a few steps.
     nitric build
     ```
 
-    **Setup cloud credentials:**
-
     ```bash
-    # AWS
-    aws configure
+    ✓ Terraform generated successfully
+      output written to ./.nitric/stacks/my-first-app-aws-12345
     
-    # Google Cloud
-    gcloud auth application-default login
-    
-    # Azure
-    az login
+    Next steps:
+    1. Run cd ./.nitric/stacks/my-first-app-aws-12345 to move to the stack directory
+    2. Initialize the stack terraform init -upgrade
+    3. Optionally, preview with terraform plan
+    4. Deploy with terraform apply
     ```
 
+    **Setup cloud credentials:**
+
+    <Tabs>
+      <Tab title="AWS">
+        ```bash
+        # AWS
+        aws configure
+        ```
+      </Tab>
+      <Tab title="GCP">
+        ```bash
+        # Google Cloud
+        gcloud auth application-default login
+        ```
+      </Tab>
+      <Tab title="Azure">
+        ```bash
+        # Azure
+        az login
+        ```
+      </Tab>
+    </Tabs>
     **Deploy with Terraform:**
 
     ```bash
     cd .nitric/stacks/my-first-app-aws-xyz
     terraform init -upgrade
+    ```
+
+    ```bash
+    Initializing the backend...
+    Initializing provider plugins...
+    - Installing hashicorp/aws v5.0.0...
+    - Installed hashicorp/aws v5.0.0 (signed by HashiCorp)
+    
+    Terraform has been successfully initialized!
+    ```
+
+    ```bash
     terraform plan
+    ```
+
+    ```bash
+    Terraform will perform the following actions:
+    
+      # aws_s3_bucket.storage will be created
+      + resource "aws_s3_bucket" "storage" {
+          + bucket = "my-first-app-storage"
+          ...
+      }
+    
+    Plan: 15 to add, 0 to change, 0 to destroy.
+    ```
+
+    ```bash
     terraform apply
     ```
 
-    <Note>
-      Requires cloud provider account and credentials configured
-    </Note>
+    ```bash
+    Do you want to perform these actions?
+      Terraform will perform the actions described above.
+      Only 'yes' will be accepted to approve.
+    
+      Enter a value: yes
+    
+    Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
+    
+    Outputs:
+    api_endpoint = "https://api.my-first-app.example.com"
+    ```
   </Accordion>
 </AccordionGroup>
 
 **What you just accomplished:**
 
-- ✅ Correctly set up Suga
-- ✅ A sample app running locally with hot reloads
-- ✅ Generated Terraform deployment scripts
-- ✅ Deployed to your chosen cloud provider (with proper credentials)
+- ✅ Developed and tested an application locally with Suga
+- ✅ Generated Terraform deployment scripts for your application
+- ✅ Deployed to your chosen cloud provider
 
----
-
-## Common Used Commands
+## The features you'll reach for every day
 
 <CardGroup cols={2}>
   <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
@@ -197,7 +256,7 @@ Deploy your first application on the Suga platform in just a few steps.
   <Card title="Generate Clients" icon="code" href="./cli/generate.mdx">
     Use `nitric generate` to create type-safe client libraries for your APIs
   </Card>
-  <Card title="Generate Terraform" icon="hammer" href="./cli/generate.mdx">
+  <Card title="Build Terraform" icon="hammer" href="./cli/build.mdx">
     Use `nitric build` to generate Terraform infrastructure code for your deployment target
   </Card>
   <Card title="Team Authentication" icon="key" href="./cli/login.mdx">
