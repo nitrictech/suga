@@ -12,7 +12,7 @@ Deploy your first application on the Suga platform in just a few steps.
 </Note>
 
 <AccordionGroup>
-  <Accordion title="Setup" defaultOpen icon="rocket">
+  <Accordion title="Step1: Setup" defaultOpen={false} icon="rocket">
     **Create and initialize your project:**
 
     ```bash
@@ -51,7 +51,7 @@ Deploy your first application on the Suga platform in just a few steps.
     ├── nitric.yaml          # Project configuration
     ├── package.json         # Dependencies (Node.js)
     ├── services/
-    │   └── api.ts          # Your API service code
+    │    └── api.ts          # Your API service code
     └── README.md           # Project documentation
     ```
 
@@ -60,7 +60,7 @@ Deploy your first application on the Suga platform in just a few steps.
     npm install  # or pip install -r requirements.txt, go mod tidy
     ```
   </Accordion>
-  <Accordion title="Design" icon="pen-to-square">
+  <Accordion title="Step 2: Design" icon="pen-to-square">
     **Configure or review your application architecture:**
 
     ```bash
@@ -77,7 +77,7 @@ Deploy your first application on the Suga platform in just a few steps.
       Design your APIs, databases, storage, and other cloud resources
     </Note>
   </Accordion>
-  <Accordion title="Develop" icon="code">
+  <Accordion title="Step 3: Develop" icon="code">
     **Build and test your application locally:**
 
     ```bash
@@ -112,7 +112,7 @@ Deploy your first application on the Suga platform in just a few steps.
       Services automatically restart when you change code files
     </Tip>
   </Accordion>
-  <Accordion title="Deploy" icon="cloud">
+  <Accordion title="Step 4: Deploy" icon="cloud">
     **Configure deployment target and deploy to production:**
 
     Use the visual editor to choose from available targets:
@@ -121,24 +121,13 @@ Deploy your first application on the Suga platform in just a few steps.
     nitric edit
     ```
 
+    ![deploy targets.png](/docs/images/deploytargets.png)
+
     Or add deployment targets to `nitric.yaml`:
 
     ```bash nitric.yaml
     targets:
       - nitric/aws@latest # or nitric/gcp@latest, nitric/azure@latest
-    ```
-
-    **Setup cloud credentials:**
-
-    ```bash
-    # AWS
-    aws configure
-    
-    # Google Cloud
-    gcloud auth application-default login
-    
-    # Azure
-    az login
     ```
 
     **Generate Terraform:**
@@ -184,7 +173,7 @@ Deploy your first application on the Suga platform in just a few steps.
 
 ---
 
-## Common Commands
+## Common Used Commands
 
 <CardGroup cols={2}>
   <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
