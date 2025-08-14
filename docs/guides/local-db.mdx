@@ -3,11 +3,11 @@ title: 'Local Database Setup'
 description: 'Set up PostgreSQL for Nitric local development.'
 ---
 
-Nitric doesn't automatically provision databases in local development. Here's how to set up PostgreSQL for local development.
+Nitric doesn't automatically provision databases in local development - this gives you full control over your database choice. Here's how to set up PostgreSQL locally that works with any PostgreSQL provider (Neon, Supabase, AWS RDS) when deployed.
 
 <AccordionGroup>
   <Accordion title="Step 1: Initialize Project" icon="folder-plus">
-    **Create a new Nitric project:**
+    **Start with a fresh project:**
 
     Create a new project and select the Go template:
 
@@ -37,14 +37,12 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
 
-  <Accordion title="Step 2: Create Docker Compose" icon="docker">
-    **Define your database container:**
+  <Accordion title="Step 2: Setup Database Environment" icon="docker">
+    **Run PostgreSQL locally without installing it:**
 
-    Docker Compose lets you run PostgreSQL without installing it locally. Create `docker-compose.yml` in your project root:
+    Create `docker-compose.yml` for PostgreSQL:
 
     ```yaml
-    version: '3.8'
-
     services:
       postgres:
         image: postgres:15
@@ -61,12 +59,8 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     volumes:
       postgres_data:
     ```
-  </Accordion>
 
-  <Accordion title="Step 3: Create Makefile" icon="file-code">
-    **Add convenient database commands:**
-
-    A Makefile simplifies managing your database. Create `Makefile`:
+    Add database commands to your `Makefile`:
 
     ```makefile
     .PHONY: db-start db-stop
@@ -82,8 +76,8 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
   
-  <Accordion title="Step 4: Configure Nitric" icon="gear">
-    **Register your database with Nitric:**
+  <Accordion title="Step 3: Configure & Connect Nitric" icon="plug">
+    **Tell Nitric how to connect to your database:**
 
     Add your database to `nitric.yaml`:
 
@@ -98,36 +92,21 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     services:
       app:
         env:
-          DATABASE_URL: postgresql://admin:secure_password@localhost:5434/myapp?sslmode=disable
+          DATABASE_URL: postgresql://admin:secure_password@localhost:5432/myapp?sslmode=disable
     ```
 
-    This tells Nitric about your database and provides the connection string.
-  </Accordion>
-
-  <Accordion title="Step 5: Start & Connect" icon="plug">
-    **Run your database and connect Nitric:**
-
-    Start the database container:
+    Start the database and launch Nitric:
 
     ```bash
     make db-start
-    ```
-
-    Tell Nitric where to find your database:
-
-    ```bash
-    export DATABASE_URL="postgresql://admin:secure_password@localhost:5432/myapp"
-    ```
-
-    Launch Nitric in development mode:
-
-    ```bash
     nitric dev
     ```
+
+    Nitric will now connect to your PostgreSQL database automatically.
   </Accordion>
 
-  <Accordion title="Step 6: Initialize Database" icon="table">
-    **Set up tables and seed data:**
+  <Accordion title="Step 4: Initialize Database" icon="table">
+    **Create your tables with sample data:**
 
     Create `init.sql` with your schema and initial data:
 
@@ -168,8 +147,8 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     </Note>
   </Accordion>
 
-  <Accordion title="Step 7: Query from API" icon="code">
-    **Add database queries to your application:**
+  <Accordion title="Step 5: Query from API" icon="code">
+    **Fetch data from your database in your API:**
 
     Update your service code to query the database. Example in Go:
 
@@ -209,6 +188,16 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
 </AccordionGroup>
+
+## Production Deployment
+
+This setup works seamlessly with any PostgreSQL provider when deploying:
+
+- **Neon**: Replace `DATABASE_URL` with your Neon connection string
+- **Supabase**: Replace `DATABASE_URL` with your Supabase connection string  
+- **AWS RDS**: Replace `DATABASE_URL` with your RDS connection string
+
+Your application code remains unchanged - only the connection string needs to be updated for your chosen provider.
 
 <Note>
   Stop with `make db-stop` when done.
