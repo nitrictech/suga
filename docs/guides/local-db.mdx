@@ -6,7 +6,38 @@ description: 'Set up PostgreSQL for Nitric local development.'
 Nitric doesn't automatically provision databases in local development. Here's how to set up PostgreSQL for local development.
 
 <AccordionGroup>
-  <Accordion title="Step 1: Create Docker Compose" icon="docker">
+  <Accordion title="Step 1: Initialize Project" icon="folder-plus">
+    **Create a new Nitric project:**
+
+    Create a new project and select the Go template:
+
+    ```bash
+    nitric new my-app
+    ```
+
+    When prompted, select the Go template:
+
+    ```bash
+    Welcome to Suga, this command will help you create a project from a template.
+
+    Project name: my-app
+
+    ? Template: 
+      suga/python
+    > suga/go          # Select this one
+      suga/typescript
+
+    ✓ Project created!
+    ```
+
+    Enter your project:
+
+    ```bash
+    cd my-app
+    ```
+  </Accordion>
+
+  <Accordion title="Step 2: Create Docker Compose" icon="docker">
     **Define your database container:**
 
     Docker Compose lets you run PostgreSQL without installing it locally. Create `docker-compose.yml` in your project root:
@@ -32,7 +63,7 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
 
-  <Accordion title="Step 2: Create Makefile" icon="file-code">
+  <Accordion title="Step 3: Create Makefile" icon="file-code">
     **Add convenient database commands:**
 
     A Makefile simplifies managing your database. Create `Makefile`:
@@ -59,7 +90,7 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
   
-  <Accordion title="Step 3: Configure Nitric" icon="gear">
+  <Accordion title="Step 4: Configure Nitric" icon="gear">
     **Register your database with Nitric:**
 
     Add your database to `nitric.yaml`:
@@ -67,15 +98,21 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```yaml
     databases:
       mydb:
+        env_var_key: DATABASE_URL
         access:
-          api:
+          app:
             - query
+    
+    services:
+      app:
+        env:
+          DATABASE_URL: postgresql://admin:secure_password@localhost:5434/myapp?sslmode=disable
     ```
 
-    This tells Nitric about your database and which services can access it.
+    This tells Nitric about your database and provides the connection string.
   </Accordion>
 
-  <Accordion title="Step 4: Start & Connect" icon="plug">
+  <Accordion title="Step 5: Start & Connect" icon="plug">
     **Run your database and connect Nitric:**
 
     Start the database container:
@@ -97,7 +134,7 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     ```
   </Accordion>
 
-  <Accordion title="Step 5: Initialize Database" icon="table">
+  <Accordion title="Step 6: Initialize Database" icon="table">
     **Set up tables and seed data:**
 
     Create `init.sql` with your schema and initial data:
@@ -125,6 +162,47 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     <Note>
       For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
     </Note>
+  </Accordion>
+
+  <Accordion title="Step 7: Query from API" icon="code">
+    **Add database queries to your application:**
+
+    Update your service code to query the database. Example in Go:
+
+    ```go
+    import (
+        "database/sql"
+        "encoding/json"
+        _ "github.com/lib/pq"
+    )
+
+    // Connect to database
+    dbURL := os.Getenv("DATABASE_URL")
+    db, err := sql.Open("postgres", dbURL)
+
+    // Query users
+    router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
+        rows, err := db.Query("SELECT id, email, created_at FROM users")
+        // ... handle results
+    })
+    ```
+
+    Generate Nitric client and test:
+
+    ```bash
+    make generate
+    make run
+    curl http://localhost:3000/users
+    ```
+
+    You'll see your user data:
+
+    ```json
+    [
+      {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
+      {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
+    ]
+    ```
   </Accordion>
 </AccordionGroup>
 
