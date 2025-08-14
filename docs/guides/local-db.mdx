@@ -69,7 +69,7 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     A Makefile simplifies managing your database. Create `Makefile`:
 
     ```makefile
-    .PHONY: db-start db-stop db-reset
+    .PHONY: db-start db-stop
 
     db-start:
     	@echo "🐳 Starting database..."
@@ -79,14 +79,6 @@ Nitric doesn't automatically provision databases in local development. Here's ho
     db-stop:
     	@echo "🛑 Stopping database..."
     	@docker compose down
-
-    db-reset:
-    	@echo "🔄 Resetting database..."
-    	@docker compose down -v
-    	@docker compose up -d
-    	@sleep 2
-    	@docker compose exec postgres psql -U admin -d myapp -f /init.sql
-    	@echo "✅ Database reset with fresh data!"
     ```
   </Accordion>
   
@@ -153,7 +145,19 @@ Nitric doesn't automatically provision databases in local development. Here's ho
       ('user@example.com');
     ```
 
-    Apply your schema with database reset:
+    Add the reset command to your Makefile:
+
+    ```makefile
+    db-reset:
+    	@echo "🔄 Resetting database..."
+    	@docker compose down -v
+    	@docker compose up -d
+    	@sleep 2
+    	@docker compose exec postgres psql -U admin -d myapp -f /init.sql
+    	@echo "✅ Database reset with fresh data!"
+    ```
+
+    Apply your schema:
 
     ```bash
     make db-reset
