@@ -1,10 +1,10 @@
 # Suga Documentation
 
-Documentation for [Suga](https://getsuga.com), the platform for building and deploying cloud-native applications.
+Documentation for [Suga](https://makesuga.com), the platform for building and deploying cloud-native applications.
 
 ## 📚 Live Documentation
 
-Visit [docs.getsuga.com](https://docs.getsuga.com) to view the live documentation.
+Visit [docs.makesuga.com](https://docs.makesuga.com) to view the live documentation.
 
 ## 🚀 Local Development
 
@@ -63,14 +63,14 @@ docs/
 ## 🤝 Support
 
 - **Issues**: [GitHub Issues](https://github.com/nitrictech/suga/issues)
-- **Email**: [support@suga.io](mailto:support@suga.io)
-- **Dashboard**: [app.suga.io](https://app.suga.io)
+- **Email**: [support@makesuga.com](mailto:support@makesuga.com)
+- **Dashboard**: [app.makesuga.com](https://app.makesuga.com)
 
 ## 🔗 Links
 
-- [Suga Platform](https://getsuga.com)
+- [Suga Platform](https://makesuga.com)
 - [GitHub](https://github.com/nitrictech/suga)
-- [Twitter](https://x.com/nitric_io)
+- [X](https://x.com/sugasrc)
 - [LinkedIn](https://www.linkedin.com/company/nitrictech)
 
 ---

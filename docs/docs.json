@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Suga Platform",
+  "name": "Suga Docs",
   "colors": {
     "primary": "#25B355",
     "light": "#2BC65F",
@@ -22,30 +22,24 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": [
-              "index",
-              "quickstart"
-            ]
+            "pages": ["index", "quickstart"]
           }
         ]
       },
       {
-        "dropdown": "CLI Reference", 
+        "dropdown": "CLI Reference",
         "description": "Reference for the Suga CLI",
         "icon": "terminal",
         "groups": [
           {
             "group": "Getting Started",
-            "pages": [
-              "cli/introduction",
-              "cli/installation"
-            ]
+            "pages": ["cli/introduction", "cli/installation"]
           },
           {
             "group": "Commands",
             "pages": [
               "cli/access-token",
-              "cli/build", 
+              "cli/build",
               "cli/completion",
               "cli/config",
               "cli/dev",
@@ -66,7 +60,7 @@
       "anchors": [
         {
           "anchor": "Website",
-          "href": "https://getsuga.com",
+          "href": "https://makesuga.com",
           "icon": "globe"
         },
         {
@@ -85,30 +79,30 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@suga.io"
+        "href": "mailto:support@makesuga.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://app.suga.io"
+      "href": "https://app.makesuga.com"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/nitric_io",
+      "x": "https://x.com/sugasrc",
       "github": "https://github.com/nitrictech/suga",
       "linkedin": "https://www.linkedin.com/company/nitrictech"
     }

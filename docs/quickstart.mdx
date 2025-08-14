@@ -1,151 +1,264 @@
 ---
 title: "Quickstart"
-description: "Get started with Suga in minutes"
+description: "The Suga CLI provides everything you need to build, test, and deploy cloud-native applications with automatic infrastructure generation."
 ---
 
-## Get started with Suga
+## Get started with Suga in minutes
 
 Deploy your first application on the Suga platform in just a few steps.
 
-### Step 1: Install Suga CLI
+<Note>
+  **Before you begin:** Make sure you have Suga CLI installed. See our [Installation Guide](/cli/installation) for platform-specific instructions.
+</Note>
 
 <AccordionGroup>
-  <Accordion icon="download" title="Install the Suga CLI">
-    Download the Suga CLI for your operating system:
-    
-    **macOS:**
+  <Accordion title="Step 1: Setup" defaultOpen="false" icon="rocket">
+    **Create and initialize your project:**
+
     ```bash
-    brew install nitrictech/tap/suga
+    # Create new project from template
+    suga new my-first-app
     ```
-    
-    **Windows:**
-    ```powershell
-    scoop bucket add nitrictech https://github.com/nitrictech/scoop-bucket
-    scoop install suga
-    ```
-    
-    **Linux:**
+
     ```bash
-    curl -sSL https://suga.io/install.sh | sh
+    Welcome to Suga, this command will help you create a project from a template.
+    
+    Project name: my-first-app
+    
+    ? Template: 
+      > acme/api-starter - REST API template
+        acme/web-app - Full-stack web application
+        acme/microservice - Microservice template
+    
+    Template: acme/api-starter
+    
+    ✓ Project created!
     ```
+
+    <Tip>
+      Choose a template that matches your use case or preferred framework.
+    </Tip>
+    ```bash
+    cd my-first-app
     
-    Or download directly from [GitHub Releases](https://github.com/nitrictech/suga/releases)
-    
-    <Tip>Verify installation with `suga version`</Tip>
+    # Review the generated project structure
+    ls -la
+    ```
+
+    ```bash
+    # Example project structure:
+    my-first-app/
+    ├── suga.yaml          # Project configuration
+    ├── package.json         # Dependencies (Node.js)
+    ├── services/
+    │    └── api.ts          # Your API service code
+    └── README.md           # Project documentation
+    ```
+
+    ```bash
+    # Install dependencies
+    npm install  # or pip install -r requirements.txt, go mod tidy
+    ```
   </Accordion>
-  <Accordion icon="user" title="Login to Suga">
-    Authenticate with your Suga account:
+  <Accordion title="Step 2: Design" icon="pen-to-square">
+    **Configure or review your application architecture:**
+
     ```bash
+    # Login to platform
     suga login
     ```
-    
-    This will open your browser to complete authentication.
-    
-    <Note>Don't have an account? Sign up at [app.suga.io](https://app.suga.io)</Note>
-  </Accordion>
-</AccordionGroup>
 
-### Step 2: Create your first project
-
-<AccordionGroup>
-  <Accordion icon="folder" title="Create a new project">
-    Use the `new` command to create a project from a template:
     ```bash
-    suga new my-app
+    ⚡ Suga Logging in...
+    
+    ✓ Logged in as User
     ```
-    
-    You'll be prompted to choose a template. To see all available templates:
-    ```bash
-    suga templates
-    ```
-    
-    <Tip>Choose a template that matches your use case (API, web app, microservices, etc.)</Tip>
-  </Accordion>
-  <Accordion icon="code" title="Explore the project structure">
-    ```bash
-    cd my-app
-    ```
-    
-    Your project will include:
-    - `suga.yaml` - Main configuration file
-    - Service code in your chosen language
-    - Infrastructure definitions
-    - Environment configuration
-    
-    <Note>Project structure varies by template and language</Note>
-  </Accordion>
-</AccordionGroup>
 
-### Step 3: Develop and deploy
+    **Open visual editor to review architecture**
 
-<AccordionGroup>
-  <Accordion icon="play" title="Run in development mode">
-    Start your application locally:
     ```bash
+    suga edit
+    ```
+
+    ```bash
+    ⚡ Suga Editor
+    Opening visual editor at http://localhost:3001
+    Press Ctrl+C to stop the editor
+    ```
+
+    ![review.png](/images/edit-design.png)
+
+    <Note>
+      Design your APIs, databases, storage, and other cloud resources
+    </Note>
+  </Accordion>
+  <Accordion title="Step 3: Develop" icon="code">
+    **Run your application locally:**
+
+    ```bash
+    # Start development server with hot reload
     suga dev
     ```
+
+    ```bash
+    ⚡ Suga v1.0.0
+       - App: my-first-app
+       - Addr: http://localhost:50051
+       - Dashboard: https://app.makesuga.com/dev
     
-    This will:
-    - Start local development server
-    - Enable hot reloading
-    - Provide local endpoints for testing
+    Services
     
-    <Tip>Use `suga edit` to open the visual application editor</Tip>
+    ✓ Starting [api]
+    
+    Entrypoints
+    
+    ✓ Starting [main] http://localhost:3000
+    
+    Use Ctrl-C to exit
+    ```
+
+    <Tip>
+      Services automatically restart when you update your application code
+    </Tip>
+    **Test your application**
+
+    ```bash
+    curl http://localhost:3000/hello
+    # {"message": "Hello World"}
+    ```
   </Accordion>
-  <Accordion icon="hammer" title="Build for deployment">
-    Generate Terraform modules for deployment:
+  <Accordion title="Step 4: Deploy" icon="cloud">
+    **Configure deployment target and deploy to production:**
+
+    Use the visual editor to choose from available targets:
+
+    ```bash
+    suga edit
+    ```
+
+    ![deploy targets.png](/images/deploy-targets.png)
+
+    Or add deployment targets to `suga.yaml`:
+
+    ```bash suga.yaml
+    targets:
+      - suga/aws@latest # or suga/gcp@latest, suga/azure@latest
+    ```
+
+    **Generate Terraform:**
+
     ```bash
     suga build
     ```
+
+    ```bash
+    ✓ Terraform generated successfully
+      output written to ./.suga/stacks/my-first-app-aws-12345
     
-    The build process:
-    1. Validates your configuration
-    2. Compiles your services
-    3. Generates Terraform modules using Suga plugins or custom plugins
-    4. Outputs infrastructure-as-code ready for deployment
+    Next steps:
+    1. Run cd ./.suga/stacks/my-first-app-aws-12345 to move to the stack directory
+    2. Initialize the stack terraform init -upgrade
+    3. Optionally, preview with terraform plan
+    4. Deploy with terraform apply
+    ```
+
+    **Setup cloud credentials:**
+
+    <Tabs>
+      <Tab title="AWS">
+        ```bash
+        # AWS
+        aws configure
+        ```
+      </Tab>
+      <Tab title="GCP">
+        ```bash
+        # Google Cloud
+        gcloud auth application-default login
+        ```
+      </Tab>
+      <Tab title="Azure">
+        ```bash
+        # Azure
+        az login
+        ```
+      </Tab>
+    </Tabs>
+    **Deploy with Terraform:**
+
+    ```bash
+    cd .suga/stacks/my-first-app-aws-xyz
+    terraform init -upgrade
+    ```
+
+    ```bash
+    Terraform has been successfully initialized!
+    ```
+
+    ```bash
+    terraform plan
+    ```
+
+    ```bash
+    Terraform will perform the following actions:
     
-    <Note>The generated Terraform modules can be deployed using standard Terraform workflows</Note>
+      # aws_s3_bucket.storage will be created
+      + resource "aws_s3_bucket" "storage" {
+          + bucket = "my-first-app-storage"
+          ...
+      }
+    
+    Plan: 15 to add, 0 to change, 0 to destroy.
+    ```
+
+    ```bash
+    terraform apply
+    ```
+
+    ```bash
+    Do you want to perform these actions?
+      Terraform will perform the actions described above.
+      Only 'yes' will be accepted to approve.
+    
+      Enter a value: yes
+    
+    Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
+    
+    Outputs:
+    api_endpoint = "https://api.my-first-app.example.com"
+    ```
   </Accordion>
 </AccordionGroup>
 
-## CLI Commands
+**What you just accomplished:**
+
+- ✅ Developed and tested an application locally with Suga
+- ✅ Generated Terraform deployment scripts for your application
+- ✅ Deployed to your chosen cloud provider
+
+## The features you'll reach for every day
 
 <CardGroup cols={2}>
-
-<Card title="Visual Editor" icon="pen-to-square" href="/quickstart">
-  Use `suga edit` to open the application editor for visual infrastructure design
-</Card>
-
-<Card title="Generate Client Libraries" icon="code" href="/quickstart">
-  Use `suga generate` to create type-safe client libraries
-</Card>
-
-<Card title="Manage Configuration" icon="gear" href="/quickstart">
-  Use `suga config` to manage your CLI settings
-</Card>
-
-<Card title="Get Access Token" icon="key" href="/quickstart">
-  Use `suga access-token` for programmatic access
-</Card>
-
-</CardGroup>
-
-## Next steps
-
-Explore more features and capabilities:
-
-<CardGroup cols={2}>
-
-<Card title="Templates" icon="layer-group" href="/quickstart">
-  Browse available project templates with `suga templates`
-</Card>
-
-<Card title="CLI Reference" icon="terminal" href="/cli/introduction">
-  Explore the complete CLI command reference
-</Card>
-
+  <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
+    Use `suga new` to create projects from templates or `suga init` to add Suga to existing apps
+  </Card>
+  <Card title="Visual Editor" icon="pen-to-square" href="/cli/edit.mdx">
+    Use `suga edit` to design your application architecture and configure deployment targets
+  </Card>
+  <Card title="Local Development" icon="play" href="/cli/dev.mdx">
+    Use `suga dev` to run your application locally with hot reload and instant feedback
+  </Card>
+  <Card title="Generate Clients" icon="code" href="/cli/generate.mdx">
+    Use `suga generate` to create type-safe client libraries for your APIs
+  </Card>
+  <Card title="Build Terraform" icon="hammer" href="/cli/build.mdx">
+    Use `suga build` to generate Terraform infrastructure code for your deployment target
+  </Card>
+  <Card title="Team Authentication" icon="key" href="/cli/login.mdx">
+    Use `suga login` to connect to Suga Platform
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** Contact [support@suga.io](mailto:support@suga.io) or check our [GitHub](https://github.com/nitrictech/suga).
+  **Need help?** Contact [support@makesuga.com](mailto:support@makesuga.com) or check our [GitHub](https://github.com/nitrictech/suga).
 </Note>

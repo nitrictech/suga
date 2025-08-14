@@ -1,0 +1,18 @@
+---
+title: "Environment Variables"
+description: "Configure the CLI behavior with environment variables:"
+---
+
+| Variable        | Description                                          | Default                    |
+| :-------------- | :--------------------------------------------------- | :------------------------- |
+| `SUGA_HOST`   | API server host                                      | `localhost`                |
+| `SUGA_PORT`   | API server port                                      | Auto-allocated 50051-50999 |
+| `LOG_LEVEL`     | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info`                     |
+| `SUGA_CONFIG` | Custom config file path                              | `~/.suga/config.yaml`    |
+| `SUGA_TOKEN`  | Authentication token for CI/CD                       | -                          |
+
+**Example:**
+
+```bash
+LOG_LEVEL=debug suga dev
+```
