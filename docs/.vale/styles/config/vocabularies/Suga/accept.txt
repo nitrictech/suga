@@ -1,6 +1,7 @@
 # Add accepted terms here (one per line)
 # These terms will be considered correct regardless of case
 Suga
+nitrictech
 
 # Defaults from mintlify
 Mintlify
