@@ -17,11 +17,11 @@ Deploy your first application on the Suga platform in just a few steps.
 
     ```bash
     # Create new project from template
-    nitric new my-first-app
+    suga new my-first-app
     ```
 
     ```bash
-    Welcome to Nitric, this command will help you create a project from a template.
+    Welcome to Suga, this command will help you create a project from a template.
     
     Project name: my-first-app
     
@@ -48,7 +48,7 @@ Deploy your first application on the Suga platform in just a few steps.
     ```bash
     # Example project structure:
     my-first-app/
-    ├── nitric.yaml          # Project configuration
+    ├── suga.yaml          # Project configuration
     ├── package.json         # Dependencies (Node.js)
     ├── services/
     │    └── api.ts          # Your API service code
@@ -65,11 +65,11 @@ Deploy your first application on the Suga platform in just a few steps.
 
     ```bash
     # Login to platform
-    nitric login
+    suga login
     ```
 
     ```bash
-    ⚡ Nitric Logging in...
+    ⚡ Suga Logging in...
     
     ✓ Logged in as User
     ```
@@ -77,11 +77,11 @@ Deploy your first application on the Suga platform in just a few steps.
     **Open visual editor to review architecture**
 
     ```bash
-    nitric edit
+    suga edit
     ```
 
     ```bash
-    ⚡ Nitric Editor
+    ⚡ Suga Editor
     Opening visual editor at http://localhost:3001
     Press Ctrl+C to stop the editor
     ```
@@ -97,14 +97,14 @@ Deploy your first application on the Suga platform in just a few steps.
 
     ```bash
     # Start development server with hot reload
-    nitric dev
+    suga dev
     ```
 
     ```bash
-    ⚡ Nitric v1.0.0
+    ⚡ Suga v1.0.0
        - App: my-first-app
        - Addr: http://localhost:50051
-       - Dashboard: https://app.nitric.io/dev
+       - Dashboard: https://app.makesuga.com/dev
     
     Services
     
@@ -133,30 +133,30 @@ Deploy your first application on the Suga platform in just a few steps.
     Use the visual editor to choose from available targets:
 
     ```bash
-    nitric edit
+    suga edit
     ```
 
     ![deploy targets.png](/images/deploy-targets.png)
 
-    Or add deployment targets to `nitric.yaml`:
+    Or add deployment targets to `suga.yaml`:
 
-    ```bash nitric.yaml
+    ```bash suga.yaml
     targets:
-      - nitric/aws@latest # or nitric/gcp@latest, nitric/azure@latest
+      - suga/aws@latest # or suga/gcp@latest, suga/azure@latest
     ```
 
     **Generate Terraform:**
 
     ```bash
-    nitric build
+    suga build
     ```
 
     ```bash
     ✓ Terraform generated successfully
-      output written to ./.nitric/stacks/my-first-app-aws-12345
+      output written to ./.suga/stacks/my-first-app-aws-12345
     
     Next steps:
-    1. Run cd ./.nitric/stacks/my-first-app-aws-12345 to move to the stack directory
+    1. Run cd ./.suga/stacks/my-first-app-aws-12345 to move to the stack directory
     2. Initialize the stack terraform init -upgrade
     3. Optionally, preview with terraform plan
     4. Deploy with terraform apply
@@ -187,7 +187,7 @@ Deploy your first application on the Suga platform in just a few steps.
     **Deploy with Terraform:**
 
     ```bash
-    cd .nitric/stacks/my-first-app-aws-xyz
+    cd .suga/stacks/my-first-app-aws-xyz
     terraform init -upgrade
     ```
 
@@ -240,25 +240,25 @@ Deploy your first application on the Suga platform in just a few steps.
 
 <CardGroup cols={2}>
   <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
-    Use `nitric new` to create projects from templates or `nitric init` to add Nitric to existing apps
+    Use `suga new` to create projects from templates or `suga init` to add Suga to existing apps
   </Card>
   <Card title="Visual Editor" icon="pen-to-square" href="/cli/edit.mdx">
-    Use `nitric edit` to design your application architecture and configure deployment targets
+    Use `suga edit` to design your application architecture and configure deployment targets
   </Card>
   <Card title="Local Development" icon="play" href="/cli/dev.mdx">
-    Use `nitric dev` to run your application locally with hot reload and instant feedback
+    Use `suga dev` to run your application locally with hot reload and instant feedback
   </Card>
   <Card title="Generate Clients" icon="code" href="/cli/generate.mdx">
-    Use `nitric generate` to create type-safe client libraries for your APIs
+    Use `suga generate` to create type-safe client libraries for your APIs
   </Card>
   <Card title="Build Terraform" icon="hammer" href="/cli/build.mdx">
-    Use `nitric build` to generate Terraform infrastructure code for your deployment target
+    Use `suga build` to generate Terraform infrastructure code for your deployment target
   </Card>
   <Card title="Team Authentication" icon="key" href="/cli/login.mdx">
-    Use `nitric login` to connect to Nitric Platform
+    Use `suga login` to connect to Suga Platform
   </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** Contact [support@suga.io](mailto:support@suga.io) or check our [GitHub](https://github.com/nitrictech/suga).
+  **Need help?** Contact [support@makesuga.com](mailto:support@makesuga.com) or check our [GitHub](https://github.com/nitrictech/suga).
 </Note>

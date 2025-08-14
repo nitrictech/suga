@@ -79,13 +79,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@suga.io"
+        "href": "mailto:support@makesuga.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://app.suga.io"
+      "href": "https://app.makesuga.com"
     }
   },
   "contextual": {
@@ -102,7 +102,7 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/nitric_io",
+      "x": "https://x.com/sugasrc",
       "github": "https://github.com/nitrictech/suga",
       "linkedin": "https://www.linkedin.com/company/nitrictech"
     }

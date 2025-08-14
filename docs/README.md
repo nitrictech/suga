@@ -63,14 +63,14 @@ docs/
 ## 🤝 Support
 
 - **Issues**: [GitHub Issues](https://github.com/nitrictech/suga/issues)
-- **Email**: [support@suga.io](mailto:support@suga.io)
-- **Dashboard**: [app.suga.io](https://app.suga.io)
+- **Email**: [support@makesuga.com](mailto:support@makesuga.com)
+- **Dashboard**: [app.makesuga.com](https://app.makesuga.com)
 
 ## 🔗 Links
 
 - [Suga Platform](https://makesuga.com)
 - [GitHub](https://github.com/nitrictech/suga)
-- [Twitter](https://x.com/nitric_io)
+- [X](https://x.com/sugasrc)
 - [LinkedIn](https://www.linkedin.com/company/nitrictech)
 
 ---

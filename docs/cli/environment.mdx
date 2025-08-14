@@ -5,14 +5,14 @@ description: "Configure the CLI behavior with environment variables:"
 
 | Variable        | Description                                          | Default                    |
 | :-------------- | :--------------------------------------------------- | :------------------------- |
-| `NITRIC_HOST`   | API server host                                      | `localhost`                |
-| `NITRIC_PORT`   | API server port                                      | Auto-allocated 50051-50999 |
+| `SUGA_HOST`   | API server host                                      | `localhost`                |
+| `SUGA_PORT`   | API server port                                      | Auto-allocated 50051-50999 |
 | `LOG_LEVEL`     | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info`                     |
-| `NITRIC_CONFIG` | Custom config file path                              | `~/.nitric/config.yaml`    |
-| `NITRIC_TOKEN`  | Authentication token for CI/CD                       | -                          |
+| `SUGA_CONFIG` | Custom config file path                              | `~/.suga/config.yaml`    |
+| `SUGA_TOKEN`  | Authentication token for CI/CD                       | -                          |
 
 **Example:**
 
 ```bash
-LOG_LEVEL=debug nitric dev
+LOG_LEVEL=debug suga dev
 ```
