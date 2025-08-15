@@ -40,6 +40,10 @@ Nitric doesn't automatically provision databases in local development - this giv
   <Accordion title="Step 2: Setup Database Environment" icon="docker">
     **Run PostgreSQL locally without installing it:**
 
+    <Tip>
+      Already have PostgreSQL running? Skip the Docker setup and use your existing database. Just update the `DATABASE_URL` in Step 3 to point to your instance.
+    </Tip>
+
     Create `docker-compose.yml` for PostgreSQL:
 
     ```yaml
@@ -47,9 +51,9 @@ Nitric doesn't automatically provision databases in local development - this giv
       postgres:
         image: postgres:15
         environment:
-          POSTGRES_USER: admin
-          POSTGRES_PASSWORD: secure_password
-          POSTGRES_DB: myapp
+          POSTGRES_USER: ${POSTGRES_USER:-admin}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+          POSTGRES_DB: ${POSTGRES_DB:-myapp}
         ports:
           - '5432:5432'
         volumes:
@@ -58,6 +62,14 @@ Nitric doesn't automatically provision databases in local development - this giv
 
     volumes:
       postgres_data:
+    ```
+
+    Create an `.env` file for local development (don't commit this):
+
+    ```bash
+    POSTGRES_USER=admin
+    POSTGRES_PASSWORD=secure_password
+    POSTGRES_DB=myapp
     ```
 
     Add database commands to your `Makefile`:
@@ -94,6 +106,10 @@ Nitric doesn't automatically provision databases in local development - this giv
         env:
           DATABASE_URL: postgresql://admin:secure_password@localhost:5432/myapp?sslmode=disable
     ```
+
+    <Note>
+      Update the DATABASE_URL to match your .env file values. For production, use environment variables or secrets management.
+    </Note>
 
     Start the database and launch Nitric:
 
