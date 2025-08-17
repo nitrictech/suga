@@ -15,10 +15,13 @@ Deploy your first application on the Suga platform in just a few steps.
   <Accordion title="Step 1: Setup" defaultOpen="false" icon="rocket">
     **Create and initialize your project:**
 
+    Create a new project from a template using the following command:
+
     ```bash
-    # Create new project from template
     suga new my-first-app
     ```
+
+    You'll be prompted to select a template that matches your use case:
 
     ```bash
     Welcome to Suga, this command will help you create a project from a template.
@@ -38,35 +41,59 @@ Deploy your first application on the Suga platform in just a few steps.
     <Tip>
       Choose a template that matches your use case or preferred framework.
     </Tip>
+    Navigate to your new project directory:
+
     ```bash
     cd my-first-app
-    
-    # Review the generated project structure
+    ```
+
+    Review the generated project structure:
+
+    ```bash
     ls -la
     ```
 
-    ```bash
-    # Example project structure:
-    my-first-app/
-    ├── suga.yaml          # Project configuration
-    ├── package.json         # Dependencies (Node.js)
-    ├── services/
-    │    └── api.ts          # Your API service code
-    └── README.md           # Project documentation
-    ```
+    Your project will have the following structure:
 
     ```bash
-    # Install dependencies
-    npm install  # or pip install -r requirements.txt, go mod tidy
+    my-first-app/
+    ├── suga.yaml          # Project configuration
+    ├── package.json       # Dependencies (Node.js)
+    ├── services/
+    │    └── api.ts        # Your API service code
+    └── README.md          # Project documentation
     ```
+
+    Install the project dependencies based on your language:
+
+    <Tabs>
+      <Tab title="Node.js">
+        ```bash
+        npm install
+        ```
+      </Tab>
+      <Tab title="Python">
+        ```bash
+        pip install -r requirements.txt
+        ```
+      </Tab>
+      <Tab title="Go">
+        ```bash
+        go mod tidy
+        ```
+      </Tab>
+    </Tabs>
   </Accordion>
   <Accordion title="Step 2: Design" icon="pen-to-square">
     **Configure or review your application architecture:**
 
+    First, log in to the Suga platform:
+
     ```bash
-    # Login to platform
     suga login
     ```
+
+    You'll see a confirmation message:
 
     ```bash
     ⚡ Suga Logging in...
@@ -74,11 +101,13 @@ Deploy your first application on the Suga platform in just a few steps.
     ✓ Logged in as User
     ```
 
-    **Open visual editor to review architecture**
+    Open the visual editor to review and modify your application architecture:
 
     ```bash
     suga edit
     ```
+
+    The editor will launch in your browser:
 
     ```bash
     ⚡ Suga Editor
@@ -95,10 +124,13 @@ Deploy your first application on the Suga platform in just a few steps.
   <Accordion title="Step 3: Develop" icon="code">
     **Run your application locally:**
 
+    Start the development server with hot reload enabled:
+
     ```bash
-    # Start development server with hot reload
     suga dev
     ```
+
+    The development server will start and display connection information:
 
     ```bash
     ⚡ Suga v1.0.0
@@ -122,15 +154,22 @@ Deploy your first application on the Suga platform in just a few steps.
     </Tip>
     **Test your application**
 
+    Send a test request to verify your application is running:
+
     ```bash
     curl http://localhost:3000/hello
-    # {"message": "Hello World"}
+    ```
+
+    Expected response:
+
+    ```json
+    {"message": "Hello World"}
     ```
   </Accordion>
   <Accordion title="Step 4: Deploy" icon="cloud">
     **Configure deployment target and deploy to production:**
 
-    Use the visual editor to choose from available targets:
+    Use the visual editor to choose from available deployment targets:
 
     ```bash
     suga edit
@@ -138,18 +177,24 @@ Deploy your first application on the Suga platform in just a few steps.
 
     ![deploy targets.png](/images/deploy-targets.png)
 
-    Or add deployment targets to `suga.yaml`:
+    Alternatively, you can manually add deployment targets to your `suga.yaml` file:
 
-    ```bash suga.yaml
+    ```yaml
     targets:
-      - suga/aws@latest # or suga/gcp@latest, suga/azure@latest
+      - suga/aws@latest
+      - suga/gcp@latest
+      - suga/azure@latest
     ```
 
     **Generate Terraform:**
 
+    Build the Terraform configuration for your chosen deployment target:
+
     ```bash
     suga build
     ```
+
+    The build process will generate infrastructure code:
 
     ```bash
     ✓ Terraform generated successfully
@@ -164,40 +209,52 @@ Deploy your first application on the Suga platform in just a few steps.
 
     **Setup cloud credentials:**
 
+    Configure credentials for your chosen cloud provider:
+
     <Tabs>
       <Tab title="AWS">
         ```bash
-        # AWS
         aws configure
         ```
       </Tab>
       <Tab title="GCP">
         ```bash
-        # Google Cloud
         gcloud auth application-default login
         ```
       </Tab>
       <Tab title="Azure">
         ```bash
-        # Azure
         az login
         ```
       </Tab>
     </Tabs>
     **Deploy with Terraform:**
 
+    Navigate to the generated stack directory:
+
     ```bash
     cd .suga/stacks/my-first-app-aws-xyz
+    ```
+
+    Initialize Terraform:
+
+    ```bash
     terraform init -upgrade
     ```
+
+    You'll see a success message:
 
     ```bash
     Terraform has been successfully initialized!
     ```
 
+    Preview the changes Terraform will make:
+
     ```bash
     terraform plan
     ```
+
+    Review the planned infrastructure changes:
 
     ```bash
     Terraform will perform the following actions:
@@ -211,9 +268,13 @@ Deploy your first application on the Suga platform in just a few steps.
     Plan: 15 to add, 0 to change, 0 to destroy.
     ```
 
+    Apply the Terraform configuration to deploy your application:
+
     ```bash
     terraform apply
     ```
+
+    Confirm the deployment when prompted:
 
     ```bash
     Do you want to perform these actions?
@@ -234,9 +295,9 @@ Deploy your first application on the Suga platform in just a few steps.
 
 - ✅ Developed and tested an application locally with Suga
 - ✅ Generated Terraform deployment scripts for your application
-- ✅ Deployed to your chosen cloud provider
+- ✅ Deployed the application to your chosen cloud provider
 
-## The features you'll reach for every day
+## Everyday Commands
 
 <CardGroup cols={2}>
   <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
