@@ -40,7 +40,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     **Running PostgreSQL with a Docker container:**
 
     <Tip>
-      Already have PostgreSQL running? Skip this step and use your existing database. 
+      Already have PostgreSQL running? Skip this step and use your existing database.
     </Tip>
     Create `docker-compose.yml` to define a containerized PostgreSQL database that starts and stops on demand:
 
@@ -102,6 +102,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     # Add this to your existing nitric.yaml
     databases:
       mydb:
+        env_var_key: DATABASE_URL
         access:
           app:
             - query
@@ -149,11 +150,11 @@ Nitric doesn't automatically provision databases in local development - this giv
       For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
     </Note>
   </Accordion>
-  <Accordion title="Step 5: Query from API" icon="code">
+  <Accordion title="Step 5: Building your API" icon="code">
     **Add database connectivity to your existing service.**
 
     First, add the required dependencies:
-    
+
     ```bash
     go get github.com/lib/pq
     go get github.com/joho/godotenv
@@ -176,7 +177,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     )
     ```
 
-    Add database connection and a new route in your `main()` function. Add this at the beginning of main():
+    Add database connection and a new route in your `main()` function. 
 
     ```go
     // Load .env file
@@ -189,7 +190,7 @@ Nitric doesn't automatically provision databases in local development - this giv
         log.Fatalf("Failed to connect to database: %v", err)
     }
     defer db.Close()
-
+    
     // Add users endpoint
     router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
         rows, err := db.Query("SELECT id, email, created_at FROM users")
@@ -221,9 +222,9 @@ Nitric doesn't automatically provision databases in local development - this giv
     ```bash
     nitric dev
     ```
-    
+
     In another terminal, test the endpoint:
-    
+
     ```bash
     curl http://localhost:3003/users
     ```
@@ -243,18 +244,8 @@ Nitric doesn't automatically provision databases in local development - this giv
 
 This setup works seamlessly with any PostgreSQL provider when deploying:
 
-**Local Development**: Uses `DATABASE_URL` from your `.env` file  
+**Local Development**: Uses `DATABASE_URL` from your `.env` file\
 **Production**: Nitric provisions the database declared in `nitric.yaml` and injects the connection string automatically
-
-For production deployment with different providers:
-- **AWS**: Nitric provisions RDS PostgreSQL automatically
-- **GCP**: Nitric provisions Cloud SQL PostgreSQL automatically  
-- **Azure**: Nitric provisions Azure Database for PostgreSQL automatically
-
-You can also use external providers:
-- **Neon**: Set `DATABASE_URL` environment variable with your Neon connection string
-- **Supabase**: Set `DATABASE_URL` environment variable with your Supabase connection string
-- **Any PostgreSQL**: Set `DATABASE_URL` environment variable with your connection string
 
 <Note>
   Stop with `make db-stop` when done.
