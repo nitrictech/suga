@@ -44,12 +44,19 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     - **Framework:** Select `Go`
 
     This will create a `nitric.yaml` file in your project root.
-
   </Accordion>
   <Accordion title="Step 2: Define Your Resources" icon="gear">
     **Configure services and storage in nitric.yaml**
 
-    Replace the generated `nitric.yaml` with:
+    ```bash
+    suga edit
+    ```
+
+    First, drag an entry point onto your canvas named 'ingress'. Then add a service named 'app' and connect the entry point to the service, leaving the default forwarding route. Next, drag a bucket onto your canvas and name it 'files'. Connect the service to the bucket and edit the permissions to grant 'Write' and 'Delete' permissions.
+
+    ![Migrate](/docs/images/migrate.png)
+
+    This will automatically add a database declaration to your `suga.yaml`.
 
     ```yaml
     targets:
@@ -77,7 +84,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
                 /:
                     name: app
     ```
-
   </Accordion>
   <Accordion title="Step 3: Create Dockerfile" icon="docker">
     **Add a Dockerfile for containerized deployment**
@@ -85,29 +91,27 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     <Note>
       Skip this step if you already have a Dockerfile in your project.
     </Note>
-
     Create a `Dockerfile` in your project root:
 
     ```dockerfile
     FROM golang:1.24-alpine as builder
-
+    
     WORKDIR /app
-
+    
     COPY . .
-
+    
     RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
-
+    
     FROM alpine:latest
-
+    
     RUN apk --no-cache add ca-certificates
-
+    
     COPY --from=builder /app/main .
-
+    
     ENTRYPOINT ["/main"]
     ```
 
     This multi-stage build creates a minimal container image for your application.
-
   </Accordion>
   <Accordion title="Step 4: Generate Your SDK" icon="code">
     **Create a custom client and install dependencies**
@@ -121,7 +125,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
 
     - Create a `nitric/` directory with a Go client tailored to your `nitric.yaml` configuration
     - Add Suga dependencies and remove unused AWS SDK packages automatically
-
   </Accordion>
   <Accordion title="Step 5: Migrate Your Code to Suga" icon="code">
     **Replace cloud provider SDKs with Suga's simplified APIs**
@@ -129,20 +132,19 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     **How to migrate your code:**
 
     1. **Update imports** - Replace AWS/GCP/Azure SDK imports with:
+
        ```go
        import "example/nitric"  // Your generated Suga client
        ```
-
     2. **Initialize Suga client** - Replace SDK configuration and client creation with:
+
        ```go
        app, err := nitric.NewClient()
        ```
-
     3. **Update API calls** - Replace SDK-specific methods with Suga's unified API:
        - S3 PutObject → `app.Files.Write("filename", data)`
        - S3 GetObject → `app.Files.Read("filename")`
        - Add other resources (databases, queues) in your `nitric.yaml` to generate their APIs
-
     4. **Simplify error handling** - Remove cloud-specific error checking, Suga handles retries and cloud errors automatically
 
     **Example transformation:**
@@ -151,7 +153,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
       <Tab title="AWS S3 Sample">
         ```go
         package main
-
+        
         import (
             "context"
             "fmt"
@@ -159,32 +161,32 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
             "net/http"
             "os"
             "strings"
-
+        
             "github.com/aws/aws-sdk-go-v2/aws"
             "github.com/aws/aws-sdk-go-v2/config"
             "github.com/aws/aws-sdk-go-v2/service/s3"
         )
-
+        
         func main() {
             router := http.NewServeMux()
-
+        
             // Load AWS configuration
             cfg, err := config.LoadDefaultConfig(context.TODO())
             if err != nil {
                 log.Fatalf("Failed to load AWS config: %v", err)
             }
-
+        
             // Create S3 client
             s3Client := s3.NewFromConfig(cfg)
             bucketName := os.Getenv("S3_BUCKET_NAME")
             if bucketName == "" {
                 bucketName = "cloudscale-analytics-bucket"
             }
-
+        
             // setup a basic http server
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
-
+        
                 // Use S3 to store file
                 _, err := s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
                     Bucket: aws.String(bucketName),
@@ -197,23 +199,23 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
                     w.Write([]byte("Error uploading to S3"))
                     return
                 }
-
+        
                 w.WriteHeader(http.StatusOK)
                 w.Write([]byte("Hello, " + name + "!"))
             })
-
+        
             port := os.Getenv("PORT")
             if port == "" {
                 port = "8080"
             }
-
+        
             server := &http.Server{
                 Addr:    ":" + port,
                 Handler: router,
             }
-
+        
             fmt.Printf("Server started on port %s\n", port)
-
+        
             server.ListenAndServe()
         }
         ```
@@ -221,7 +223,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
       <Tab title="Migrate to Suga ">
         ```go
         package main
-
+        
         import (
             "example/nitric"
             "fmt"
@@ -229,41 +231,40 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
             "net/http"
             "os"
         )
-
+        
         func main() {
             router := http.NewServeMux()
-
+        
             app, err := nitric.NewClient()
             if err != nil {
                 log.Fatalf("Failed to create nitric client: %v", err)
             }
-
+        
             // setup a basic http server
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
-
+        
                 // Use the nitric client to access cloud resources
                 app.Files.Write("example.txt", []byte("Hello, "+name+"!"))
-
+        
                 w.WriteHeader(http.StatusOK)
                 w.Write([]byte("Hello, " + name + "!"))
             })
-
+        
             port := os.Getenv("PORT")
-
+        
             server := &http.Server{
                 Addr:    ":" + port,
                 Handler: router,
             }
-
+        
             fmt.Printf("Server started on port %s, however use the entrypoint port to connect to the server\n", port)
-
+        
             server.ListenAndServe()
         }
         ```
       </Tab>
     </Tabs>
-
   </Accordion>
   <Accordion title="Step 6: Test Locally" icon="play">
     **Run your application with local cloud services**
@@ -289,7 +290,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```
 
     The file `example.txt` will be created in Suga's local file storage.
-
   </Accordion>
   <Accordion title="Step 7: Deploy to Any Cloud" icon="cloud">
     **Generate Terraform and deploy to AWS, GCP, or Azure**
@@ -305,7 +305,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```bash
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-app-aws-12345
-
+    
     Next steps:
     1. Run cd ./.suga/stacks/my-app-aws-12345 to move to the stack directory
     2. Initialize the stack terraform init -upgrade
@@ -361,7 +361,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```
 
     When prompted, type `yes` to confirm the deployment. Once complete, you'll see your application endpoints in the output.
-
   </Accordion>
 </AccordionGroup>
 
