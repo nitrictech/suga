@@ -2,6 +2,7 @@
 # These terms will be considered correct regardless of case
 Suga
 nitrictech
+Dockerfile
 
 # Defaults from mintlify
 Mintlify
