@@ -28,13 +28,13 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     First, login to Suga if you haven't already:
 
     ```bash
-    nitric login
+    suga login
     ```
 
     Initialize Suga in your existing project:
 
     ```bash
-    nitric init
+    suga init
     ```
 
     When prompted:
@@ -117,7 +117,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     **Create a custom client and install dependencies**
 
     ```bash
-    nitric generate --go --go-out ./nitric --go-package-name nitric
+    suga generate --go --go-out ./nitric --go-package-name nitric
     go mod tidy
     ```
 
@@ -272,7 +272,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     Start the Suga development environment:
 
     ```bash
-    nitric dev
+    suga dev
     ```
 
     This starts your application with Suga's local development environment.
@@ -297,7 +297,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     Build your application for deployment:
 
     ```bash
-    nitric build
+    suga build
     ```
 
     You'll be prompted to select your cloud provider and region. The output will show:
