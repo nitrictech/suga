@@ -7,7 +7,13 @@ Nitric doesn't automatically provision databases in local development - this giv
 
 <AccordionGroup>
   <Accordion title="Step 1: Initialize Project" icon="folder-plus">
-    **Start with a fresh project:**
+    **Start with a fresh Nitric project**
+
+    First, login to Nitric if you haven't already:
+
+    ```bash
+    nitric login
+    ```
 
     Create a new project and select the Go template:
 
@@ -15,34 +21,28 @@ Nitric doesn't automatically provision databases in local development - this giv
     nitric new my-app
     ```
 
-    When prompted, select the Go template:
-
-    ```bash
-    Welcome to Suga, this command will help you create a project from a template.
-    
-    Project name: my-app
-    
-    ? Template: 
-      suga/python
-    > suga/go
-      suga/typescript
-    
-    ✓ Project created!
-    ```
+    When prompted, select the Go template (go-starter).
 
     Enter your project:
 
     ```bash
     cd my-app
     ```
+
+    Generate the Nitric SDK to enable access to cloud resources:
+
+    ```bash
+    make generate
+    go mod tidy
+    ```
   </Accordion>
   <Accordion title="Step 2: Setup Database Environment" icon="docker">
-    **Run PostgreSQL locally without installing it:**
+    **Running PostgreSQL with a Docker container:**
 
     <Tip>
       Already have PostgreSQL running? Skip this step and use your existing database. 
     </Tip>
-    Create `docker-compose.yml` for PostgreSQL:
+    Create `docker-compose.yml` to define a containerized PostgreSQL database that starts and stops on demand:
 
     ```yaml
     services:
@@ -53,16 +53,16 @@ Nitric doesn't automatically provision databases in local development - this giv
           POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
           POSTGRES_DB: ${POSTGRES_DB:-myapp}
         ports:
-          - '5432:5432'
+          - '5433:5432'
         volumes:
           - postgres_data:/var/lib/postgresql/data
-          - ./init.sql:/init.sql
+        command: postgres -c ssl=off
     
     volumes:
       postgres_data:
     ```
 
-    Create an `.env` file for local development:
+    Create an `.env` file for local credentials:
 
     ```bash
     POSTGRES_USER=admin
@@ -73,7 +73,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     Add database commands to your `Makefile`:
 
     ```makefile
-    .PHONY: db-start db-stop
+    .PHONY: db-start db-stop db-reset
     
     db-start:
     	@echo "🐳 Starting database..."
@@ -83,43 +83,47 @@ Nitric doesn't automatically provision databases in local development - this giv
     db-stop:
     	@echo "🛑 Stopping database..."
     	@docker compose down
+    
+    db-reset:
+    	@echo "🔄 Resetting database..."
+    	@docker compose down -v
+    	@docker compose up -d
+    	@sleep 2
+    	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
+    	@echo "✅ Database reset with fresh data!"
     ```
   </Accordion>
-  <Accordion title="Step 3: Configure & Connect Nitric" icon="plug">
-    **Tell Nitric how to connect to your database:**
+  <Accordion title="Step 3: Configure Database Connection" icon="plug">
+    **Configure database for both local development and production deployment.**
 
-    Add your database to `nitric.yaml`:
+    Add database declaration to your `nitric.yaml` for production deployment:
 
     ```yaml
+    # Add this to your existing nitric.yaml
     databases:
       mydb:
-        env_var_key: DATABASE_URL
         access:
           app:
             - query
-    
-    services:
-      app:
-        env:
-          DATABASE_URL: postgresql://admin:secure_password@localhost:5432/myapp?sslmode=disable
     ```
 
-    <Note>
-      Update the DATABASE_URL to match your .env file values. For production, use environment variables or secrets management.
-    </Note>
-    Start the database and launch Nitric:
+    Add the database connection to your `.env` file for local development:
+
+    ```bash
+    # Add this line to your existing .env file
+    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+    ```
+
+    Start the database:
 
     ```bash
     make db-start
-    nitric dev
     ```
-
-    Nitric will now connect to your PostgreSQL database automatically.
   </Accordion>
   <Accordion title="Step 4: Initialize Database" icon="table">
-    **Create your tables with sample data:**
+    **Create your tables with sample data.**
 
-    Create `init.sql` with your schema and initial data:
+    Create `init.sql` with your schema and initial data (this SQL script runs automatically when the container starts):
 
     ```sql
     DROP TABLE IF EXISTS users;
@@ -135,19 +139,7 @@ Nitric doesn't automatically provision databases in local development - this giv
       ('user@example.com');
     ```
 
-    Add the reset command to your Makefile:
-
-    ```makefile
-    db-reset:
-    	@echo "🔄 Resetting database..."
-    	@docker compose down -v
-    	@docker compose up -d
-    	@sleep 2
-    	@docker compose exec postgres psql -U admin -d myapp -f /init.sql
-    	@echo "✅ Database reset with fresh data!"
-    ```
-
-    Apply your schema:
+    Apply your schema by executing init.sql to create tables and insert sample data:
 
     ```bash
     make db-reset
@@ -158,34 +150,82 @@ Nitric doesn't automatically provision databases in local development - this giv
     </Note>
   </Accordion>
   <Accordion title="Step 5: Query from API" icon="code">
-    **Fetch data from your database in your API:**
+    **Add database connectivity to your existing service.**
 
-    Update your service code to query the database. Example in Go:
+    First, add the required dependencies:
+    
+    ```bash
+    go get github.com/lib/pq
+    go get github.com/joho/godotenv
+    ```
+
+    Update your `main.go` to add database connectivity. Add these imports:
 
     ```go
     import (
         "database/sql"
         "encoding/json"
-        _ "github.com/lib/pq"
+        "example/nitric"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        
+        "github.com/joho/godotenv"  // Add this line
+        _ "github.com/lib/pq"       // Add this line
     )
+    ```
+
+    Add database connection and a new route in your `main()` function. Add this at the beginning of main():
+
+    ```go
+    // Load .env file
+    _ = godotenv.Load()
     
     // Connect to database
     dbURL := os.Getenv("DATABASE_URL")
     db, err := sql.Open("postgres", dbURL)
-    
-    // Query users
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+    }
+    defer db.Close()
+
+    // Add users endpoint
     router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
         rows, err := db.Query("SELECT id, email, created_at FROM users")
-        // ... handle results
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        defer rows.Close()
+        
+        var users []map[string]interface{}
+        for rows.Next() {
+            var id int
+            var email, createdAt string
+            rows.Scan(&id, &email, &createdAt)
+            users = append(users, map[string]interface{}{
+                "id": id,
+                "email": email,
+                "created_at": createdAt,
+            })
+        }
+        
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(users)
     })
     ```
 
-    Generate Nitric client and test:
+    Test your API:
 
     ```bash
-    make generate
-    make run
-    curl http://localhost:3000/users
+    nitric dev
+    ```
+    
+    In another terminal, test the endpoint:
+    
+    ```bash
+    curl http://localhost:3003/users
     ```
 
     You'll see your user data:
@@ -203,9 +243,18 @@ Nitric doesn't automatically provision databases in local development - this giv
 
 This setup works seamlessly with any PostgreSQL provider when deploying:
 
-- **Neon**: Replace `DATABASE_URL` with your Neon connection string
-- **Supabase**: Replace `DATABASE_URL` with your Supabase connection string
-- **AWS RDS**: Replace `DATABASE_URL` with your RDS connection string
+**Local Development**: Uses `DATABASE_URL` from your `.env` file  
+**Production**: Nitric provisions the database declared in `nitric.yaml` and injects the connection string automatically
+
+For production deployment with different providers:
+- **AWS**: Nitric provisions RDS PostgreSQL automatically
+- **GCP**: Nitric provisions Cloud SQL PostgreSQL automatically  
+- **Azure**: Nitric provisions Azure Database for PostgreSQL automatically
+
+You can also use external providers:
+- **Neon**: Set `DATABASE_URL` environment variable with your Neon connection string
+- **Supabase**: Set `DATABASE_URL` environment variable with your Supabase connection string
+- **Any PostgreSQL**: Set `DATABASE_URL` environment variable with your connection string
 
 <Note>
   Stop with `make db-stop` when done.
