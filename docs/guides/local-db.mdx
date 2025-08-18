@@ -11,7 +11,7 @@ Suga doesn’t auto-provision databases locally, giving you full choice and cont
 
 <AccordionGroup>
   <Accordion title="Step 1: Initialize Project" icon="folder-plus">
-    **Start with a fresh Nitric project**
+    **Start with a fresh Suga project**
 
     First, login to Suga if you haven't already:
 
@@ -36,7 +36,7 @@ Suga doesn’t auto-provision databases locally, giving you full choice and cont
     Generate the Suga SDK to enable access to cloud resources:
 
     ```bash
-    make generate
+    suga generate --go --go-out ./suga --go-package-name suga
     go mod tidy
     ```
   </Accordion>
