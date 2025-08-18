@@ -3,6 +3,7 @@
 Suga
 nitrictech
 Dockerfile
+Subcommands
 
 # Defaults from mintlify
 Mintlify
