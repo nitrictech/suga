@@ -117,7 +117,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     **Create a custom client and install dependencies**
 
     ```bash
-    suga generate --go --go-out ./nitric --go-package-name nitric
+    suga generate --go --go-out ./suga --go-package-name suga
     go mod tidy
     ```
 
@@ -134,12 +134,12 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     1. **Update imports** - Replace AWS/GCP/Azure SDK imports with:
 
        ```go
-       import "example/nitric"  // Your generated Suga client
+       import "example/suga"  // Your generated Suga client
        ```
     2. **Initialize Suga client** - Replace SDK configuration and client creation with:
 
        ```go
-       app, err := nitric.NewClient()
+       app, err := suga.NewClient()
        ```
     3. **Update API calls** - Replace SDK-specific methods with Suga's unified API:
        - S3 PutObject → `app.Files.Write("filename", data)`
@@ -225,7 +225,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
         package main
         
         import (
-            "example/nitric"
+            "example/suga"
             "fmt"
             "log"
             "net/http"
@@ -235,9 +235,9 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
         func main() {
             router := http.NewServeMux()
         
-            app, err := nitric.NewClient()
+            app, err := suga.NewClient()
             if err != nil {
-                log.Fatalf("Failed to create nitric client: %v", err)
+                log.Fatalf("Failed to create suga client: %v", err)
             }
         
             // setup a basic http server
