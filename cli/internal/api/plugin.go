@@ -1,0 +1,63 @@
+package api
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+
+	"github.com/nitrictech/nitric/engines/terraform"
+	"github.com/nitrictech/suga/cli/internal/version"
+)
+
+// FIXME: Because of the difference in fields between identity and resource plugins we need to return an interface
+func (c *SugaApiClient) GetPluginManifest(team, lib, libVersion, name string) (interface{}, error) {
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/plugin_libraries/%s/versions/%s/plugins/%s", team, lib, libVersion, name), true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to %s plugin details endpoint: %v", version.ProductName, err)
+	}
+
+	if response.StatusCode == 404 {
+		return nil, ErrNotFound
+	}
+
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("received non 200 response from %s plugin details endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s plugin details endpoint: %v", version.ProductName, err)
+	}
+
+	// First, unmarshal the response wrapper
+	var manifestResponse GetPluginManifestResponse
+	err = json.Unmarshal(body, &manifestResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s plugin details endpoint: %v", version.ProductName, err)
+	}
+
+	// Convert the manifest map back to JSON for proper unmarshaling
+	manifestBytes, err := json.Marshal(manifestResponse.Manifest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal manifest from %s plugin details endpoint: %v", version.ProductName, err)
+	}
+
+	// Try to unmarshal as ResourcePluginManifest first
+	var pluginManifest terraform.ResourcePluginManifest
+	err = json.Unmarshal(manifestBytes, &pluginManifest)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s plugin details endpoint: %v", version.ProductName, err)
+	}
+
+	if pluginManifest.Type == "identity" {
+		var identityPluginManifest terraform.IdentityPluginManifest
+		err = json.Unmarshal(manifestBytes, &identityPluginManifest)
+		if err != nil {
+			return nil, fmt.Errorf("unexpected response from %s plugin details endpoint: %v", version.ProductName, err)
+		}
+
+		return &identityPluginManifest, nil
+	}
+
+	return &pluginManifest, nil
+}

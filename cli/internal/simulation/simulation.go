@@ -1,0 +1,396 @@
+package simulation
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	pubsubpb "github.com/nitrictech/nitric/proto/pubsub/v2"
+	storagepb "github.com/nitrictech/nitric/proto/storage/v2"
+	"github.com/nitrictech/suga/cli/internal/netx"
+	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
+	"github.com/nitrictech/suga/cli/internal/simulation/service"
+	"github.com/nitrictech/suga/cli/internal/style"
+	"github.com/nitrictech/suga/cli/internal/style/icons"
+	"github.com/nitrictech/suga/cli/internal/version"
+	"github.com/nitrictech/suga/cli/pkg/schema"
+	"github.com/nitrictech/suga/cli/pkg/tui"
+	"github.com/samber/lo"
+	"github.com/spf13/afero"
+	"google.golang.org/grpc"
+)
+
+type SimulationServer struct {
+	fs      afero.Fs
+	appDir  string
+	appSpec *schema.Application
+	storagepb.UnimplementedStorageServer
+	pubsubpb.UnimplementedPubsubServer
+
+	apiPort        netx.ReservedPort
+	fileServerPort int
+	services       map[string]*service.ServiceSimulation
+}
+
+var suga = style.Purple(icons.Lightning + " " + version.ProductName)
+
+func sugaIntro(addr string, dashUrl string, appSpec *schema.Application) string {
+	version := version.GetShortVersion()
+
+	intro := fmt.Sprintf("\n%s %s\n- App: %s\n- Addr: %s\n- Dashboard: %s\n", suga, style.Gray(version), appSpec.Name, addr, dashUrl)
+
+	return lipgloss.NewStyle().Border(lipgloss.HiddenBorder(), false, true).Render(intro)
+}
+
+const (
+	SUGA_SERVICE_MIN_PORT = 50051
+	SUGA_SERVICE_MAX_PORT = 50999
+	ENTRYPOINT_MIN_PORT   = 3000
+	ENTRYPOINT_MAX_PORT   = 3999
+)
+
+func (s *SimulationServer) startSugaApis() error {
+	srv := grpc.NewServer()
+
+	storagepb.RegisterStorageServer(srv, s)
+	pubsubpb.RegisterPubsubServer(srv, s)
+
+	host := os.Getenv("SUGA_HOST")
+	portEnv := os.Getenv("SUGA_PORT")
+
+	if portEnv != "" {
+		portInt, err := strconv.Atoi(portEnv)
+		if err != nil {
+			return fmt.Errorf("failed to parse port: %v", err)
+		}
+
+		s.apiPort, err = netx.ReservePort(portInt)
+		if err != nil {
+			return err
+		}
+	} else {
+		openPort, err := netx.GetNextPort(netx.MinPort(SUGA_SERVICE_MIN_PORT), netx.MaxPort(SUGA_SERVICE_MAX_PORT))
+		if err != nil {
+			return fmt.Errorf("failed to find open port: %v", err)
+		}
+
+		s.apiPort = openPort
+	}
+
+	addr := net.JoinHostPort(host, s.apiPort.String())
+
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen: %v", err)
+	}
+
+	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr, "Dashboard", fmt.Sprintf("%s/dev", version.ProductURL)))
+	go srv.Serve(lis)
+
+	return nil
+}
+
+var greenCheck = style.Green(icons.Check)
+
+func (s *SimulationServer) startEntrypoints(services map[string]*service.ServiceSimulation) error {
+	resourceIntents := s.appSpec.GetResourceIntents()
+	serviceProxies := map[string]*httputil.ReverseProxy{}
+	for serviceName, service := range services {
+		url := &url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("localhost:%d", service.GetPort()),
+		}
+
+		serviceProxies[serviceName] = httputil.NewSingleHostReverseProxy(url)
+	}
+
+	for entrypointName, entrypoint := range s.appSpec.EntrypointIntents {
+		// Reserve a port
+		reservedPort, err := netx.GetNextPort(netx.MinPort(ENTRYPOINT_MIN_PORT), netx.MaxPort(ENTRYPOINT_MAX_PORT))
+		if err != nil {
+			return err
+		}
+
+		router := http.NewServeMux()
+
+		for route, target := range entrypoint.Routes {
+			spec, ok := resourceIntents[target.TargetName]
+			if !ok {
+				return fmt.Errorf("resource %s does not exist", target.TargetName)
+			}
+
+			if spec.GetType() != "service" && spec.GetType() != "bucket" {
+				return fmt.Errorf("only buckets and services can be routed to entrypoints got type :%s", spec.GetType())
+			}
+
+			var proxyHandler http.Handler
+			styleColor := style.Teal
+			if spec.GetType() == "service" {
+				service := services[target.TargetName]
+
+				url := &url.URL{
+					Scheme: "http",
+					Host:   fmt.Sprintf("localhost:%d", service.GetPort()),
+					Path:   target.BasePath,
+				}
+
+				proxyHandler = httputil.NewSingleHostReverseProxy(url)
+
+			} else if spec.GetType() == "bucket" {
+				url := &url.URL{
+					Scheme: "http",
+					Host:   fmt.Sprintf("localhost:%d", s.fileServerPort),
+					Path:   strings.TrimSuffix(fmt.Sprintf("/%s/%s", target.TargetName, target.BasePath), "/"),
+				}
+				proxyHandler = httputil.NewSingleHostReverseProxy(url)
+				styleColor = style.Green
+			}
+
+			proxyLogMiddleware := middleware.ProxyLogging(styledName(entrypointName, style.Orange), styledName(target.TargetName, styleColor), false)
+			router.Handle(route, http.StripPrefix(strings.TrimSuffix(route, "/"), proxyLogMiddleware(proxyHandler)))
+		}
+
+		go http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), router)
+
+		fmt.Printf("%s Starting %s http://localhost:%d\n", greenCheck, styledName(entrypointName, style.Orange), reservedPort)
+	}
+
+	return nil
+}
+
+// CopyDir copies the content of src to dst. src should be a full path.
+func (s *SimulationServer) CopyDir(dst, src string) error {
+	return afero.Walk(s.fs, src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// copy to this path
+		outpath := filepath.Join(dst, strings.TrimPrefix(path, src))
+
+		if info.IsDir() {
+			return s.fs.MkdirAll(outpath, info.Mode())
+		}
+
+		// handle irregular files
+		if !info.Mode().IsRegular() {
+			switch info.Mode().Type() & os.ModeType {
+			case os.ModeSymlink:
+				// For symlinks, we'll just copy the file contents instead
+				// since not all Afero filesystems support symlinks
+				in, err := s.fs.Open(path)
+				if err != nil {
+					return err
+				}
+				defer in.Close()
+
+				fh, err := s.fs.Create(outpath)
+				if err != nil {
+					return err
+				}
+				defer fh.Close()
+
+				_, err = io.Copy(fh, in)
+				return err
+			}
+			return nil
+		}
+
+		// copy contents of regular file efficiently
+		in, err := s.fs.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+
+		// create output
+		fh, err := s.fs.Create(outpath)
+		if err != nil {
+			return err
+		}
+		defer fh.Close()
+
+		// make it the same
+		s.fs.Chmod(outpath, info.Mode())
+
+		// copy content
+		_, err = io.Copy(fh, in)
+		return err
+	})
+}
+
+func (s *SimulationServer) startServices(output io.Writer) (<-chan service.ServiceEvent, error) {
+	serviceIntents := s.appSpec.ServiceIntents
+
+	eventChans := []<-chan service.ServiceEvent{}
+
+	for serviceName, serviceIntent := range serviceIntents {
+		port, err := netx.GetNextPort()
+		if err != nil {
+			return nil, err
+		}
+
+		simulatedService, eventChan, err := service.NewServiceSimulation(serviceName, *serviceIntent, port, s.apiPort)
+		if err != nil {
+			return nil, err
+		}
+
+		eventChans = append(eventChans, eventChan)
+		s.services[serviceName] = simulatedService
+
+		fmt.Fprintf(output, "%s Starting %s\n", greenCheck, styledName(serviceName, style.Teal))
+
+	}
+
+	for _, simulatedService := range s.services {
+		go func() {
+			err := simulatedService.Start(true)
+			if err != nil {
+				// TODO: Handle the start error
+			}
+		}()
+	}
+
+	// Combine all of the events
+	combinedEventsChan := lo.FanIn(100, eventChans...)
+
+	return combinedEventsChan, nil
+}
+
+func (s *SimulationServer) handleServiceOutputs(output io.Writer, events <-chan service.ServiceEvent) {
+
+	s.fs.MkdirAll(ServicesLogsDir, os.ModePerm)
+
+	serviceWriters := make(map[string]io.Writer, len(s.appSpec.ServiceIntents))
+	serviceLogs := make(map[string]io.WriteCloser, len(s.appSpec.ServiceIntents))
+	for serviceName := range s.appSpec.ServiceIntents {
+		serviceWriters[serviceName] = NewPrefixWriter(styledName(serviceName, style.Teal)+" ", output)
+
+		serviceLogPath, err := GetServiceLogPath(s.appDir, serviceName)
+		if err != nil {
+			log.Fatalf("failed to get service log path for service %s: %v", serviceName, err)
+		}
+
+		s.fs.Remove(serviceLogPath)
+		s.fs.Create(serviceLogPath)
+
+		file, err := s.fs.OpenFile(serviceLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatalf("failed to open log file for service %s: %v", serviceName, err)
+		}
+		serviceLogs[serviceName] = file
+	}
+
+	defer func() {
+		for _, log := range serviceLogs {
+			log.Close()
+		}
+	}()
+
+	for {
+		event := <-events
+
+		if event.Output != nil {
+			// write some kind of output for that service
+			if writer, ok := serviceWriters[event.GetName()]; ok {
+				writer.Write(event.Content)
+			} else {
+				log.Fatalf("failed to retrieve output writer for service %s", event.GetName())
+			}
+		}
+
+		if log, ok := serviceLogs[event.GetName()]; ok {
+			log.Write(event.Content)
+		}
+
+		if event.PreviousStatus != event.GetStatus() {
+			if event.GetStatus() == service.Status_Restarting {
+				fmt.Fprintf(output, "\n%s Restarting %s\n\n", style.Red(icons.CircleEmpty), styledName(event.GetName(), style.Teal))
+			}
+		}
+	}
+}
+
+var styledNames = map[string]string{}
+
+func styledName(name string, styleFunc func(...string) string) string {
+	_, ok := styledNames[name]
+	if !ok {
+		styledNames[name] = styleFunc(fmt.Sprintf("[%s]", name))
+	}
+
+	return styledNames[name]
+}
+
+func (s *SimulationServer) Start(output io.Writer) error {
+	err := s.startSugaApis()
+	if err != nil {
+		return err
+	}
+
+	var svcEvents <-chan service.ServiceEvent
+
+	if len(s.appSpec.ServiceIntents) > 0 {
+		fmt.Fprintf(output, "%s\n\n", style.Teal("Services"))
+		svcEvents, err = s.startServices(output)
+		if err != nil {
+			return err
+		}
+		fmt.Fprint(output, "\n")
+	}
+
+	if len(s.appSpec.BucketIntents) > 0 {
+		err := s.startBuckets()
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(s.appSpec.EntrypointIntents) > 0 {
+		fmt.Fprintf(output, "%s\n\n", style.Orange("Entrypoints"))
+		err = s.startEntrypoints(s.services)
+		if err != nil {
+			return err
+		}
+		fmt.Fprint(output, "\n")
+	}
+
+	fmt.Println(style.Gray("Use Ctrl-C to exit\n"))
+
+	// block on handling service outputs for now
+	s.handleServiceOutputs(output, svcEvents)
+
+	return nil
+}
+
+type SimulationServerOption func(*SimulationServer)
+
+func WithAppDirectory(appDir string) SimulationServerOption {
+	return func(s *SimulationServer) {
+		s.appDir = appDir
+	}
+}
+
+func NewSimulationServer(fs afero.Fs, appSpec *schema.Application, opts ...SimulationServerOption) *SimulationServer {
+	simServer := &SimulationServer{
+		fs:       fs,
+		appSpec:  appSpec,
+		appDir:   ".",
+		services: make(map[string]*service.ServiceSimulation),
+	}
+
+	for _, o := range opts {
+		o(simServer)
+	}
+
+	return simServer
+}
