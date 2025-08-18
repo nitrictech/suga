@@ -5,6 +5,8 @@ nitrictech
 Dockerfile
 Subcommands
 SDKs
+Supabase
+
 
 # Defaults from mintlify
 Mintlify
