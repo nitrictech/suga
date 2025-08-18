@@ -36,9 +36,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     go mod tidy
     ```
   </Accordion>
-  <Accordion title="Step 2: Setup Database Environment" icon="docker">
-    **Running PostgreSQL with a Docker container:**
-
+  <Accordion title="Step 2: Setup PostgresSQL with a Docker container" icon="docker">
     <Tip>
       Already have PostgreSQL running? Skip this step and use your existing database.
     </Tip>
@@ -94,12 +92,19 @@ Nitric doesn't automatically provision databases in local development - this giv
     ```
   </Accordion>
   <Accordion title="Step 3: Configure Database Connection" icon="plug">
-    **Configure database for both local development and production deployment.**
+    **Add a database to your project using the dashboard**
 
-    Add database declaration to your `nitric.yaml` for production deployment:
+    ```bash
+    nitric edit
+    ```
+
+    First click and drag the database onto your project and connect it to your service to grant query access to your service. Then set the Database environment key to DATABASE_URL.
+
+    ![Database Pn](/docs/images/database.png)
+
+    This will automatically add a database declaration to your `nitric.yaml`.
 
     ```yaml
-    # Add this to your existing nitric.yaml
     databases:
       mydb:
         env_var_key: DATABASE_URL
@@ -177,7 +182,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     )
     ```
 
-    Add database connection and a new route in your `main()` function. 
+    Add database connection and a new route in your `main()` function.
 
     ```go
     // Load .env file
