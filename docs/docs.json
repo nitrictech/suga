@@ -60,7 +60,7 @@
       "anchors": [
         {
           "anchor": "Website",
-          "href": "https://makesuga.com",
+          "href": "https://addsuga.com",
           "icon": "globe"
         },
         {
@@ -79,13 +79,13 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:support@makesuga.com"
+        "href": "mailto:support@addsuga.com"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://app.makesuga.com"
+      "href": "https://app.addsuga.com"
     }
   },
   "contextual": {
