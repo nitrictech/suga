@@ -1,9 +1,9 @@
 ---
 title: "Local Database Setup"
-description: "Set up PostgreSQL for Nitric local development."
+description: "Set up PostgreSQL for Suga local development."
 ---
 
-Nitric doesn’t auto-provision databases locally, giving you full choice and control. Here’s how to set up PostgreSQL for local use and any provider (Neon, Supabase, RDS) for production.
+Suga doesn’t auto-provision databases locally, giving you full choice and control. Here’s how to set up PostgreSQL for local use and any provider (Neon, Supabase, RDS) for production.
 
 <Note>
   **Before you begin:** Make sure you have Suga CLI installed. See our [Installation Guide](/cli/installation) for platform-specific instructions.
@@ -13,16 +13,16 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
   <Accordion title="Step 1: Initialize Project" icon="folder-plus">
     **Start with a fresh Nitric project**
 
-    First, login to Nitric if you haven't already:
+    First, login to Suga if you haven't already:
 
     ```bash
-    nitric login
+    suga login
     ```
 
     Create a new project and select the Go template:
 
     ```bash
-    nitric new my-app
+    suga new my-app
     ```
 
     When prompted, select the Go template (go-starter).
@@ -99,14 +99,14 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
     **Add a database to your project using the dashboard**
 
     ```bash
-    nitric edit
+    suga edit
     ```
 
     First click and drag the database onto your project and connect it to your service to grant query access to your service. Then set the Database environment key to DATABASE_URL.
 
     ![Database Pn](/docs/images/database.png)
 
-    This will automatically add a database declaration to your `nitric.yaml`.
+    This will automatically add a database declaration to your `suga.yaml`.
 
     ```yaml
     databases:
@@ -229,7 +229,7 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
     Test your API:
 
     ```bash
-    nitric dev
+    suga dev
     ```
 
     In another terminal, test the endpoint:
@@ -255,6 +255,6 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
 
 **What you just accomplished:**
 
-- ✅ Enabled database support with a Nitric project
+- ✅ Enabled database support with a Suga project
 - ✅ Built a database-connected API that queries PostgreSQL and returns JSON
 - ✅ Setup production-ready configuration that you can test locally
