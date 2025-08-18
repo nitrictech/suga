@@ -1,0 +1,377 @@
+---
+title: "Migrate Your Existing Project to Suga"
+description: "This guide shows how to bring your existing projects to Suga. We'll use a simple Go web service that stores files in AWS S3 as our example - a common pattern in many cloud applications."
+---
+
+## Why Suga?
+
+- **Local development** with real cloud services (no mocks\!)
+- **Deploy anywhere** - AWS, GCP, or Azure from the same code
+- **Auto-generated Terraform** - production-ready infrastructure
+
+<Note>
+  **Before you begin:** Make sure you have Suga CLI installed. See the [Installation Guide](https://suga.io/docs/installation) for platform-specific instructions.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="Step 1: Initialize Suga" icon="folder-plus">
+    **Add Suga to your existing project**
+
+    Our example project is a Go web service that:
+
+    - Handles HTTP requests
+    - Stores files in AWS S3
+    - Requires AWS credentials and configuration
+
+    Let's add Suga to simplify this setup.
+
+    First, login to Suga if you haven't already:
+
+    ```bash
+    nitric login
+    ```
+
+    Initialize Suga in your existing project:
+
+    ```bash
+    nitric init
+    ```
+
+    When prompted:
+
+    - **Project name:** `my-app` (or your preferred name)
+    - **Description:** Your project description
+    - **Framework:** Select `Go`
+
+    This will create a `nitric.yaml` file in your project root.
+
+  </Accordion>
+  <Accordion title="Step 2: Define Your Resources" icon="gear">
+    **Configure services and storage in nitric.yaml**
+
+    Replace the generated `nitric.yaml` with:
+
+    ```yaml
+    targets:
+        - suga/aws@1
+    name: my-app
+    description: Your project description
+    services:
+        app:
+            container:
+                docker:
+                    dockerfile: Dockerfile
+                    context: .
+            dev:
+                script: go run main.go
+    buckets:
+        files:
+            access:
+                app:
+                    - read
+                    - write
+                    - delete
+    entrypoints:
+        ingress:
+            routes:
+                /:
+                    name: app
+    ```
+
+  </Accordion>
+  <Accordion title="Step 3: Create Dockerfile" icon="docker">
+    **Add a Dockerfile for containerized deployment**
+
+    <Note>
+      Skip this step if you already have a Dockerfile in your project.
+    </Note>
+
+    Create a `Dockerfile` in your project root:
+
+    ```dockerfile
+    FROM golang:1.24-alpine as builder
+
+    WORKDIR /app
+
+    COPY . .
+
+    RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
+
+    FROM alpine:latest
+
+    RUN apk --no-cache add ca-certificates
+
+    COPY --from=builder /app/main .
+
+    ENTRYPOINT ["/main"]
+    ```
+
+    This multi-stage build creates a minimal container image for your application.
+
+  </Accordion>
+  <Accordion title="Step 4: Generate Your SDK" icon="code">
+    **Create a custom client and install dependencies**
+
+    ```bash
+    nitric generate --go --go-out ./nitric --go-package-name nitric
+    go mod tidy
+    ```
+
+    This will:
+
+    - Create a `nitric/` directory with a Go client tailored to your `nitric.yaml` configuration
+    - Add Suga dependencies and remove unused AWS SDK packages automatically
+
+  </Accordion>
+  <Accordion title="Step 5: Migrate Your Code to Suga" icon="code">
+    **Replace cloud provider SDKs with Suga's simplified APIs**
+
+    **How to migrate your code:**
+
+    1. **Update imports** - Replace AWS/GCP/Azure SDK imports with:
+       ```go
+       import "example/nitric"  // Your generated Suga client
+       ```
+
+    2. **Initialize Suga client** - Replace SDK configuration and client creation with:
+       ```go
+       app, err := nitric.NewClient()
+       ```
+
+    3. **Update API calls** - Replace SDK-specific methods with Suga's unified API:
+       - S3 PutObject → `app.Files.Write("filename", data)`
+       - S3 GetObject → `app.Files.Read("filename")`
+       - Add other resources (databases, queues) in your `nitric.yaml` to generate their APIs
+
+    4. **Simplify error handling** - Remove cloud-specific error checking, Suga handles retries and cloud errors automatically
+
+    **Example transformation:**
+
+    <Tabs>
+      <Tab title="AWS S3 Sample">
+        ```go
+        package main
+
+        import (
+            "context"
+            "fmt"
+            "log"
+            "net/http"
+            "os"
+            "strings"
+
+            "github.com/aws/aws-sdk-go-v2/aws"
+            "github.com/aws/aws-sdk-go-v2/config"
+            "github.com/aws/aws-sdk-go-v2/service/s3"
+        )
+
+        func main() {
+            router := http.NewServeMux()
+
+            // Load AWS configuration
+            cfg, err := config.LoadDefaultConfig(context.TODO())
+            if err != nil {
+                log.Fatalf("Failed to load AWS config: %v", err)
+            }
+
+            // Create S3 client
+            s3Client := s3.NewFromConfig(cfg)
+            bucketName := os.Getenv("S3_BUCKET_NAME")
+            if bucketName == "" {
+                bucketName = "cloudscale-analytics-bucket"
+            }
+
+            // setup a basic http server
+            router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
+                name := r.PathValue("name")
+
+                // Use S3 to store file
+                _, err := s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+                    Bucket: aws.String(bucketName),
+                    Key:    aws.String("example.txt"),
+                    Body:   strings.NewReader("Hello, " + name + "!"),
+                })
+                if err != nil {
+                    log.Printf("Failed to upload to S3: %v", err)
+                    w.WriteHeader(http.StatusInternalServerError)
+                    w.Write([]byte("Error uploading to S3"))
+                    return
+                }
+
+                w.WriteHeader(http.StatusOK)
+                w.Write([]byte("Hello, " + name + "!"))
+            })
+
+            port := os.Getenv("PORT")
+            if port == "" {
+                port = "8080"
+            }
+
+            server := &http.Server{
+                Addr:    ":" + port,
+                Handler: router,
+            }
+
+            fmt.Printf("Server started on port %s\n", port)
+
+            server.ListenAndServe()
+        }
+        ```
+      </Tab>
+      <Tab title="Migrate to Suga ">
+        ```go
+        package main
+
+        import (
+            "example/nitric"
+            "fmt"
+            "log"
+            "net/http"
+            "os"
+        )
+
+        func main() {
+            router := http.NewServeMux()
+
+            app, err := nitric.NewClient()
+            if err != nil {
+                log.Fatalf("Failed to create nitric client: %v", err)
+            }
+
+            // setup a basic http server
+            router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
+                name := r.PathValue("name")
+
+                // Use the nitric client to access cloud resources
+                app.Files.Write("example.txt", []byte("Hello, "+name+"!"))
+
+                w.WriteHeader(http.StatusOK)
+                w.Write([]byte("Hello, " + name + "!"))
+            })
+
+            port := os.Getenv("PORT")
+
+            server := &http.Server{
+                Addr:    ":" + port,
+                Handler: router,
+            }
+
+            fmt.Printf("Server started on port %s, however use the entrypoint port to connect to the server\n", port)
+
+            server.ListenAndServe()
+        }
+        ```
+      </Tab>
+    </Tabs>
+
+  </Accordion>
+  <Accordion title="Step 6: Test Locally" icon="play">
+    **Run your application with local cloud services**
+
+    Start the Suga development environment:
+
+    ```bash
+    nitric dev
+    ```
+
+    This starts your application with Suga's local development environment.
+
+    In another terminal, test your endpoint:
+
+    ```bash
+    curl http://localhost:3003/hello/world
+    ```
+
+    You should see:
+
+    ```
+    Hello, world!
+    ```
+
+    The file `example.txt` will be created in Suga's local file storage.
+
+  </Accordion>
+  <Accordion title="Step 7: Deploy to Any Cloud" icon="cloud">
+    **Generate Terraform and deploy to AWS, GCP, or Azure**
+
+    Build your application for deployment:
+
+    ```bash
+    nitric build
+    ```
+
+    You'll be prompted to select your cloud provider and region. The output will show:
+
+    ```bash
+    ✓ Terraform generated successfully
+      output written to ./.suga/stacks/my-app-aws-12345
+
+    Next steps:
+    1. Run cd ./.suga/stacks/my-app-aws-12345 to move to the stack directory
+    2. Initialize the stack terraform init -upgrade
+    3. Optionally, preview with terraform plan
+    4. Deploy with terraform apply
+    ```
+
+    **Setup cloud credentials:**
+
+    Configure credentials for your chosen cloud provider:
+
+    <Tabs>
+      <Tab title="AWS">
+        ```bash
+        aws configure
+        ```
+      </Tab>
+      <Tab title="GCP">
+        ```bash
+        gcloud auth application-default login
+        ```
+      </Tab>
+      <Tab title="Azure">
+        ```bash
+        az login
+        ```
+      </Tab>
+    </Tabs>
+    **Deploy with Terraform:**
+
+    Navigate to the generated stack directory:
+
+    ```bash
+    cd .suga/stacks/my-app-aws-xyz
+    ```
+
+    Initialize Terraform:
+
+    ```bash
+    terraform init -upgrade
+    ```
+
+    Preview the changes:
+
+    ```bash
+    terraform plan
+    ```
+
+    Deploy your application:
+
+    ```bash
+    terraform apply
+    ```
+
+    When prompted, type `yes` to confirm the deployment. Once complete, you'll see your application endpoints in the output.
+
+  </Accordion>
+</AccordionGroup>
+
+**What You've Accomplished**
+
+- ✅ Replaced AWS SDK with Suga's unified API
+- ✅ Enabled local testing of your project
+- ✅ Generated Terraform for production deployment
+- ✅ Gained multi-cloud capability - same code deploys to AWS, GCP, or Azure
+
+<Note>
+  Your application now works across multiple cloud providers without changing code. Suga handles the cloud-specific implementations automatically.
+</Note>
