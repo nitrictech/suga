@@ -24,7 +24,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     
     ? Template: 
       suga/python
-    > suga/go          # Select this one
+    > suga/go
       suga/typescript
     
     ✓ Project created!
@@ -40,7 +40,7 @@ Nitric doesn't automatically provision databases in local development - this giv
     **Run PostgreSQL locally without installing it:**
 
     <Tip>
-      Already have PostgreSQL running? Skip the Docker setup and use your existing database. Just update the `DATABASE_URL` in Step 3 to point to your instance.
+      Already have PostgreSQL running? Skip this step and use your existing database. 
     </Tip>
     Create `docker-compose.yml` for PostgreSQL:
 
@@ -62,7 +62,7 @@ Nitric doesn't automatically provision databases in local development - this giv
       postgres_data:
     ```
 
-    Create an `.env` file for local development (don't commit this):
+    Create an `.env` file for local development:
 
     ```bash
     POSTGRES_USER=admin
