@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/nitrictech/nitric/engines/terraform"
 	"github.com/nitrictech/suga/cli/internal/version"
+	"github.com/nitrictech/suga/engines/terraform"
 )
 
 // FIXME: Because of the difference in fields between identity and resource plugins we need to return an interface

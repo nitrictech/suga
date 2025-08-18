@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	storagepb "github.com/nitrictech/nitric/proto/storage/v2"
 	"github.com/nitrictech/suga/cli/internal/netx"
 	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
+	storagepb "github.com/nitrictech/suga/proto/storage/v2"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

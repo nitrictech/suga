@@ -14,8 +14,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	pubsubpb "github.com/nitrictech/nitric/proto/pubsub/v2"
-	storagepb "github.com/nitrictech/nitric/proto/storage/v2"
 	"github.com/nitrictech/suga/cli/internal/netx"
 	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
 	"github.com/nitrictech/suga/cli/internal/simulation/service"
@@ -24,6 +22,8 @@ import (
 	"github.com/nitrictech/suga/cli/internal/version"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/cli/pkg/tui"
+	pubsubpb "github.com/nitrictech/suga/proto/pubsub/v2"
+	storagepb "github.com/nitrictech/suga/proto/storage/v2"
 	"github.com/samber/lo"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"

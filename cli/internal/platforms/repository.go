@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/nitrictech/nitric/engines/terraform"
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/cli/internal/version"
+	"github.com/nitrictech/suga/engines/terraform"
 )
 
 type PlatformRepository struct {

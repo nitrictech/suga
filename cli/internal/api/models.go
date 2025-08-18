@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nitrictech/nitric/engines/terraform"
+	"github.com/nitrictech/suga/engines/terraform"
 )
 
 // TODO: We need a better mechanism to sync the models with the server.

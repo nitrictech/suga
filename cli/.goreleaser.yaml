@@ -1,0 +1,58 @@
+project_name: suga
+version: 2
+release:
+  prerelease: auto
+before:
+  hooks:
+    - go mod tidy
+    - make build
+builds:
+  - env:
+      - CGO_ENABLED=0
+    id: suga
+    binary: suga
+    ldflags:
+      - -s -w -X github.com/nitrictech/suga/cli/internal/version.Version={{.Version}} -X github.com/nitrictech/suga/cli/internal/version.Commit={{.Commit}} -X github.com/nitrictech/suga/cli/internal/version.BuildTime={{.Date}}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - format_overrides:
+      - goos: windows
+        formats: [zip]
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+changelog:
+  disable: true
+scoops:
+  - name: suga
+    repository:
+      owner: nitrictech
+      name: suga-scoop-bucket
+    commit_author:
+      name: nitric-bot
+      email: maintainers@nitric.io
+    homepage: "https://app.addsuga.com"
+    description: "Suga CLI"
+    license: Apache 2.0
+
+brews:
+  - name: suga
+    repository:
+      owner: nitrictech
+      name: suga-homebrew-tap
+    commit_author:
+      name: nitric-bot
+      email: maintainers@nitric.io
+    directory: Formula
+    homepage: "https://app.addsuga.com/"
+    description: "Suga CLI"
+    license: "Apache 2.0"
+    dependencies:
+      - name: git

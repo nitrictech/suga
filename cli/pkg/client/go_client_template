@@ -7,7 +7,7 @@ import (
 	"os"
 
 	{{ if .Buckets }}
-	storagepb "github.com/nitrictech/nitric/proto/storage/v2"
+	storagepb "github.com/nitrictech/suga/proto/storage/v2"
 	{{ end }}
 
 	"github.com/nitrictech/suga/client/go/suga"

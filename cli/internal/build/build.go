@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/nitrictech/nitric/engines/terraform"
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/cli/internal/platforms"
 	"github.com/nitrictech/suga/cli/internal/plugins"
 	"github.com/nitrictech/suga/cli/pkg/schema"
+	"github.com/nitrictech/suga/engines/terraform"
 	"github.com/samber/do/v2"
 	"github.com/spf13/afero"
 )

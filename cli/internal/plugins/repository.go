@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nitrictech/nitric/engines/terraform"
 	"github.com/nitrictech/suga/cli/internal/api"
+	"github.com/nitrictech/suga/engines/terraform"
 )
 
 type PluginRepository struct {
