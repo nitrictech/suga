@@ -26,7 +26,7 @@ View the documentation at `http://localhost:3000`
 
 ## 📝 Contributing
 
-We welcome contributions to improve our documentation!
+We welcome contributions to improve our documentation\!
 
 ### How to Contribute
 
