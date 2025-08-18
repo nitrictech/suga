@@ -159,7 +159,7 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
       For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
     </Note>
   </Accordion>
-  <Accordion title="Step 5: Building your API" icon="code">
+  <Accordion title="Step 5: Build and test your API" icon="code">
     **Add database connectivity to your existing service.**
 
     First, add the required dependencies:
@@ -246,16 +246,15 @@ Nitric doesn’t auto-provision databases locally, giving you full choice and co
       {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
     ]
     ```
+
+    <Note>
+      Stop with `make db-stop` when done.
+    </Note>
   </Accordion>
 </AccordionGroup>
 
-## Production Deployment
+**What you just accomplished:**
 
-This setup works seamlessly with any PostgreSQL provider when deploying:
-
-**Local Development**: Uses `DATABASE_URL` from your `.env` file\
-**Production**: Nitric provisions the database declared in `nitric.yaml` and injects the connection string automatically
-
-<Note>
-  Stop with `make db-stop` when done.
-</Note>
+- ✅ Enabled database support with a Nitric project
+- ✅ Built a database-connected API that queries PostgreSQL and returns JSON
+- ✅ Setup production-ready configuration that you can test locally
