@@ -279,7 +279,10 @@ func (s *SimulationServer) startBuckets() error {
 
 		w.Header().Set("Content-Type", DetectContentType(req.Key, resp.Body))
 
-		w.Write(resp.Body)
+		_, err = w.Write(resp.Body)
+		if err != nil {
+			fmt.Printf("Error writing response: %v\n", err)
+		}
 	})
 
 	router.HandleFunc("PUT /write/{token}", func(w http.ResponseWriter, r *http.Request) {
@@ -327,7 +330,15 @@ func (s *SimulationServer) startBuckets() error {
 		return err
 	}
 
-	go http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), handler)
+	var serveErr chan (error)
+	go func() {
+		serveErr <- http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), handler)
+	}()
+
+	err = <-serveErr
+	if err != nil {
+		return err
+	}
 
 	s.fileServerPort = int(reservedPort)
 

@@ -35,7 +35,11 @@ func WithDebounce(debounce time.Duration) FileSyncOption {
 }
 
 func (fs *SugaFileSync) getApplicationFileContents() (*schema.Application, []byte, error) {
-	fs.file.Seek(0, 0) // Seek to beginning
+	_, err := fs.file.Seek(0, 0) // Seek to beginning
+	if err != nil {
+		return nil, nil, err
+	}
+
 	contents, err := io.ReadAll(fs.file)
 	if err != nil {
 		return nil, nil, err
@@ -43,11 +47,10 @@ func (fs *SugaFileSync) getApplicationFileContents() (*schema.Application, []byt
 
 	application, schemaResult, err := schema.ApplicationFromYaml(string(contents))
 	if err != nil {
-		fmt.Println("Error parsing application from yaml:", err)
-		return nil, contents, err
+		return nil, contents, fmt.Errorf("error parsing application from yaml: %v", err)
 	} else if schemaResult != nil && len(schemaResult.Errors()) > 0 {
 		// Wrap the schema errors in a new error
-		return nil, contents, fmt.Errorf("Errors parsing application from yaml: %v", schemaResult.Errors())
+		return nil, contents, fmt.Errorf("errors parsing application from yaml: %v", schemaResult.Errors())
 	}
 
 	if appSpecErrors := application.IsValid(); len(appSpecErrors) > 0 {

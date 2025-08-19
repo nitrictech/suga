@@ -115,6 +115,9 @@ func ApplicationFromYaml(yamlString string) (*Application, *gojsonschema.Result,
 	}
 
 	rawJson, err := json.Marshal(raw)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return ApplicationFromJson(string(rawJson))
 }

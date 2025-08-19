@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -50,12 +51,22 @@ func (a *WorkOSAuth) performPKCE(organizationId string) error {
 		Handler: http.HandlerFunc(newCallbackHandler(callbackResult, a.httpClient, pkceChallenge)),
 	}
 
-	go callbackServer.Serve(listener)
+	go func() {
+		err := callbackServer.Serve(listener)
+		if err != nil {
+			log.Fatalf("failed to start callback server for login")
+			return
+		}
+	}()
+
 	defer func() {
 		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 300*time.Millisecond)
 		defer cancelShutdown()
 
-		callbackServer.Shutdown(shutdownCtx)
+		err = callbackServer.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Fatalf("failed to shutdown callback server")
+		}
 	}()
 
 	authOptions := workos_http.GetAuthorizationUrlOptions{
@@ -116,7 +127,10 @@ func newCallbackHandler(callbackResult chan CallbackResult, client *workos_http.
 		if err != nil {
 			// TODO: make this pretty
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			_, err = w.Write([]byte(err.Error()))
+			if err != nil {
+				log.Fatalf("failed writing error response %v", err)
+			}
 
 			callbackResult <- CallbackResult{Error: err}
 			return
@@ -124,7 +138,11 @@ func newCallbackHandler(callbackResult chan CallbackResult, client *workos_http.
 
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		w.Write(loginSuccessPage)
+		_, err = w.Write(loginSuccessPage)
+		if err != nil {
+			callbackResult <- CallbackResult{Error: err}
+			return
+		}
 
 		go func() {
 			callbackResult <- CallbackResult{Tokens: &Tokens{

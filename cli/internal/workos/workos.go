@@ -3,7 +3,6 @@ package workos
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -33,10 +32,9 @@ type Tokens struct {
 }
 
 type WorkOSAuth struct {
-	sugaBackendUrl *url.URL
-	tokenStore     TokenStore
-	tokens         *Tokens
-	httpClient     *http.HttpClient
+	tokenStore TokenStore
+	tokens     *Tokens
+	httpClient *http.HttpClient
 }
 
 func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
@@ -109,7 +107,7 @@ func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
 
 func (a *WorkOSAuth) refreshToken() error {
 	if a.tokens.RefreshToken == "" {
-		return fmt.Errorf("no refresh token", ErrUnauthenticated)
+		return fmt.Errorf("%w: no refresh token", ErrUnauthenticated)
 	}
 
 	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(a.tokens.RefreshToken, nil)
@@ -141,7 +139,7 @@ func (a *WorkOSAuth) RefreshTokenForOrganization(organizationId string) error {
 	}
 
 	if a.tokens.RefreshToken == "" {
-		return fmt.Errorf("no refresh token available", ErrUnauthenticated)
+		return fmt.Errorf("%w: no refresh token available", ErrUnauthenticated)
 	}
 
 	// Use organization-scoped refresh token

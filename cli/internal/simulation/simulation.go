@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/nitrictech/suga/cli/internal/netx"
 	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
 	"github.com/nitrictech/suga/cli/internal/simulation/service"
@@ -39,16 +38,6 @@ type SimulationServer struct {
 	apiPort        netx.ReservedPort
 	fileServerPort int
 	services       map[string]*service.ServiceSimulation
-}
-
-var suga = style.Purple(icons.Lightning + " " + version.ProductName)
-
-func sugaIntro(addr string, dashUrl string, appSpec *schema.Application) string {
-	version := version.GetShortVersion()
-
-	intro := fmt.Sprintf("\n%s %s\n- App: %s\n- Addr: %s\n- Dashboard: %s\n", suga, style.Gray(version), appSpec.Name, addr, dashUrl)
-
-	return lipgloss.NewStyle().Border(lipgloss.HiddenBorder(), false, true).Render(intro)
 }
 
 const (
@@ -94,7 +83,13 @@ func (s *SimulationServer) startSugaApis() error {
 	}
 
 	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr, "Dashboard", fmt.Sprintf("%s/dev", version.ProductURL)))
-	go srv.Serve(lis)
+
+	go func() {
+		err := srv.Serve(lis)
+		if err != nil {
+			log.Fatalf("failed to serve listener")
+		}
+	}()
 
 	return nil
 }
@@ -159,7 +154,12 @@ func (s *SimulationServer) startEntrypoints(services map[string]*service.Service
 			router.Handle(route, http.StripPrefix(strings.TrimSuffix(route, "/"), proxyLogMiddleware(proxyHandler)))
 		}
 
-		go http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), router)
+		go func() {
+			err := http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), router)
+			if err != nil {
+				log.Fatalf("failed to start entrypoint %s: %v", entrypointName, err)
+			}
+		}()
 
 		fmt.Printf("%s Starting %s http://localhost:%d\n", greenCheck, styledName(entrypointName, style.Orange), reservedPort)
 	}
@@ -220,7 +220,10 @@ func (s *SimulationServer) CopyDir(dst, src string) error {
 		defer fh.Close()
 
 		// make it the same
-		s.fs.Chmod(outpath, info.Mode())
+		err = s.fs.Chmod(outpath, info.Mode())
+		if err != nil {
+			return err
+		}
 
 		// copy content
 		_, err = io.Copy(fh, in)
@@ -248,14 +251,13 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 		s.services[serviceName] = simulatedService
 
 		fmt.Fprintf(output, "%s Starting %s\n", greenCheck, styledName(serviceName, style.Teal))
-
 	}
 
 	for _, simulatedService := range s.services {
 		go func() {
 			err := simulatedService.Start(true)
 			if err != nil {
-				// TODO: Handle the start error
+				log.Fatalf("failed to start simulated service: %v", err)
 			}
 		}()
 	}
@@ -268,7 +270,10 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 
 func (s *SimulationServer) handleServiceOutputs(output io.Writer, events <-chan service.ServiceEvent) {
 
-	s.fs.MkdirAll(ServicesLogsDir, os.ModePerm)
+	err := s.fs.MkdirAll(ServicesLogsDir, os.ModePerm)
+	if err != nil {
+		log.Fatalf("failed to make service log directory: %v", err)
+	}
 
 	serviceWriters := make(map[string]io.Writer, len(s.appSpec.ServiceIntents))
 	serviceLogs := make(map[string]io.WriteCloser, len(s.appSpec.ServiceIntents))
@@ -280,8 +285,15 @@ func (s *SimulationServer) handleServiceOutputs(output io.Writer, events <-chan 
 			log.Fatalf("failed to get service log path for service %s: %v", serviceName, err)
 		}
 
-		s.fs.Remove(serviceLogPath)
-		s.fs.Create(serviceLogPath)
+		err = s.fs.Remove(serviceLogPath)
+		if err != nil {
+			log.Fatalf("failed to remove service log path for service %s: %v", serviceName, err)
+		}
+
+		_, err = s.fs.Create(serviceLogPath)
+		if err != nil {
+			log.Fatalf("failed to create service log path for service %s: %v", serviceName, err)
+		}
 
 		file, err := s.fs.OpenFile(serviceLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -302,14 +314,20 @@ func (s *SimulationServer) handleServiceOutputs(output io.Writer, events <-chan 
 		if event.Output != nil {
 			// write some kind of output for that service
 			if writer, ok := serviceWriters[event.GetName()]; ok {
-				writer.Write(event.Content)
+				_, err := writer.Write(event.Content)
+				if err != nil {
+					log.Fatalf("failed to write service event content")
+				}
 			} else {
 				log.Fatalf("failed to retrieve output writer for service %s", event.GetName())
 			}
 		}
 
-		if log, ok := serviceLogs[event.GetName()]; ok {
-			log.Write(event.Content)
+		if serviceLog, ok := serviceLogs[event.GetName()]; ok {
+			_, err := serviceLog.Write(event.Content)
+			if err != nil {
+				log.Fatalf("failed to write service log")
+			}
 		}
 
 		if event.PreviousStatus != event.GetStatus() {

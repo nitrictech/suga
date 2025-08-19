@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
@@ -39,8 +38,6 @@ func WithListener(listener net.Listener) WebsocketServerSyncOption {
 		ws.listener = &listener
 	}
 }
-
-const defaultDebounce = time.Millisecond * 100
 
 type BroadcastFunc func(Message[any])
 
@@ -73,11 +70,14 @@ func (fw *DevWebsockerServer) sendToClient(client *websocket.Conn) SendFunc {
 	return func(message Message[any]) {
 		messageJSON, err := json.Marshal(message)
 		if err != nil {
-			log.Printf("Error marshaling message: %v", err)
+			log.Printf("error marshaling message: %v", err)
 			return
 		}
 
-		client.Write(messageJSON)
+		_, err = client.Write(messageJSON)
+		if err != nil {
+			log.Printf("error marshaling message: %v", err)
+		}
 	}
 }
 

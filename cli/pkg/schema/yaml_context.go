@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -13,12 +14,16 @@ type YamlContextBuilder struct {
 	strings.Builder
 }
 
-func (b *YamlContextBuilder) WriteError(s string) (int, error) {
+func (b *YamlContextBuilder) WriteError(s string) {
 	errStr := lipgloss.NewStyle().Foreground(colors.Red).Render(fmt.Sprintf("\t# <-- %s", s))
-	return b.Builder.WriteString(errStr)
+
+	_, err := b.Builder.WriteString(errStr)
+	if err != nil {
+		log.Fatalf("failed to write yaml context: %v", err)
+	}
 }
 
-func (b *YamlContextBuilder) WriteYamlKey(s interface{}, indent int) (int, error) {
+func (b *YamlContextBuilder) WriteYamlKey(s interface{}, indent int) {
 	indentStr := strings.Repeat("  ", indent)
 	keyStr := ""
 
@@ -33,7 +38,11 @@ func (b *YamlContextBuilder) WriteYamlKey(s interface{}, indent int) (int, error
 	}
 
 	styledKeyStr := lipgloss.NewStyle().Foreground(colors.Blue).Render(keyStr)
-	return b.Builder.WriteString(styledKeyStr)
+
+	_, err := b.Builder.WriteString(styledKeyStr)
+	if err != nil {
+		log.Fatalf("failed to write ")
+	}
 }
 
 func (b *YamlContextBuilder) String() string {

@@ -28,9 +28,6 @@ type ServiceSimulation struct {
 
 	events chan<- ServiceEvent
 
-	stdOut io.Writer
-	stdErr io.Writer
-
 	port    netx.ReservedPort
 	apiPort netx.ReservedPort
 
@@ -93,7 +90,7 @@ func (s *ServiceSimulation) Signal(sig os.Signal) {
 	if err != nil {
 		s.autoRestart = false
 		s.updateStatus(Status_Stopping)
-		err = s.cmd.Process.Kill()
+		_ = s.cmd.Process.Kill()
 	}
 }
 
