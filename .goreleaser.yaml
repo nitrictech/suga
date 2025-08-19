@@ -11,6 +11,7 @@ builds:
       - CGO_ENABLED=0
     id: suga
     binary: suga
+    main: ./cli/main.go
     ldflags:
       - -s -w -X github.com/nitrictech/suga/cli/internal/version.Version={{.Version}} -X github.com/nitrictech/suga/cli/internal/version.Commit={{.Commit}} -X github.com/nitrictech/suga/cli/internal/version.BuildTime={{.Date}}
     goos:
