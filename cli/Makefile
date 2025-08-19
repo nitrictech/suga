@@ -6,6 +6,13 @@ endif
 
 .PHONY: build run
 
+ifeq (/,${HOME})
+    GOLANGCI_LINT_CACHE=/tmp/golangci-lint-cache/
+else
+    GOLANGCI_LINT_CACHE=${HOME}/.cache/golangci-lint
+endif
+GOLANGCI_LINT ?= GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) go run github.com/golangci/golangci-lint/cmd/golangci-lint
+
 # See pkg/cmd/version.go for details
 SOURCE_GIT_COMMIT ?= $(shell git rev-parse --short --dirty HEAD)
 BUILD_VERSION ?= $(shell git describe --tags --abbrev=7 --dirty)
@@ -37,3 +44,11 @@ test-short:
 
 test-pretty:
 	@go tool gotest.tools/gotestsum --format=pkgname ./pkg/...
+
+.PHONY: fmt
+fmt:
+	$(GOLANGCI_LINT) run --fix
+
+.PHONY: lint
+lint: build-dashboard
+	$(GOLANGCI_LINT) run --timeout=10m

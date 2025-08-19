@@ -3,11 +3,11 @@ name: Test CLI
 on:
   push:
     branches:
-      - '**'
+      - "**"
     paths:
-      - 'cli/**'
-      - '.github/workflows/test-cli.yaml'
-      
+      - "cli/**"
+      - ".github/workflows/test-cli.yaml"
+
 jobs:
   test:
     name: Test
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
           cache-dependency-path: |
             go.work.sum
             cli/go.sum
@@ -40,13 +40,6 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./cli/coverage.out
-          flags: cli
-          name: cli-coverage
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -60,7 +53,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
           cache-dependency-path: |
             go.work.sum
             cli/go.sum
@@ -93,7 +86,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
           cache-dependency-path: |
             go.work.sum
             cli/go.sum
@@ -117,7 +110,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.3'
+          go-version: "1.24.3"
           cache-dependency-path: |
             go.work.sum
             cli/go.sum
@@ -125,7 +118,7 @@ jobs:
       - name: Run gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: '-no-fail -fmt sarif -out results.sarif ./cli/...'
+          args: "-no-fail -fmt sarif -out results.sarif ./cli/..."
 
   # Summary job - useful for branch protection rules
   # This job waits for all parallel jobs to complete
