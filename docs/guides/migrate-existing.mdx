@@ -11,9 +11,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
 - **Auto-generated Terraform** - production-ready infrastructure
 
 <Note>
-  **Before you begin:** Make sure you have Suga CLI installed. See the
-  [Installation Guide](https://suga.io/docs/installation) for platform-specific
-  instructions.
+  **Before you begin:** Make sure you have Suga CLI installed. See the [Installation Guide](https://suga.io/docs/installation) for platform-specific instructions.
 </Note>
 
 <AccordionGroup>
@@ -46,7 +44,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     - **Description:** Your project description
 
     This will create a `suga.yaml` file in your project root.
-
   </Accordion>
   <Accordion title="Step 2: Define Your Resources" icon="gear">
     **Configure services and storage in suga.yaml**
@@ -87,7 +84,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
                 /:
                     name: app
     ```
-
   </Accordion>
   <Accordion title="Step 3: Create Dockerfile" icon="docker">
     **Add a Dockerfile for containerized deployment**
@@ -99,24 +95,23 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
 
     ```dockerfile
     FROM golang:1.24-alpine as builder
-
+    
     WORKDIR /app
-
+    
     COPY . .
-
+    
     RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
-
+    
     FROM alpine:latest
-
+    
     RUN apk --no-cache add ca-certificates
-
+    
     COPY --from=builder /app/main .
-
+    
     ENTRYPOINT ["/main"]
     ```
 
     This multi-stage build creates a minimal container image for your application.
-
   </Accordion>
   <Accordion title="Step 4: Generate SDK and Migrate Your Code" icon="code">
     **Generate your SDK and replace cloud provider SDKs with Suga's APIs**
@@ -154,7 +149,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
       <Tab title="AWS S3 Sample">
         ```go
         package main
-
+        
         import (
             "context"
             "fmt"
@@ -162,32 +157,32 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
             "net/http"
             "os"
             "strings"
-
+        
             "github.com/aws/aws-sdk-go-v2/aws"
             "github.com/aws/aws-sdk-go-v2/config"
             "github.com/aws/aws-sdk-go-v2/service/s3"
         )
-
+        
         func main() {
             router := http.NewServeMux()
-
+        
             // Load AWS configuration
             cfg, err := config.LoadDefaultConfig(context.TODO())
             if err != nil {
                 log.Fatalf("Failed to load AWS config: %v", err)
             }
-
+        
             // Create S3 client
             s3Client := s3.NewFromConfig(cfg)
             bucketName := os.Getenv("S3_BUCKET_NAME")
             if bucketName == "" {
                 bucketName = "cloudscale-analytics-bucket"
             }
-
+        
             // setup a basic http server
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
-
+        
                 // Use S3 to store file
                 _, err := s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
                     Bucket: aws.String(bucketName),
@@ -200,23 +195,23 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
                     w.Write([]byte("Error uploading to S3"))
                     return
                 }
-
+        
                 w.WriteHeader(http.StatusOK)
                 w.Write([]byte("Hello, " + name + "!"))
             })
-
+        
             port := os.Getenv("PORT")
             if port == "" {
                 port = "8080"
             }
-
+        
             server := &http.Server{
                 Addr:    ":" + port,
                 Handler: router,
             }
-
+        
             fmt.Printf("Server started on port %s\n", port)
-
+        
             server.ListenAndServe()
         }
         ```
@@ -224,7 +219,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
       <Tab title="Migrate to Suga ">
         ```go
         package main
-
+        
         import (
             "example/suga"
             "fmt"
@@ -232,41 +227,40 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
             "net/http"
             "os"
         )
-
+        
         func main() {
             router := http.NewServeMux()
-
+        
             app, err := suga.NewClient()
             if err != nil {
                 log.Fatalf("Failed to create suga client: %v", err)
             }
-
+        
             // setup a basic http server
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
-
+        
                 // Use the nitric client to access cloud resources
                 app.Files.Write("example.txt", []byte("Hello, "+name+"!"))
-
+        
                 w.WriteHeader(http.StatusOK)
                 w.Write([]byte("Hello, " + name + "!"))
             })
-
+        
             port := os.Getenv("PORT")
-
+        
             server := &http.Server{
                 Addr:    ":" + port,
                 Handler: router,
             }
-
+        
             fmt.Printf("Server started on port %s, however use the entrypoint port to connect to the server\n", port)
-
+        
             server.ListenAndServe()
         }
         ```
       </Tab>
     </Tabs>
-
   </Accordion>
   <Accordion title="Step 5: Test Locally" icon="play">
     **Run your application with local cloud services**
@@ -292,7 +286,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```
 
     The file `example.txt` will be created in Suga's local file storage.
-
   </Accordion>
   <Accordion title="Step 6: Deploy to Any Cloud" icon="cloud">
     **Generate Terraform and deploy to AWS, GCP, or Azure**
@@ -308,7 +301,7 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```bash
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-app-aws-12345
-
+    
     Next steps:
     1. Run cd ./.suga/stacks/my-app-aws-12345 to move to the stack directory
     2. Initialize the stack terraform init -upgrade
@@ -364,7 +357,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```
 
     When prompted, type `yes` to confirm the deployment. Once complete, you'll see your application endpoints in the output.
-
   </Accordion>
 </AccordionGroup>
 
