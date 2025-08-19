@@ -102,12 +102,7 @@ jobs:
         env:
           GOOS: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'windows' }}
           GOARCH: ${{ matrix.arch }}
-        run: |
-          go build -ldflags "-s -w" -o bin/suga${{ runner.os == 'Windows' && '.exe' || '' }} main.go
-
-      - name: Test binary execution
-        run: |
-          ./bin/suga${{ runner.os == 'Windows' && '.exe' || '' }} version
+        run: make build
 
   security:
     name: Security Scan
