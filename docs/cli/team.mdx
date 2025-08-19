@@ -1,0 +1,43 @@
+---
+title: "team"
+description: "Switch between teams or list available teams."
+---
+
+Switch between teams or list available teams.
+
+When run without arguments, displays an interactive list of available teams.
+
+```bash
+suga team
+```
+
+When run with a team slug, switches directly to that team.
+
+```bash
+suga team my-team
+```
+
+## Example
+
+Showing the interactive team switcher:
+
+```bash
+suga team
+
+Current team: My Team
+
+Select a team:
+➜ My Team
+  My Other Team (current)
+```
+
+Switching directly using the team slug:
+
+```bash
+suga team my-other-team
+
+Current team: My Team
+
+Switching to team: My Other Team
+✓ Successfully switched to team: My Other Team
+```
