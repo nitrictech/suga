@@ -49,6 +49,7 @@
               "cli/login",
               "cli/logout",
               "cli/new",
+              "cli/team",
               "cli/templates",
               "cli/version"
             ]
