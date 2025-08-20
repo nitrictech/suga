@@ -6,7 +6,6 @@
 
 <p align="center">
   <a href="https://docs.addsuga.com">Documentation</a> •
-  <a href="https://app.addsuga.com">Get Started</a> •
   <a href="https://github.com/nitrictech/suga/releases">Releases</a>
 </p>
 
