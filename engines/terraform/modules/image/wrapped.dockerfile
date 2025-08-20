@@ -10,7 +10,7 @@ ENV PLUGIN_DEFINITION=${PLUGIN_DEFINITION}
 RUN apt-get update && apt-get install -y make
 
 # Checkout the suga github repo
-RUN git clone --depth=1 -b next https://github.com/nitrictech/suga /suga
+RUN git clone --depth=1 -b main https://github.com/nitrictech/suga /suga
 WORKDIR /suga
 
 RUN go work sync
