@@ -1,0 +1,168 @@
+package workos
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/nitrictech/suga/cli/internal/details"
+	"github.com/nitrictech/suga/cli/internal/workos/http"
+	"github.com/samber/do/v2"
+)
+
+var (
+	ErrNotFound        = errors.New("no token found")
+	ErrUnauthenticated = errors.New("unauthenticated")
+)
+
+type TokenStore interface {
+	// GetTokens returns the tokens from the store, or nil if no tokens are found
+	GetTokens() (*Tokens, error)
+	// SaveTokens saves the tokens to the store
+	SaveTokens(*Tokens) error
+	// Clear clears the tokens from the store
+	Clear() error
+}
+
+type Tokens struct {
+	AccessToken  string     `json:"access_token"`
+	RefreshToken string     `json:"refresh_token"`
+	User         *http.User `json:"user"`
+}
+
+type WorkOSAuth struct {
+	tokenStore TokenStore
+	tokens     *Tokens
+	httpClient *http.HttpClient
+}
+
+func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
+	details, err := do.MustInvokeAs[details.AuthDetailsService](inj).GetWorkOSDetails()
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := http.NewHttpClient(details.ClientID, http.WithHostname(details.ApiHostname))
+
+	tokenStore := do.MustInvokeAs[TokenStore](inj)
+	tokens, _ := tokenStore.GetTokens()
+
+	return &WorkOSAuth{tokenStore: tokenStore, httpClient: httpClient, tokens: tokens}, nil
+}
+
+func (a *WorkOSAuth) Login() (*http.User, error) {
+	if a.tokens != nil {
+		return a.tokens.User, nil
+	}
+
+	err := a.performPKCE("")
+	if err != nil {
+		return nil, err
+	}
+
+	return a.tokens.User, nil
+}
+
+func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
+	if a.tokens == nil {
+		tokens, err := a.tokenStore.GetTokens()
+		if err != nil {
+			return "", fmt.Errorf("no stored tokens found, please login: %w", err)
+		}
+		a.tokens = tokens
+	}
+
+	if forceRefresh {
+		if err := a.refreshToken(); err != nil {
+			return "", fmt.Errorf("token refresh failed: %w", err)
+		}
+	}
+
+	// Decode the JWT to check if it's expired
+	claims := jwt.RegisteredClaims{}
+	parsedToken, err := jwt.ParseWithClaims(a.tokens.AccessToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
+		kid, ok := token.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("kid not found in token header")
+		}
+
+		return a.httpClient.GetRSAPublicKey(kid)
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}))
+
+	// Add a 1 second buffer to the expiry time to account for a slight delay in the token being sent to the server
+	// i.e. the token must remain valid for at least another second, or we'll refresh it early for good measure
+	if err != nil || !parsedToken.Valid || claims.ExpiresAt.Before(time.Now().Add(1+time.Second)) {
+		if err := a.refreshToken(); err != nil {
+			return "", fmt.Errorf("token refresh failed: %w", err)
+		}
+	}
+
+	return a.tokens.AccessToken, nil
+}
+
+func (a *WorkOSAuth) refreshToken() error {
+	if a.tokens.RefreshToken == "" {
+		return fmt.Errorf("%w: no refresh token", ErrUnauthenticated)
+	}
+
+	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(a.tokens.RefreshToken, nil)
+	if err != nil {
+		return err
+	}
+
+	a.tokens = &Tokens{
+		AccessToken:  workosToken.AccessToken,
+		RefreshToken: workosToken.RefreshToken,
+		User:         &workosToken.User,
+	}
+
+	err = a.tokenStore.SaveTokens(a.tokens)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *WorkOSAuth) RefreshTokenForOrganization(organizationId string) error {
+	if a.tokens == nil {
+		tokens, err := a.tokenStore.GetTokens()
+		if err != nil {
+			return fmt.Errorf("no stored tokens found, please login: %w", err)
+		}
+		a.tokens = tokens
+	}
+
+	if a.tokens.RefreshToken == "" {
+		return fmt.Errorf("%w: no refresh token available", ErrUnauthenticated)
+	}
+
+	// Use organization-scoped refresh token
+	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(a.tokens.RefreshToken, &organizationId)
+	if err != nil {
+		return err
+	}
+
+	a.tokens = &Tokens{
+		AccessToken:  workosToken.AccessToken,
+		RefreshToken: workosToken.RefreshToken,
+		User:         &workosToken.User,
+	}
+
+	err = a.tokenStore.SaveTokens(a.tokens)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *WorkOSAuth) Logout() error {
+	a.tokens = nil
+	return a.tokenStore.Clear()
+}

@@ -1,0 +1,17 @@
+import { grpc, {{if .Buckets}} StorageClient, Bucket {{end}}} from "@suga/client";
+
+const SERVICE_ADDRESS = `${process.env.SUGA_SERVICE_ADDRESS || "localhost:50051"}`;
+
+export class SugaClient {
+  private storageClient: InstanceType<typeof StorageClient>;
+  {{range .Buckets}}
+  public {{.CamelCase}}: Bucket;
+  {{end}}
+
+  constructor(credentials: grpc.ChannelCredentials = grpc.credentials.createInsecure()) {
+    this.storageClient = new StorageClient(SERVICE_ADDRESS, credentials);
+    {{range .Buckets}}
+    this.{{.CamelCase}} = new Bucket(this.storageClient, "{{.Unmodified}}");
+    {{end}}
+  }
+} 

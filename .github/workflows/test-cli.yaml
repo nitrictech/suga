@@ -1,0 +1,140 @@
+name: Test CLI
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "cli/**"
+      - ".github/workflows/test-cli.yaml"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+          cache-dependency-path: |
+            go.work.sum
+            cli/go.sum
+
+      - name: Install dependencies
+        run: |
+          cd ..
+          go work sync
+          cd cli
+          go mod download
+          go mod verify
+
+      - name: Run tests
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./pkg/...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+          cache-dependency-path: |
+            go.work.sum
+            cli/go.sum
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: cli
+          args: --timeout=5m
+
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [amd64, arm64]
+        exclude:
+          # Exclude Windows ARM64 as it's not commonly supported
+          - os: windows-latest
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+          cache-dependency-path: |
+            go.work.sum
+            cli/go.sum
+
+      - name: Build binary
+        env:
+          GOOS: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'windows' }}
+          GOARCH: ${{ matrix.arch }}
+        run: make build
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+          cache-dependency-path: |
+            go.work.sum
+            cli/go.sum
+
+      - name: Run gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: "-no-fail -fmt sarif -out results.sarif ./cli/..."
+
+  # Summary job - useful for branch protection rules
+  # This job waits for all parallel jobs to complete
+  ci-success:
+    name: All Checks Pass
+    needs: [test, lint, build, security]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Verify all jobs passed
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "❌ One or more CI checks failed"
+            exit 1
+          elif [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "⚠️ One or more CI checks were cancelled"
+            exit 1
+          fi
+          echo "✅ All CI checks passed successfully!"
