@@ -1,8 +1,11 @@
 <p align="center">
-  <a href="https://app.addsuga.com">
-    <img src="docs/logo/suga-dark.svg" width="120" alt="Suga Logo"/>
-  </a>
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/logo/suga-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="docs/logo/suga-light.svg">
+      <img alt="Shows a black logo in light color mode and a white one in dark color mode." src="docs/logo/suga-light.svg">
+    </picture>
 </p>
+
 
 <p align="center">
   <a href="https://docs.addsuga.com">Documentation</a> •
