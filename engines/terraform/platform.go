@@ -34,6 +34,7 @@ type Variable struct {
 	Type        string      `json:"type" yaml:"type"`
 	Description string      `json:"description" yaml:"description"`
 	Default     interface{} `json:"default" yaml:"default"`
+	Nullable    bool        `json:"nullable" yaml:"nullable"`
 }
 
 type Library struct {

@@ -14,6 +14,7 @@ func (td *TerraformDeployment) createVariablesForIntent(intentName string, spec 
 		td.instancedTerraformVariables[intentName][varName] = cdktf.NewTerraformVariable(td.stack, jsii.Sprintf("%s_%s", intentName, varName), &cdktf.TerraformVariableConfig{
 			Description: jsii.String(variable.Description),
 			Type:        jsii.String(variable.Type),
+			Nullable:    jsii.Bool(variable.Nullable),
 			Default:     variable.Default,
 		})
 	}
@@ -24,6 +25,7 @@ func (td *TerraformDeployment) createPlatformVariables() {
 		td.terraformVariables[varName] = cdktf.NewTerraformVariable(td.stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
 			Description: jsii.String(variableSpec.Description),
 			Default:     variableSpec.Default,
+			Nullable:    jsii.Bool(variableSpec.Nullable),
 			Type:        jsii.String(variableSpec.Type),
 		})
 	}
