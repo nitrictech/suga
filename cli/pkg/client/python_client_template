@@ -7,6 +7,31 @@ from suga.gen.storage.v2 import storage_pb2_grpc
 from suga.buckets import Bucket
 {{end}}
 
+{{range .Buckets}}
+class {{.PascalCase}}Bucket:
+    """Wrapper for bucket '{{.Unmodified}}' with restricted permissions."""
+    
+    def __init__(self, storage_client, name):
+        self._bucket = Bucket(storage_client, name)
+        {{range .Permissions}}
+        {{if eq . "read"}}
+        self.read = self._bucket.read
+        {{end}}
+        {{if eq . "write"}}
+        self.write = self._bucket.write
+        {{end}}
+        {{if eq . "delete"}}
+        self.delete = self._bucket.delete
+        {{end}}
+        {{end}}
+        
+        # Always available methods
+        self.list = self._bucket.list
+        self.exists = self._bucket.exists
+        self.get_download_url = self._bucket.get_download_url
+        self.get_upload_url = self._bucket.get_upload_url
+{{end}}
+
 class SugaClient:
     def __init__(self):
         address = os.getenv("SUGA_SERVICE_ADDRESS")
@@ -19,7 +44,7 @@ class SugaClient:
         {{end}}
         
         {{range .Buckets}}
-        self.{{.CamelCase}} = Bucket(self._storage_client, "{{.Unmodified}}")
+        self.{{.CamelCase}} = {{.PascalCase}}Bucket(self._storage_client, "{{.Unmodified}}")
         {{end}}
 
     def close(self):

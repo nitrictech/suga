@@ -20,23 +20,13 @@ var clientTemplate string
 type GoSDKTemplateData struct {
 	Package    string
 	ImportPath string
-	Buckets    []ResourceNameNormalizer
+	Buckets    []BucketWithPermissions
 }
 
 func AppSpecToGoTemplateData(appSpec schema.Application, goPackageName string) (GoSDKTemplateData, error) {
-	buckets := []ResourceNameNormalizer{}
-	for name, resource := range appSpec.GetResourceIntents() {
-
-		if resource.GetType() != "bucket" {
-			continue
-		}
-
-		normalized, err := NewResourceNameNormalizer(name)
-		if err != nil {
-			return GoSDKTemplateData{}, fmt.Errorf("failed to normalize resource name: %w", err)
-		}
-
-		buckets = append(buckets, normalized)
+	buckets, err := ExtractPermissionsForBuckets(appSpec)
+	if err != nil {
+		return GoSDKTemplateData{}, err
 	}
 
 	return GoSDKTemplateData{

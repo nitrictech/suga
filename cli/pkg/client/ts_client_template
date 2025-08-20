@@ -2,16 +2,64 @@ import { grpc, {{if .Buckets}} StorageClient, Bucket {{end}}} from "@nitric/suga
 
 const SERVICE_ADDRESS = `${process.env.SUGA_SERVICE_ADDRESS || "localhost:50051"}`;
 
+{{range $bucket := .Buckets}}
+/**
+ * Wrapper for bucket '{{$bucket.Unmodified}}' with restricted permissions
+ */
+class {{$bucket.PascalCase}}Bucket {
+  private bucket: Bucket;
+
+  constructor(storageClient: InstanceType<typeof StorageClient>, name: string) {
+    this.bucket = new Bucket(storageClient, name);
+  }
+
+  {{range $bucket.Permissions}}
+  {{if eq . "read"}}
+  async read(key: string): Promise<Buffer> {
+    return this.bucket.read(key);
+  }
+  {{end}}
+  {{if eq . "write"}}
+  async write(key: string, data: Buffer | string): Promise<void> {
+    return this.bucket.write(key, data);
+  }
+  {{end}}
+  {{if eq . "delete"}}
+  async delete(key: string): Promise<void> {
+    return this.bucket.delete(key);
+  }
+  {{end}}
+  {{end}}
+
+  // Always available methods
+  async list(prefix?: string): Promise<string[]> {
+    return this.bucket.list(prefix || "");
+  }
+
+  async exists(key: string): Promise<boolean> {
+    return this.bucket.exists(key);
+  }
+
+  async getDownloadURL(key: string, opts?: any): Promise<string> {
+    return this.bucket.getDownloadURL(key, opts);
+  }
+
+  async getUploadURL(key: string, opts?: any): Promise<string> {
+    return this.bucket.getUploadURL(key, opts);
+  }
+}
+{{end}}
+
 export class SugaClient {
   private storageClient: InstanceType<typeof StorageClient>;
-  {{range .Buckets}}
-  public {{.CamelCase}}: Bucket;
+  {{range $bucket := .Buckets}}
+  public {{$bucket.CamelCase}}: {{$bucket.PascalCase}}Bucket;
   {{end}}
 
   constructor(credentials: grpc.ChannelCredentials = grpc.credentials.createInsecure()) {
     this.storageClient = new StorageClient(SERVICE_ADDRESS, credentials);
-    {{range .Buckets}}
-    this.{{.CamelCase}} = new Bucket(this.storageClient, "{{.Unmodified}}");
+    {{range $bucket := .Buckets}}
+    this.{{$bucket.CamelCase}} = new {{$bucket.PascalCase}}Bucket(this.storageClient, "{{$bucket.Unmodified}}");
     {{end}}
   }
 } 

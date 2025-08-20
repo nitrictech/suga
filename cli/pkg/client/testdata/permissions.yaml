@@ -1,0 +1,45 @@
+name: permission-test
+description: Test application to demonstrate permission handling in generated clients
+targets:
+  - aws/default@1
+
+services:
+  api:
+    type: container
+    dockerfile: ./api/Dockerfile
+  
+  worker:
+    type: container
+    dockerfile: ./worker/Dockerfile
+
+buckets:
+  read_only_storage:
+    access:
+      api:
+        - read
+  
+  write_only_storage:
+    access:
+      api:
+        - write
+  
+  full_access_storage:
+    access:
+      api:
+        - all
+  
+  image:
+    access:
+      api:
+        - read
+        - write
+  
+  no_permissions_storage:
+    access: {}
+  
+  shared_bucket:
+    access:
+      api:
+        - read
+      worker:
+        - write
