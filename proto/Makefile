@@ -17,8 +17,9 @@ endif
 
 PROTO_PREFIX:=github.com/nitrictech/suga/proto
 
+# Remove all non .proto files
 clean-proto:
-	@rm -rf ./pkg/proto/
+	@find ./pubsub ./storage -type f ! -name "*.proto" -delete
 
 # Generate interfaces
 generate-proto-go: install-tools check-gopath clean-proto

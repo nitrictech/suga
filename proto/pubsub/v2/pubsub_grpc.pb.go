@@ -36,7 +36,7 @@ func NewPubsubClient(cc grpc.ClientConnInterface) PubsubClient {
 
 func (c *pubsubClient) Publish(ctx context.Context, in *PubsubPublishRequest, opts ...grpc.CallOption) (*PubsubPublishResponse, error) {
 	out := new(PubsubPublishResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.pubsub.v1.Pubsub/Publish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.pubsub.v1.Pubsub/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func _Pubsub_Publish_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.pubsub.v1.Pubsub/Publish",
+		FullMethod: "/suga.proto.pubsub.v1.Pubsub/Publish",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PubsubServer).Publish(ctx, req.(*PubsubPublishRequest))
@@ -94,7 +94,7 @@ func _Pubsub_Publish_Handler(srv interface{}, ctx context.Context, dec func(inte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Pubsub_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "nitric.proto.pubsub.v1.Pubsub",
+	ServiceName: "suga.proto.pubsub.v1.Pubsub",
 	HandlerType: (*PubsubServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

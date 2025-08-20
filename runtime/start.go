@@ -66,14 +66,14 @@ func Start(cmd string) {
 		srv.Serve(lis)
 	}()
 
-	// Start the actual nitric service
+	// Start the actual suga service
 	cmdParts := strings.Split(cmd, " ")
 	runCmd := exec.Command(cmdParts[0], cmdParts[1:]...)
 	runCmd.Env = os.Environ()
 	runCmd.Stdout = os.Stdout
 	runCmd.Stderr = os.Stderr
 
-	servicePort := os.Getenv("NITRIC_GUEST_PORT")
+	servicePort := os.Getenv("SUGA_GUEST_PORT")
 	if servicePort == "" {
 		servicePort = os.Getenv("PORT")
 	} else {

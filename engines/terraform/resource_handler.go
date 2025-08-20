@@ -46,8 +46,8 @@ func (e *TerraformEngine) resolvePluginsForService(servicePlugin *ResourcePlugin
 	return pluginDef, nil
 }
 
-func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema.Application) (map[string]*NitricServiceVariables, error) {
-	serviceInputs := map[string]*NitricServiceVariables{}
+func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema.Application) (map[string]*SugaServiceVariables, error) {
+	serviceInputs := map[string]*SugaServiceVariables{}
 
 	for intentName, serviceIntent := range appSpec.ServiceIntents {
 		spec, err := td.engine.platform.GetServiceBlueprint(serviceIntent.GetSubType())
@@ -59,18 +59,18 @@ func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema
 			return nil, err
 		}
 
-		nitricVar, err := td.resolveService(intentName, serviceIntent, spec, plug)
+		sugaVar, err := td.resolveService(intentName, serviceIntent, spec, plug)
 		if err != nil {
 			return nil, err
 		}
 
-		serviceInputs[intentName] = nitricVar
+		serviceInputs[intentName] = sugaVar
 	}
 
 	return serviceInputs, nil
 }
 
-func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.Application, serviceInputs map[string]*NitricServiceVariables, serviceEnvs map[string][]interface{}) error {
+func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.Application, serviceInputs map[string]*SugaServiceVariables, serviceEnvs map[string][]interface{}) error {
 	for intentName, serviceIntent := range appSpec.ServiceIntents {
 		spec, err := td.engine.platform.GetResourceBlueprint(serviceIntent.GetType(), serviceIntent.GetSubType())
 		if err != nil {
@@ -81,19 +81,19 @@ func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.
 			return err
 		}
 
-		nitricVar := serviceInputs[intentName]
-		origEnv := nitricVar.Env
+		sugaVar := serviceInputs[intentName]
+		origEnv := sugaVar.Env
 
 		mergedEnv := serviceEnvs[intentName]
 		allEnv := append(mergedEnv, origEnv)
-		nitricVar.Env = cdktf.Fn_Merge(&allEnv)
+		sugaVar.Env = cdktf.Fn_Merge(&allEnv)
 
 		td.createVariablesForIntent(intentName, spec)
 
 		td.terraformResources[intentName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(intentName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(plug.Deployment.Terraform),
 			Variables: &map[string]interface{}{
-				"nitric": nitricVar,
+				"suga": sugaVar,
 			},
 		})
 	}
@@ -136,7 +136,7 @@ func (td *TerraformDeployment) processBucketResources(appSpec *app_spec_schema.A
 			}
 		}
 
-		nitricVar := map[string]any{
+		sugaVar := map[string]any{
 			"name":         intentName,
 			"stack_id":     td.stackId.Result(),
 			"content_path": contentPath,
@@ -148,13 +148,13 @@ func (td *TerraformDeployment) processBucketResources(appSpec *app_spec_schema.A
 		td.terraformResources[intentName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(intentName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(plug.Deployment.Terraform),
 			Variables: &map[string]interface{}{
-				"nitric": nitricVar,
+				"suga": sugaVar,
 			},
 		})
 
 		// Collect environment variables that buckets export to services
 		for serviceName := range td.serviceIdentities {
-			env := cdktf.Fn_Try(&[]interface{}{td.terraformResources[intentName].Get(jsii.Sprintf("nitric.exports.services.%s.env", serviceName)), map[string]interface{}{}})
+			env := cdktf.Fn_Try(&[]interface{}{td.terraformResources[intentName].Get(jsii.Sprintf("suga.exports.services.%s.env", serviceName)), map[string]interface{}{}})
 			serviceEnvs[serviceName] = append(serviceEnvs[serviceName], env)
 		}
 	}
@@ -173,7 +173,7 @@ func (td *TerraformDeployment) processEntrypointResources(appSpec *app_spec_sche
 			return err
 		}
 
-		nitricVar, err := td.resolveEntrypointNitricVar(intentName, appSpec, entrypointIntent)
+		sugaVar, err := td.resolveEntrypointSugaVar(intentName, appSpec, entrypointIntent)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func (td *TerraformDeployment) processEntrypointResources(appSpec *app_spec_sche
 		td.terraformResources[intentName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(intentName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(plug.Deployment.Terraform),
 			Variables: &map[string]interface{}{
-				"nitric": nitricVar,
+				"suga": sugaVar,
 			},
 		})
 	}
@@ -221,7 +221,7 @@ func (td *TerraformDeployment) processDatabaseResources(appSpec *app_spec_schema
 			}
 		}
 
-		nitricVar := map[string]any{
+		sugaVar := map[string]any{
 			"name":        intentName,
 			"stack_id":    td.stackId.Result(),
 			"services":    servicesInput,
@@ -233,13 +233,13 @@ func (td *TerraformDeployment) processDatabaseResources(appSpec *app_spec_schema
 		td.terraformResources[intentName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(intentName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(plug.Deployment.Terraform),
 			Variables: &map[string]interface{}{
-				"nitric": nitricVar,
+				"suga": sugaVar,
 			},
 		})
 
 		// Collect environment variables that databases export to services
 		for serviceName := range td.serviceIdentities {
-			env := cdktf.Fn_Try(&[]interface{}{td.terraformResources[intentName].Get(jsii.Sprintf("nitric.exports.services.%s.env", serviceName)), map[string]interface{}{}})
+			env := cdktf.Fn_Try(&[]interface{}{td.terraformResources[intentName].Get(jsii.Sprintf("suga.exports.services.%s.env", serviceName)), map[string]interface{}{}})
 			serviceEnvs[serviceName] = append(serviceEnvs[serviceName], env)
 		}
 	}

@@ -26,7 +26,7 @@ locals {
   image_id         = var.image_id == null ? docker_image.base_service.name : var.image_id
 }
 
-# Next we want to wrap this image withing a nitric service
+# Next we want to wrap this image withing a suga service
 resource "docker_image" "service" {
   name = var.tag
   build {

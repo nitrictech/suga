@@ -1,13 +1,13 @@
 syntax = "proto3";
-package nitric.proto.pubsub.v1;
+package suga.proto.pubsub.v1;
 
 // protoc plugin options for code generation
 option go_package = "github.com/nitrictech/suga/proto/pubsub/v2;pubsubpb";
-option java_package = "io.nitric.proto.pubsub.v2";
+option java_package = "io.suga.proto.pubsub.v2";
 option java_multiple_files = true;
 option java_outer_classname = "PubsubPubsubService";
-option php_namespace = "Nitric\\Proto\\Pubsub\\V2";
-option csharp_namespace = "Nitric.Proto.Pubsub.v2";
+option php_namespace = "Suga\\Proto\\Pubsub\\V2";
+option csharp_namespace = "Suga.Proto.Pubsub.v2";
 
 // Service for publishing asynchronous messages
 service Pubsub {

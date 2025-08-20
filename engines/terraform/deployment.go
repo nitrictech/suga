@@ -78,7 +78,7 @@ func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.Ter
 	return td.terraformInfraResources[infraName], nil
 }
 
-func (td *TerraformDeployment) resolveEntrypointNitricVar(name string, appSpec *app_spec_schema.Application, spec *app_spec_schema.EntrypointIntent) (interface{}, error) {
+func (td *TerraformDeployment) resolveEntrypointSugaVar(name string, appSpec *app_spec_schema.Application, spec *app_spec_schema.EntrypointIntent) (interface{}, error) {
 	origins := map[string]interface{}{}
 	for path, route := range spec.Routes {
 		intentTarget, ok := appSpec.GetResourceIntent(route.TargetName)
@@ -101,30 +101,30 @@ func (td *TerraformDeployment) resolveEntrypointNitricVar(name string, appSpec *
 			return nil, fmt.Errorf("target %s not found", route.TargetName)
 		}
 
-		domainNameNitricVar := hclTarget.Get(jsii.String("nitric.domain_name"))
-		idNitricVar := hclTarget.Get(jsii.String("nitric.id"))
-		resourcesNitricVar := hclTarget.Get(jsii.String("nitric.exports.resources"))
+		domainNameSugaVar := hclTarget.Get(jsii.String("suga.domain_name"))
+		idSugaVar := hclTarget.Get(jsii.String("suga.id"))
+		resourcesSugaVar := hclTarget.Get(jsii.String("suga.exports.resources"))
 
 		origins[route.TargetName] = map[string]interface{}{
 			"path":        jsii.String(path),
 			"base_path":   jsii.String(route.BasePath),
 			"type":        jsii.String(intentTargetType),
-			"id":          idNitricVar,
-			"domain_name": domainNameNitricVar,
-			"resources":   resourcesNitricVar,
+			"id":          idSugaVar,
+			"domain_name": domainNameSugaVar,
+			"resources":   resourcesSugaVar,
 		}
 	}
 
-	nitricVar := map[string]interface{}{
+	sugaVar := map[string]interface{}{
 		"name":     jsii.String(name),
 		"stack_id": td.stackId.Result(),
 		"origins":  origins,
 	}
 
-	return nitricVar, nil
+	return sugaVar, nil
 }
 
-func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema.ServiceIntent, resourceSpec *ServiceBlueprint, plug *ResourcePluginManifest) (*NitricServiceVariables, error) {
+func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema.ServiceIntent, resourceSpec *ServiceBlueprint, plug *ResourcePluginManifest) (*SugaServiceVariables, error) {
 	var imageVars *map[string]interface{} = nil
 
 	pluginManifest, err := td.engine.resolvePluginsForService(plug)
@@ -137,11 +137,11 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 		return nil, err
 	}
 
-	var schedules map[string]NitricServiceSchedule = nil
+	var schedules map[string]SugaServiceSchedule = nil
 	if len(schedules) > 0 && !slices.Contains(plug.Capabilities, "schedules") {
 		return nil, fmt.Errorf("service %s has schedules but the plugin %s does not support schedules", name, plug.Name)
 	} else {
-		schedules = map[string]NitricServiceSchedule{}
+		schedules = map[string]SugaServiceSchedule{}
 	}
 
 	for triggerName, trigger := range spec.Triggers {
@@ -149,7 +149,7 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 			continue
 		}
 
-		schedules[triggerName] = NitricServiceSchedule{
+		schedules[triggerName] = SugaServiceSchedule{
 			CronExpression: jsii.String(trigger.Schedule.CronExpression),
 			Path:           jsii.String(trigger.Path),
 		}
@@ -192,12 +192,12 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 			Variables: &id.Properties,
 		})
 
-		idModule.Set(jsii.String("nitric"), map[string]interface{}{
+		idModule.Set(jsii.String("suga"), map[string]interface{}{
 			"name":     jsii.String(name),
 			"stack_id": td.stackId.Result(),
 		})
 
-		identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("nitric"))
+		identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
 	}
 
 	for _, requiredIdentity := range plug.RequiredIdentities {
@@ -207,8 +207,8 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 		}
 	}
 
-	nitricVar := &NitricServiceVariables{
-		NitricVariables: NitricVariables{
+	sugaVar := &SugaServiceVariables{
+		SugaVariables: SugaVariables{
 			Name: jsii.String(name),
 		},
 		Schedules:  &schedules,
@@ -220,7 +220,7 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 
 	td.serviceIdentities[name] = identityModuleOutputs
 
-	return nitricVar, nil
+	return sugaVar, nil
 }
 
 func (td *TerraformDeployment) Synth() {

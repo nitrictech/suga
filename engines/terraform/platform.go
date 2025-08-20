@@ -125,13 +125,13 @@ func (p PlatformSpec) GetResourceBlueprint(intentType string, intentSubType stri
 			spec = serviceBlueprint.ResourceBlueprint
 		}
 	case "entrypoint":
-		spec, _ = p.EntrypointBlueprints[intentSubType]
+		spec = p.EntrypointBlueprints[intentSubType]
 	case "bucket":
-		spec, _ = p.BucketBlueprints[intentSubType]
+		spec = p.BucketBlueprints[intentSubType]
 	case "topic":
-		spec, _ = p.TopicBlueprints[intentSubType]
+		spec = p.TopicBlueprints[intentSubType]
 	case "database":
-		spec, _ = p.DatabaseBlueprints[intentSubType]
+		spec = p.DatabaseBlueprints[intentSubType]
 	default:
 		return nil, fmt.Errorf("failed to resolve resource blueprint, no type %s known in platform spec", intentType)
 	}
@@ -183,7 +183,7 @@ func PlatformFromId(fs afero.Fs, platformId string, repositories ...PlatformRepo
 	for _, repository := range repositories {
 		platform, err := repository.GetPlatform(platformId)
 		if errors.Is(err, ErrUnauthenticated) {
-			return nil, errors.Wrap(err, "unable to authenticate with platform repository, please make sure you are logged in with `nitric login`")
+			return nil, errors.Wrap(err, "unable to authenticate with platform repository, please make sure you are logged in with `suga login`")
 		} else if errors.Is(err, ErrPlatformNotFound) {
 			continue
 		} else if err != nil {

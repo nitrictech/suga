@@ -46,7 +46,7 @@ func NewStorageClient(cc grpc.ClientConnInterface) StorageClient {
 
 func (c *storageClient) Read(ctx context.Context, in *StorageReadRequest, opts ...grpc.CallOption) (*StorageReadResponse, error) {
 	out := new(StorageReadResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/Read", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/Read", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (c *storageClient) Read(ctx context.Context, in *StorageReadRequest, opts .
 
 func (c *storageClient) Write(ctx context.Context, in *StorageWriteRequest, opts ...grpc.CallOption) (*StorageWriteResponse, error) {
 	out := new(StorageWriteResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/Write", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/Write", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (c *storageClient) Write(ctx context.Context, in *StorageWriteRequest, opts
 
 func (c *storageClient) Delete(ctx context.Context, in *StorageDeleteRequest, opts ...grpc.CallOption) (*StorageDeleteResponse, error) {
 	out := new(StorageDeleteResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/Delete", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (c *storageClient) Delete(ctx context.Context, in *StorageDeleteRequest, op
 
 func (c *storageClient) PreSignUrl(ctx context.Context, in *StoragePreSignUrlRequest, opts ...grpc.CallOption) (*StoragePreSignUrlResponse, error) {
 	out := new(StoragePreSignUrlResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/PreSignUrl", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/PreSignUrl", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (c *storageClient) PreSignUrl(ctx context.Context, in *StoragePreSignUrlReq
 
 func (c *storageClient) ListBlobs(ctx context.Context, in *StorageListBlobsRequest, opts ...grpc.CallOption) (*StorageListBlobsResponse, error) {
 	out := new(StorageListBlobsResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/ListBlobs", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/ListBlobs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (c *storageClient) ListBlobs(ctx context.Context, in *StorageListBlobsReque
 
 func (c *storageClient) Exists(ctx context.Context, in *StorageExistsRequest, opts ...grpc.CallOption) (*StorageExistsResponse, error) {
 	out := new(StorageExistsResponse)
-	err := c.cc.Invoke(ctx, "/nitric.proto.storage.v2.Storage/Exists", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/suga.proto.storage.v2.Storage/Exists", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func _Storage_Read_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/Read",
+		FullMethod: "/suga.proto.storage.v2.Storage/Read",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).Read(ctx, req.(*StorageReadRequest))
@@ -180,7 +180,7 @@ func _Storage_Write_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/Write",
+		FullMethod: "/suga.proto.storage.v2.Storage/Write",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).Write(ctx, req.(*StorageWriteRequest))
@@ -198,7 +198,7 @@ func _Storage_Delete_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/Delete",
+		FullMethod: "/suga.proto.storage.v2.Storage/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).Delete(ctx, req.(*StorageDeleteRequest))
@@ -216,7 +216,7 @@ func _Storage_PreSignUrl_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/PreSignUrl",
+		FullMethod: "/suga.proto.storage.v2.Storage/PreSignUrl",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).PreSignUrl(ctx, req.(*StoragePreSignUrlRequest))
@@ -234,7 +234,7 @@ func _Storage_ListBlobs_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/ListBlobs",
+		FullMethod: "/suga.proto.storage.v2.Storage/ListBlobs",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).ListBlobs(ctx, req.(*StorageListBlobsRequest))
@@ -252,7 +252,7 @@ func _Storage_Exists_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/nitric.proto.storage.v2.Storage/Exists",
+		FullMethod: "/suga.proto.storage.v2.Storage/Exists",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).Exists(ctx, req.(*StorageExistsRequest))
@@ -264,7 +264,7 @@ func _Storage_Exists_Handler(srv interface{}, ctx context.Context, dec func(inte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Storage_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "nitric.proto.storage.v2.Storage",
+	ServiceName: "suga.proto.storage.v2.Storage",
 	HandlerType: (*StorageServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
