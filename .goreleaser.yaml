@@ -4,8 +4,10 @@ release:
   prerelease: auto
 before:
   hooks:
-    - go mod tidy
-    - make build
+    - cmd: go mod tidy
+      dir: ./cli
+    - cmd: make build
+      dir: ./cli
 builds:
   - env:
       - CGO_ENABLED=0
