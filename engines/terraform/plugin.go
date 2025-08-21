@@ -32,6 +32,7 @@ type RuntimeModule struct {
 type PluginInput struct {
 	Description string `json:"description" yaml:"description"`
 	Type        string `json:"default" yaml:"default"`
+	Nullable    bool   `json:"nullable" yaml:"nullable"`
 	Required    bool   `json:"required" yaml:"required"`
 }
 
