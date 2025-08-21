@@ -15,11 +15,8 @@ To run the documentation locally:
 git clone https://github.com/nitrictech/suga.git
 cd suga/docs
 
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+# Run dev server
+npx mint dev
 ```
 
 View the documentation at `http://localhost:3000`
