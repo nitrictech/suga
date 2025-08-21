@@ -12,18 +12,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestPermissionsIntegration tests the complete permission handling with the test YAML file
-func TestPermissionsIntegration(t *testing.T) {
+// Helper function to assert always available methods are present
+func assertAlwaysAvailableMethods(t *testing.T, section string, prefix string) {
+	t.Helper()
+	assert.Contains(t, section, prefix+"list")
+	assert.Contains(t, section, prefix+"exists")
+	assert.Contains(t, section, prefix+"get_download_url")
+	assert.Contains(t, section, prefix+"get_upload_url")
+}
+
+// Helper function to load test application spec
+func loadTestAppSpec(t *testing.T) *schema.Application {
+	t.Helper()
 	fs := afero.NewOsFs()
 	yamlPath := filepath.Join("testdata", "permissions.yaml")
 	
-	// Load the test configuration
 	appSpec, err := schema.LoadFromFile(fs, yamlPath, false)
 	require.NoError(t, err, "Should load test YAML file")
 	require.NotNil(t, appSpec)
 	
+	return appSpec
+}
+
+// TestPermissionsIntegration tests the complete permission handling with the test YAML file
+func TestPermissionsIntegration(t *testing.T) {
+	appSpec := loadTestAppSpec(t)
+	
 	// Verify all buckets are present
-	assert.Len(t, appSpec.BucketIntents, 5)
+	assert.Len(t, appSpec.BucketIntents, 6)
 	
 	t.Run("Python generation respects permissions", func(t *testing.T) {
 		memFs := afero.NewMemMapFs()
@@ -39,55 +55,44 @@ func TestPermissionsIntegration(t *testing.T) {
 		assert.Contains(t, readOnlySection, "self.read")
 		assert.NotContains(t, readOnlySection, "self.write")
 		assert.NotContains(t, readOnlySection, "self.delete")
-		// Always available methods should be present
-		assert.Contains(t, readOnlySection, "self.list")
-		assert.Contains(t, readOnlySection, "self.exists")
-		assert.Contains(t, readOnlySection, "self.get_download_url")
-		assert.Contains(t, readOnlySection, "self.get_upload_url")
+		assertAlwaysAvailableMethods(t, readOnlySection, "self.")
 		
 		// Write-only bucket: only write method + always available methods
 		writeOnlySection := extractBucketClass(generated, "WriteOnlyStorageBucket")
 		assert.Contains(t, writeOnlySection, "self.write")
 		assert.NotContains(t, writeOnlySection, "self.read")
 		assert.NotContains(t, writeOnlySection, "self.delete")
-		// Always available methods should be present
-		assert.Contains(t, writeOnlySection, "self.list")
-		assert.Contains(t, writeOnlySection, "self.exists")
-		assert.Contains(t, writeOnlySection, "self.get_download_url")
-		assert.Contains(t, writeOnlySection, "self.get_upload_url")
+		assertAlwaysAvailableMethods(t, writeOnlySection, "self.")
 		
 		// Full access (using 'all'): all methods + always available methods
 		fullAccessSection := extractBucketClass(generated, "FullAccessStorageBucket")
 		assert.Contains(t, fullAccessSection, "self.read")
 		assert.Contains(t, fullAccessSection, "self.write")
 		assert.Contains(t, fullAccessSection, "self.delete")
-		// Always available methods should be present
-		assert.Contains(t, fullAccessSection, "self.list")
-		assert.Contains(t, fullAccessSection, "self.exists")
-		assert.Contains(t, fullAccessSection, "self.get_download_url")
-		assert.Contains(t, fullAccessSection, "self.get_upload_url")
+		assertAlwaysAvailableMethods(t, fullAccessSection, "self.")
 		
 		// Image bucket: read and write, no delete + always available methods
 		imageSection := extractBucketClass(generated, "ImageBucket")
 		assert.Contains(t, imageSection, "self.read")
 		assert.Contains(t, imageSection, "self.write")
 		assert.NotContains(t, imageSection, "self.delete")
-		// Always available methods should be present
-		assert.Contains(t, imageSection, "self.list")
-		assert.Contains(t, imageSection, "self.exists")
-		assert.Contains(t, imageSection, "self.get_download_url")
-		assert.Contains(t, imageSection, "self.get_upload_url")
+		assertAlwaysAvailableMethods(t, imageSection, "self.")
 		
 		// No permissions: no permission-controlled methods but always available methods should be present
 		noPermsSection := extractBucketClass(generated, "NoPermissionsStorageBucket")
 		assert.NotContains(t, noPermsSection, "self.read")
 		assert.NotContains(t, noPermsSection, "self.write")
 		assert.NotContains(t, noPermsSection, "self.delete")
-		// Always available methods should be present
-		assert.Contains(t, noPermsSection, "self.list")
-		assert.Contains(t, noPermsSection, "self.exists")
-		assert.Contains(t, noPermsSection, "self.get_download_url")
-		assert.Contains(t, noPermsSection, "self.get_upload_url")
+		assertAlwaysAvailableMethods(t, noPermsSection, "self.")
+		
+		// Shared bucket: api service has read, worker service has write
+		// The current implementation combines permissions from all services
+		sharedSection := extractBucketClass(generated, "SharedBucketBucket")
+		// The generated client should have both read (from api) and write (from worker)
+		assert.Contains(t, sharedSection, "self.read")
+		assert.Contains(t, sharedSection, "self.write")
+		assert.NotContains(t, sharedSection, "self.delete")
+		assertAlwaysAvailableMethods(t, sharedSection, "self.")
 	})
 	
 	t.Run("Go generation respects permissions", func(t *testing.T) {
@@ -116,8 +121,14 @@ func TestPermissionsIntegration(t *testing.T) {
 		assert.Contains(t, generated, "func (b *ImageBucket) Write(")
 		assert.NotContains(t, generated, "func (b *ImageBucket) Delete(")
 		
+		// Shared bucket: api service has read, worker service has write
+		// The current implementation combines permissions from all services
+		assert.Contains(t, generated, "func (b *SharedBucketBucket) Read(")
+		assert.Contains(t, generated, "func (b *SharedBucketBucket) Write(")
+		assert.NotContains(t, generated, "func (b *SharedBucketBucket) Delete(")
+		
 		// Verify always available methods are present for all bucket types
-		bucketTypes := []string{"ReadOnlyStorageBucket", "WriteOnlyStorageBucket", "FullAccessStorageBucket", "ImageBucket", "NoPermissionsStorageBucket"}
+		bucketTypes := []string{"ReadOnlyStorageBucket", "WriteOnlyStorageBucket", "FullAccessStorageBucket", "ImageBucket", "NoPermissionsStorageBucket", "SharedBucketBucket"}
 		for _, bucketType := range bucketTypes {
 			assert.Contains(t, generated, fmt.Sprintf("func (b *%s) List(", bucketType))
 			assert.Contains(t, generated, fmt.Sprintf("func (b *%s) Exists(", bucketType))
@@ -141,6 +152,7 @@ func TestPermissionsIntegration(t *testing.T) {
 		assert.Contains(t, generated, "class FullAccessStorageBucket")
 		assert.Contains(t, generated, "class ImageBucket")
 		assert.Contains(t, generated, "class NoPermissionsStorageBucket")
+		assert.Contains(t, generated, "class SharedBucketBucket")
 		
 		// Verify always available methods are present in TypeScript
 		assert.Contains(t, generated, "async list(")
@@ -165,6 +177,7 @@ func TestPermissionsIntegration(t *testing.T) {
 		}
 	})
 }
+
 
 // TestExpandActions verifies the 'all' permission expansion
 func TestExpandActions(t *testing.T) {

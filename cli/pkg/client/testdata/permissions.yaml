@@ -7,6 +7,10 @@ services:
   api:
     type: container
     dockerfile: ./api/Dockerfile
+  
+  worker:
+    type: container
+    dockerfile: ./worker/Dockerfile
 
 buckets:
   read_only_storage:
@@ -32,3 +36,10 @@ buckets:
   
   no_permissions_storage:
     access: {}
+  
+  shared_bucket:
+    access:
+      api:
+        - read
+      worker:
+        - write
