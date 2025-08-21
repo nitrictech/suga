@@ -18,14 +18,6 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
   <Accordion title="Step 1: Initialize Suga" icon="folder-plus">
     **Add Suga to your existing project**
 
-    Our example project is a Go web service that:
-
-    - Handles HTTP requests
-    - Stores files in AWS S3
-    - Requires AWS credentials and configuration
-
-    Let's add Suga to simplify this setup.
-
     First, login to Suga if you haven't already:
 
     ```bash
@@ -51,6 +43,8 @@ description: "This guide shows how to bring your existing projects to Suga. We'l
     ```bash
     suga edit
     ```
+    
+    We'll design infrastructure for a project that exposes an API to handle HTTP requests for reading from and writing to a storage bucket.
 
     First, drag an entry point onto your canvas named 'ingress'. Then add a service named 'app' and connect the entry point to the service, leaving the default forwarding route. Next, drag a bucket onto your canvas and name it 'files'. Connect the service to the bucket and edit the permissions to grant 'Write' and 'Delete' permissions.
 
