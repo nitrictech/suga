@@ -20,13 +20,27 @@ func (td *TerraformDeployment) createVariablesForIntent(intentName string, spec 
 	}
 }
 
-func (td *TerraformDeployment) createPlatformVariables() {
-	for varName, variableSpec := range td.engine.platform.Variables {
-		td.terraformVariables[varName] = cdktf.NewTerraformVariable(td.stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
-			Description: jsii.String(variableSpec.Description),
-			Default:     variableSpec.Default,
-			Nullable:    jsii.Bool(variableSpec.Nullable),
-			Type:        jsii.String(variableSpec.Type),
-		})
+// getPlatformVariable returns a platform variable, creating it lazily if it doesn't exist
+func (td *TerraformDeployment) getPlatformVariable(varName string) (cdktf.TerraformVariable, bool) {
+	// Check if variable already exists
+	if tfVar, ok := td.terraformVariables[varName]; ok {
+		return tfVar, true
 	}
+
+	// Check if the variable is defined in the platform spec
+	variableSpec, ok := td.engine.platform.Variables[varName]
+	if !ok {
+		return nil, false
+	}
+
+	// Create the variable lazily
+	tfVar := cdktf.NewTerraformVariable(td.stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
+		Description: jsii.String(variableSpec.Description),
+		Default:     variableSpec.Default,
+		Type:        jsii.String(variableSpec.Type),
+	})
+
+	// Store it for future use
+	td.terraformVariables[varName] = tfVar
+	return tfVar, true
 }
