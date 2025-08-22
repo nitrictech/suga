@@ -37,6 +37,7 @@ func (td *TerraformDeployment) getPlatformVariable(varName string) (cdktf.Terraf
 	tfVar := cdktf.NewTerraformVariable(td.stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
 		Description: jsii.String(variableSpec.Description),
 		Default:     variableSpec.Default,
+		Nullable:    jsii.Bool(variableSpec.Nullable),
 		Type:        jsii.String(variableSpec.Type),
 	})
 
