@@ -1,0 +1,43 @@
+name: Docs Test
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+
+jobs:
+  vale:
+    name: Spell Check with Vale
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Vale
+        uses: errata-ai/vale-action@v2
+        with:
+          files: '["docs"]'
+          vale_flags: '--config=docs/.vale.ini'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  broken-links:
+    name: Check Broken Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check for broken links
+        working-directory: docs
+        run: npx --yes mint@latest broken-links
