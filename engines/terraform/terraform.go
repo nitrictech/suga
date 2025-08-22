@@ -62,8 +62,7 @@ func (e *TerraformEngine) GetPluginManifestsForType(typ string) (map[string]*Res
 func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (string, error) {
 	tfDeployment := NewTerraformDeployment(e, appSpec.Name)
 
-	// Create platform variables
-	tfDeployment.createPlatformVariables()
+	// Platform variables are now created lazily when referenced
 
 	// Process service identities first (needed by other resources)
 	serviceInputs, err := tfDeployment.processServiceIdentities(appSpec)

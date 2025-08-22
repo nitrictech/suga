@@ -49,7 +49,7 @@ func (td *TerraformDeployment) resolveValue(intentName string, value interface{}
 			}
 			return tfVariable.Value(), nil
 		} else if specRef.Source == "var" {
-			tfVariable, ok := td.terraformVariables[specRef.Path[0]]
+			tfVariable, ok := td.getPlatformVariable(specRef.Path[0])
 			if !ok {
 				return nil, fmt.Errorf("Variable %s does not exist for this platform", specRef.Path[0])
 			}
