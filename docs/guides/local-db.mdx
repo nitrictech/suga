@@ -1,0 +1,260 @@
+---
+title: "Local Database Setup"
+description: "Set up PostgreSQL for Suga local development."
+---
+
+Suga doesn’t auto-provision databases locally, giving you full choice and control. Here’s how to set up PostgreSQL for local use and any provider (Neon, Supabase, RDS) for production.
+
+<Note>
+  **Before you begin:** Make sure you have Suga CLI installed. See our [Installation Guide](/cli/installation) for platform-specific instructions.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="Step 1: Initialize Project" icon="folder-plus">
+    **Start with a fresh Suga project**
+
+    First, login to Suga if you haven't already:
+
+    ```bash
+    suga login
+    ```
+
+    Create a new project and select the Go template:
+
+    ```bash
+    suga new my-app
+    ```
+
+    When prompted, select the Go template (go-starter).
+
+    Enter your project:
+
+    ```bash
+    cd my-app
+    ```
+
+    Generate the Suga SDK to enable access to cloud resources:
+
+    ```bash
+    suga generate --go --go-out ./suga --go-package-name suga
+    go mod tidy
+    ```
+  </Accordion>
+  <Accordion title="Step 2: Setup PostgresSQL with a Docker container" icon="docker">
+    <Tip>
+      Already have PostgreSQL running? Skip this step and use your existing database.
+    </Tip>
+    Create `docker-compose.yml` to define a containerized PostgreSQL database that starts and stops on demand:
+
+    ```yaml
+    services:
+      postgres:
+        image: postgres:15
+        environment:
+          POSTGRES_USER: ${POSTGRES_USER:-admin}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+          POSTGRES_DB: ${POSTGRES_DB:-myapp}
+        ports:
+          - '5433:5432'
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+        command: postgres -c ssl=off
+    
+    volumes:
+      postgres_data:
+    ```
+
+    Create an `.env` file for local credentials:
+
+    ```bash
+    POSTGRES_USER=admin
+    POSTGRES_PASSWORD=secure_password
+    POSTGRES_DB=myapp
+    ```
+
+    Add database commands to your `Makefile`:
+
+    ```makefile
+    .PHONY: db-start db-stop db-reset
+    
+    db-start:
+    	@echo "🐳 Starting database..."
+    	@docker compose up -d
+    	@echo "✅ Database ready!"
+    
+    db-stop:
+    	@echo "🛑 Stopping database..."
+    	@docker compose down
+    
+    db-reset:
+    	@echo "🔄 Resetting database..."
+    	@docker compose down -v
+    	@docker compose up -d
+    	@sleep 2
+    	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
+    	@echo "✅ Database reset with fresh data!"
+    ```
+  </Accordion>
+  <Accordion title="Step 3: Configure Database Connection" icon="plug">
+    **Add a database to your project using the dashboard**
+
+    ```bash
+    suga edit
+    ```
+
+    First click and drag the database onto your project and connect it to your service to grant query access to your service. Then set the Database environment key to DATABASE_URL.
+
+    ![Database Pn](/images/database.png)
+
+    This will automatically add a database declaration to your `suga.yaml`.
+
+    ```yaml
+    databases:
+      mydb:
+        env_var_key: DATABASE_URL
+        access:
+          app:
+            - query
+    ```
+
+    Add the database connection to your `.env` file for local development:
+
+    ```bash
+    # Add this line to your existing .env file
+    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+    ```
+
+    Start the database:
+
+    ```bash
+    make db-start
+    ```
+  </Accordion>
+  <Accordion title="Step 4: Initialize Database" icon="table">
+    **Create your tables with sample data.**
+
+    Create `init.sql` with your schema and initial data (this SQL script runs automatically when the container starts):
+
+    ```sql
+    DROP TABLE IF EXISTS users;
+    
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    INSERT INTO users (email) VALUES
+      ('admin@example.com'),
+      ('user@example.com');
+    ```
+
+    Apply your schema by executing init.sql to create tables and insert sample data:
+
+    ```bash
+    make db-reset
+    ```
+
+    <Note>
+      For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
+    </Note>
+  </Accordion>
+  <Accordion title="Step 5: Build and test your API" icon="code">
+    **Add database connectivity to your existing service.**
+
+    First, add the required dependencies:
+
+    ```bash
+    go get github.com/lib/pq
+    go get github.com/joho/godotenv
+    ```
+
+    Update your `main.go` to add database connectivity. Add these imports:
+
+    ```go
+    import (
+        "database/sql"
+        "encoding/json"
+        "example/suga"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        
+        "github.com/joho/godotenv"  // Add this line
+        _ "github.com/lib/pq"       // Add this line
+    )
+    ```
+
+    Add database connection and a new route in your `main()` function.
+
+    ```go
+    // Load .env file
+    _ = godotenv.Load()
+    
+    // Connect to database
+    dbURL := os.Getenv("DATABASE_URL")
+    db, err := sql.Open("postgres", dbURL)
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+    }
+    defer db.Close()
+    
+    // Add users endpoint
+    router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
+        rows, err := db.Query("SELECT id, email, created_at FROM users")
+        if err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        defer rows.Close()
+        
+        var users []map[string]interface{}
+        for rows.Next() {
+            var id int
+            var email, createdAt string
+            rows.Scan(&id, &email, &createdAt)
+            users = append(users, map[string]interface{}{
+                "id": id,
+                "email": email,
+                "created_at": createdAt,
+            })
+        }
+        
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(users)
+    })
+    ```
+
+    Test your API:
+
+    ```bash
+    suga dev
+    ```
+
+    In another terminal, test the endpoint:
+
+    ```bash
+    curl http://localhost:3003/users
+    ```
+
+    You'll see your user data:
+
+    ```json
+    [
+      {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
+      {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
+    ]
+    ```
+
+    <Note>
+      Stop with `make db-stop` when done.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+**What you just accomplished:**
+
+- ✅ Enabled database support with a Suga project
+- ✅ Built a database-connected API that queries PostgreSQL and returns JSON
+- ✅ Setup production-ready configuration that you can test locally
