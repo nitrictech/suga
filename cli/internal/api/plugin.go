@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/nitrictech/suga/cli/internal/version"
 	"github.com/nitrictech/suga/engines/terraform"
@@ -45,7 +46,7 @@ func (c *SugaApiClient) parsePluginManifest(body []byte, endpointType string) (i
 
 // FIXME: Because of the difference in fields between identity and resource plugins we need to return an interface
 func (c *SugaApiClient) GetPluginManifest(team, lib, libVersion, name string) (interface{}, error) {
-	response, err := c.get(fmt.Sprintf("/api/teams/%s/plugin_libraries/%s/versions/%s/plugins/%s", team, lib, libVersion, name), true)
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/plugin_libraries/%s/versions/%s/plugins/%s", url.PathEscape(team), url.PathEscape(lib), url.PathEscape(libVersion), url.PathEscape(name)), true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s plugin details endpoint: %v", version.ProductName, err)
 	}
@@ -72,7 +73,7 @@ func (c *SugaApiClient) GetPluginManifest(team, lib, libVersion, name string) (i
 }
 
 func (c *SugaApiClient) GetPublicPluginManifest(team, lib, libVersion, name string) (interface{}, error) {
-	response, err := c.get(fmt.Sprintf("/api/public/plugin_libraries/%s/%s/versions/%s/plugins/%s", team, lib, libVersion, name), true)
+	response, err := c.get(fmt.Sprintf("/api/public/plugin_libraries/%s/%s/versions/%s/plugins/%s", url.PathEscape(team), url.PathEscape(lib), url.PathEscape(libVersion), url.PathEscape(name)), true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s public plugin details endpoint: %v", version.ProductName, err)
 	}

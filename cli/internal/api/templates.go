@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 )
 
 func (c *SugaApiClient) GetTemplates(team string) ([]TemplateResponse, error) {
-	response, err := c.get(fmt.Sprintf("/api/teams/%s/templates", team), true)
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/templates", url.PathEscape(team)), true)
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +38,10 @@ func (c *SugaApiClient) GetTemplate(teamSlug string, templateName string, versio
 	// latest version URL is /api/teams/{teamSlug}/templates/{templateName}
 	// specific version URL is /api/teams/{teamSlug}/templates/{templateName}/v/{version}
 
-	templatePath := fmt.Sprintf("/api/teams/%s/templates/%s", teamSlug, templateName)
+	templatePath := fmt.Sprintf("/api/teams/%s/templates/%s", url.PathEscape(teamSlug), url.PathEscape(templateName))
 
 	if version != "" {
-		templatePath = fmt.Sprintf("%s/v/%s", templatePath, version)
+		templatePath = fmt.Sprintf("%s/v/%s", templatePath, url.PathEscape(version))
 	}
 
 	response, err := c.get(templatePath, true)
