@@ -49,6 +49,7 @@ func (c *SugaApiClient) GetPluginManifest(team, lib, libVersion, name string) (i
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s plugin details endpoint: %v", version.ProductName, err)
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode == 404 {
 		return nil, ErrNotFound
@@ -75,6 +76,7 @@ func (c *SugaApiClient) GetPublicPluginManifest(team, lib, libVersion, name stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s public plugin details endpoint: %v", version.ProductName, err)
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode == 404 {
 		return nil, ErrNotFound
