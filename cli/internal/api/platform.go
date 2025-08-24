@@ -15,6 +15,7 @@ func (c *SugaApiClient) GetPlatform(team, name string, revision int) (*terraform
 	if err != nil {
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
 		if response.StatusCode == 404 {
@@ -46,6 +47,7 @@ func (c *SugaApiClient) GetPublicPlatform(team, name string, revision int) (*ter
 	if err != nil {
 		return nil, err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
 		if response.StatusCode == 404 {
