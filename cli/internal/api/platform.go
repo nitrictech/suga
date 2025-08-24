@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/nitrictech/suga/cli/internal/version"
 	"github.com/nitrictech/suga/engines/terraform"
@@ -11,7 +12,7 @@ import (
 
 // FIXME: Because of the difference in fields between identity and resource plugins we need to return an interface
 func (c *SugaApiClient) GetPlatform(team, name string, revision int) (*terraform.PlatformSpec, error) {
-	response, err := c.get(fmt.Sprintf("/api/teams/%s/platforms/%s/revisions/%d", team, name, revision), true)
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/platforms/%s/revisions/%d", url.PathEscape(team), url.PathEscape(name), revision), true)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +44,7 @@ func (c *SugaApiClient) GetPlatform(team, name string, revision int) (*terraform
 }
 
 func (c *SugaApiClient) GetPublicPlatform(team, name string, revision int) (*terraform.PlatformSpec, error) {
-	response, err := c.get(fmt.Sprintf("/api/public/platforms/%s/%s/revisions/%d", team, name, revision), true)
+	response, err := c.get(fmt.Sprintf("/api/public/platforms/%s/%s/revisions/%d", url.PathEscape(team), url.PathEscape(name), revision), true)
 	if err != nil {
 		return nil, err
 	}
