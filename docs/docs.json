@@ -28,12 +28,16 @@
       },
       {
         "dropdown": "Guides",
-        "description": "In-depth guides for Suga",
+        "description": "Learn how to use Suga",
         "icon": "graduation-cap",
         "groups": [
           {
-            "group": "Migrations",
-            "pages": ["guides/migrate-existing"]
+            "group": "Overview",
+            "pages": ["guides/overview"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["guides/database-migration", "guides/migrate-existing"]
           }
         ]
       },
@@ -64,21 +68,6 @@
               "cli/templates",
               "cli/version"
             ]
-          }
-        ]
-      },
-      {
-        "dropdown": "Guides",
-        "description": "Learn how to use Suga",
-        "icon": "puzzle-piece",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["guides/overview"]
-          },
-          {
-            "group": "Guides",
-            "pages": ["guides/database-migration"]
           }
         ]
       }
