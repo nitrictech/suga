@@ -37,13 +37,26 @@ func (r *PlatformRepository) GetPlatform(name string) (*terraform.PlatformSpec, 
 		return nil, fmt.Errorf("invalid revision format: %s. Expected integer", revisionStr)
 	}
 
+	// Try authenticated access first
 	platformSpec, err := r.apiClient.GetPlatform(team, platform, revision)
-	// If its a 404, then return platform not found error
 	if err != nil {
+		// If authentication failed, try public platform access
+		if errors.Is(err, api.ErrUnauthenticated) || errors.Is(err, api.ErrNotFound) {
+			publicPlatformSpec, publicErr := r.apiClient.GetPublicPlatform(team, platform, revision)
+			if publicErr != nil {
+				// If public access also fails with 404, return platform not found
+				if errors.Is(publicErr, api.ErrNotFound) {
+					return nil, terraform.ErrPlatformNotFound
+				}
+				// Return the original authentication error for other public access failures
+				return nil, terraform.ErrUnauthenticated
+			}
+			return publicPlatformSpec, nil
+		}
+
+		// If its a 404, then return platform not found error
 		if errors.Is(err, api.ErrNotFound) {
 			return nil, terraform.ErrPlatformNotFound
-		} else if errors.Is(err, api.ErrUnauthenticated) {
-			return nil, terraform.ErrUnauthenticated
 		}
 
 		// return the original error to the engine

@@ -544,6 +544,13 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 func (c *SugaApp) Edit() error {
 	fileName := version.ConfigFileName
 
+	// Get the current team to include in the URL
+	currentTeam := c.getCurrentTeam()
+	if currentTeam == nil {
+		// getCurrentTeam already prints appropriate error messages
+		return nil
+	}
+
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return fmt.Errorf("error listening: %v", err)
@@ -574,7 +581,7 @@ func (c *SugaApp) Edit() error {
 	port := strconv.Itoa(listener.Addr().(*net.TCPAddr).Port)
 
 	// Open browser tab to the dashboard
-	devUrl := c.config.GetSugaServerUrl().JoinPath("dev")
+	devUrl := c.config.GetSugaServerUrl().JoinPath(currentTeam.Slug, "dev")
 	q := devUrl.Query()
 	q.Add("port", port)
 	devUrl.RawQuery = q.Encode()
