@@ -24,8 +24,9 @@ databases:
 The recommended approach follows a three-phase deployment pattern:
 
 1. **Deploy database infrastructure first** - Create or update database resources
-2. **Run migrations** - Apply schema changes before deploying application code
-3. **Deploy application** - Roll out the updated application that depends on the new schema
+2. **Extract connection details** - Get the database connection string from Terraform state
+3. **Run migrations** - Apply schema changes before deploying application code
+4. **Deploy application** - Roll out the updated application that depends on the new schema
 
 ### Implementation Steps
 
