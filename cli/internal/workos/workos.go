@@ -3,10 +3,8 @@ package workos
 import (
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/nitrictech/suga/cli/internal/details"
+	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/workos/http"
 	"github.com/samber/do/v2"
 )
@@ -38,12 +36,10 @@ type WorkOSAuth struct {
 }
 
 func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
-	details, err := do.MustInvokeAs[details.AuthDetailsService](inj).GetWorkOSDetails()
-	if err != nil {
-		return nil, err
-	}
+	config := do.MustInvoke[*config.Config](inj)
+	sugaServerUrl := config.GetSugaServerUrl()
 
-	httpClient := http.NewHttpClient(details.ClientID, http.WithHostname(details.ApiHostname))
+	httpClient := http.NewHttpClient("", http.WithHostname(sugaServerUrl.Host), http.WithScheme(sugaServerUrl.Scheme))
 
 	tokenStore := do.MustInvokeAs[TokenStore](inj)
 	tokens, _ := tokenStore.GetTokens()
@@ -56,7 +52,7 @@ func (a *WorkOSAuth) Login() (*http.User, error) {
 		return a.tokens.User, nil
 	}
 
-	err := a.performPKCE("")
+	err := a.performDeviceAuth()
 	if err != nil {
 		return nil, err
 	}
@@ -79,29 +75,9 @@ func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
 		}
 	}
 
-	// Decode the JWT to check if it's expired
-	claims := jwt.RegisteredClaims{}
-	parsedToken, err := jwt.ParseWithClaims(a.tokens.AccessToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-
-		kid, ok := token.Header["kid"].(string)
-		if !ok {
-			return nil, fmt.Errorf("kid not found in token header")
-		}
-
-		return a.httpClient.GetRSAPublicKey(kid)
-	}, jwt.WithValidMethods([]string{jwt.SigningMethodRS256.Alg()}))
-
-	// Add a 1 second buffer to the expiry time to account for a slight delay in the token being sent to the server
-	// i.e. the token must remain valid for at least another second, or we'll refresh it early for good measure
-	if err != nil || !parsedToken.Valid || claims.ExpiresAt.Before(time.Now().Add(1+time.Second)) {
-		if err := a.refreshToken(); err != nil {
-			return "", fmt.Errorf("token refresh failed: %w", err)
-		}
-	}
-
+	// Since we're proxying through the backend, we don't validate the JWT here
+	// The backend will handle token validation
+	// Just return the access token
 	return a.tokens.AccessToken, nil
 }
 

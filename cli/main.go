@@ -7,7 +7,6 @@ import (
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/cli/internal/build"
 	"github.com/nitrictech/suga/cli/internal/config"
-	details_service "github.com/nitrictech/suga/cli/internal/details/service"
 	"github.com/nitrictech/suga/cli/internal/workos"
 	"github.com/nitrictech/suga/cli/pkg/app"
 	"github.com/samber/do/v2"
@@ -30,7 +29,6 @@ func main() {
 
 	do.Provide(injector, createTokenStore)
 	do.Provide(injector, api.NewSugaApiClient)
-	do.Provide(injector, details_service.NewService)
 	do.Provide(injector, workos.NewWorkOSAuth)
 	do.Provide(injector, app.NewSugaApp)
 	do.Provide(injector, app.NewAuthApp)

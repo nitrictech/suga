@@ -18,4 +18,8 @@ var (
 	Heart        = "❤"
 	Flag         = "⚑"
 	Lightning    = "⚡"
+	Globe        = "🌐"
+	Key          = "🔑"
+	Arrow        = "➜"
+	Clock        = "🕒"
 )
