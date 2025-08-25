@@ -1,14 +1,14 @@
-name: Docs Test
+name: Test Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'docs/**'
+      - "docs/**"
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'docs/**'
+      - "docs/**"
 
 jobs:
   vale:
@@ -22,7 +22,8 @@ jobs:
         uses: errata-ai/vale-action@v2
         with:
           files: '["docs"]'
-          vale_flags: '--config=docs/.vale.ini'
+          vale_flags: "--config=docs/.vale.ini"
+          fail_on_error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -36,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
 
       - name: Check for broken links
         working-directory: docs
