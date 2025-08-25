@@ -16,24 +16,16 @@ import (
 //go:embed python_client_template
 var pyClientTemplate string
 
+
 type PySDKTemplateData struct {
 	Package string
-	Buckets []ResourceNameNormalizer
+	Buckets []BucketWithPermissions
 }
 
 func AppSpecToPyTemplateData(appSpec schema.Application) (PySDKTemplateData, error) {
-	buckets := []ResourceNameNormalizer{}
-	for name, resource := range appSpec.GetResourceIntents() {
-		if resource.GetType() != "bucket" {
-			continue
-		}
-
-		normalized, err := NewResourceNameNormalizer(name)
-		if err != nil {
-			return PySDKTemplateData{}, fmt.Errorf("failed to normalize resource name: %w", err)
-		}
-
-		buckets = append(buckets, normalized)
+	buckets, err := ExtractPermissionsForBuckets(appSpec)
+	if err != nil {
+		return PySDKTemplateData{}, err
 	}
 
 	return PySDKTemplateData{

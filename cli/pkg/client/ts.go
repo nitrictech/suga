@@ -18,22 +18,13 @@ var tsClientTemplate string
 
 type TSSDKTemplateData struct {
 	Package string
-	Buckets []ResourceNameNormalizer
+	Buckets []BucketWithPermissions
 }
 
 func AppSpecToTSTemplateData(appSpec schema.Application) (TSSDKTemplateData, error) {
-	buckets := []ResourceNameNormalizer{}
-	for name, resource := range appSpec.GetResourceIntents() {
-		if resource.GetType() != "bucket" {
-			continue
-		}
-
-		normalized, err := NewResourceNameNormalizer(name)
-		if err != nil {
-			return TSSDKTemplateData{}, fmt.Errorf("failed to normalize resource name: %w", err)
-		}
-
-		buckets = append(buckets, normalized)
+	buckets, err := ExtractPermissionsForBuckets(appSpec)
+	if err != nil {
+		return TSSDKTemplateData{}, err
 	}
 
 	return TSSDKTemplateData{

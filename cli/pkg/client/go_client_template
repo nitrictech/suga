@@ -15,9 +15,57 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+{{range $bucket := .Buckets}}
+// {{$bucket.PascalCase}}Bucket provides access to bucket '{{$bucket.Unmodified}}'
+type {{$bucket.PascalCase}}Bucket struct {
+	bucket *suga.Bucket
+}
+
+{{range $bucket.Permissions}}
+{{if eq . "read"}}
+// Read reads a file from the bucket
+func (b *{{$bucket.PascalCase}}Bucket) Read(key string) ([]byte, error) {
+	return b.bucket.Read(key)
+}
+{{end}}
+{{if eq . "write"}}
+// Write writes data to the bucket
+func (b *{{$bucket.PascalCase}}Bucket) Write(key string, data []byte) error {
+	return b.bucket.Write(key, data)
+}
+{{end}}
+{{if eq . "delete"}}
+// Delete deletes a file from the bucket
+func (b *{{$bucket.PascalCase}}Bucket) Delete(key string) error {
+	return b.bucket.Delete(key)
+}
+{{end}}
+{{end}}
+
+// List files in the bucket with a given prefix (always available)
+func (b *{{$bucket.PascalCase}}Bucket) List(prefix string) ([]string, error) {
+	return b.bucket.List(prefix)
+}
+
+// Exists checks if a file exists in the bucket (always available)
+func (b *{{$bucket.PascalCase}}Bucket) Exists(key string) (bool, error) {
+	return b.bucket.Exists(key)
+}
+
+// GetDownloadURL returns a presigned URL for downloading a file (always available)
+func (b *{{$bucket.PascalCase}}Bucket) GetDownloadURL(key string, opts ...suga.PresignUrlOption) (string, error) {
+	return b.bucket.GetDownloadURL(key, opts...)
+}
+
+// GetUploadURL returns a presigned URL for uploading a file (always available)
+func (b *{{$bucket.PascalCase}}Bucket) GetUploadURL(key string, opts ...suga.PresignUrlOption) (string, error) {
+	return b.bucket.GetUploadURL(key, opts...)
+}
+{{end}}
+
 // Client provides access to suga application resources
 type Client struct {
-	{{range .Buckets}}{{.PascalCase}} *suga.Bucket
+	{{range $bucket := .Buckets}}{{$bucket.PascalCase}} *{{$bucket.PascalCase}}Bucket
 	{{end}}
 }
 
@@ -38,7 +86,7 @@ func NewClient() (*Client, error) {
 	{{ end }}
 
 	return &Client{
-		{{range .Buckets}}{{.PascalCase}}: suga.NewBucket(storageClient, "{{.Unmodified}}"),
+		{{range $bucket := .Buckets}}{{$bucket.PascalCase}}: &{{$bucket.PascalCase}}Bucket{bucket: suga.NewBucket(storageClient, "{{$bucket.Unmodified}}")},
 		{{end}}
 	}, nil
 }
