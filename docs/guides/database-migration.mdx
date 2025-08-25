@@ -1,0 +1,254 @@
+---
+title: 'Database Migration'
+description: 'Learn how to run database migrations with Suga'
+---
+
+## With public database (Neon, Supabase, Planetscale etc.)
+
+Running database migrations against services like Neon, Supabase or Planetscale is simple with Suga.
+
+### Prerequisites
+
+1. **Identify your database module name** from your `suga.yaml` file:
+
+```yaml
+databases:
+  database: # <-- 👀 This will be the terraform module name
+    env_var_key: DATABASE_URL
+```
+
+2. **Ensure your migration tool is available** in your CI/CD environment (e.g., golang-migrate, flyway, liquibase, or a custom migration script)
+
+### Migration Strategy
+
+The recommended approach follows a three-phase deployment pattern:
+
+1. **Deploy database infrastructure first** - Create or update database resources
+2. **Run migrations** - Apply schema changes before deploying application code
+3. **Deploy application** - Roll out the updated application that depends on the new schema
+
+### Implementation Steps
+
+#### Step 1: Deploy Database Module
+
+First, apply only the database module using Terraform's `-target` flag:
+
+```bash
+# Initialize Terraform
+terraform init
+
+# Plan database module deployment
+terraform plan -target=module.database -out=tfplan-database
+
+# Apply database module
+terraform apply tfplan-database
+```
+
+#### Step 2: Extract Database Connection String
+
+After the database module is deployed, extract the connection details from Terraform state:
+
+```bash
+# Extract database connection components
+terraform output -json database_connection_string
+
+# Or extract from state directly
+terraform state show module.database
+```
+
+For Neon databases specifically, you'll typically need:
+- Role name and password
+- Endpoint host
+- Database name
+- SSL mode (usually `require`)
+
+#### Step 3: Run Migrations
+
+With the connection string available, run your migrations:
+
+```bash
+# Example using golang-migrate
+migrate -database "$DATABASE_URL" -path ./migrations up
+
+# Example using a custom migration tool
+./run-migrations.sh --database-url "$DATABASE_URL"
+
+# Example using Node.js migration tool
+npm run migrate:up
+```
+
+#### Step 4: Deploy Application
+
+After migrations succeed, deploy the complete application stack:
+
+```bash
+# Plan full deployment
+terraform plan -out=tfplan-app
+
+# Apply all modules
+terraform apply tfplan-app
+```
+
+### Best Practices
+
+1. **Use environment-specific workspaces** to isolate different stages (dev, staging, production)
+2. **Implement proper concurrency control** to prevent simultaneous migrations
+3. **Always backup data** before running migrations in production
+4. **Test migrations** in lower environments first
+5. **Use transactional migrations** when possible to enable rollback on failure
+6. **Version control your migration files** alongside your application code
+
+### Full Example: Platform-Agnostic Script
+
+Here's a general approach that can be adapted to any CI/CD platform:
+
+```bash
+#!/bin/bash
+set -e
+
+# Configuration
+WORKSPACE="${ENVIRONMENT:-dev}"
+TERRAFORM_DIR="./terraform/stacks/suga_platform"
+
+# Step 1: Initialize and select workspace
+cd "$TERRAFORM_DIR"
+terraform init
+terraform workspace select "$WORKSPACE" || terraform workspace new "$WORKSPACE"
+
+# Step 2: Deploy database module
+terraform plan -target=module.database -out=tfplan-database
+terraform apply tfplan-database
+
+# Step 3: Extract connection string
+DATABASE_URL=$(terraform output -raw database_connection_string)
+export DATABASE_URL
+
+# Step 4: Run migrations
+cd ../../../backend  # Adjust path as needed
+./migrate up  # Replace with your migration command
+
+# Step 5: Deploy application
+cd "$TERRAFORM_DIR"
+terraform plan -out=tfplan-app
+terraform apply tfplan-app
+```
+
+### Example: GitHub Actions Implementation
+
+Here's a complete GitHub Actions workflow that implements the migration pattern:
+> This is a copy of the workflow used to deploy the Suga platform itself 😃
+
+```yaml
+name: Deploy with Database Migrations
+
+on:
+  push:
+    branches: [main]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+jobs:
+  terraform-apply:
+    name: Deploy Terraform Stack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Set Terraform Workspace
+        id: workspace
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            WORKSPACE="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            WORKSPACE="staging"
+          else
+            WORKSPACE="dev"
+          fi
+          echo "workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+
+      - name: Terraform Init
+        working-directory: ./terraform/stacks/suga_platform
+        run: terraform init
+
+      - name: Create or Select Terraform Workspace
+        working-directory: ./terraform/stacks/suga_platform
+        run: |
+          terraform workspace select ${{ steps.workspace.outputs.workspace }} || \
+          terraform workspace new ${{ steps.workspace.outputs.workspace }}
+
+      # Step 1: Deploy Database Module First
+      - name: Deploy Database Module
+        working-directory: ./terraform/stacks/suga_platform
+        run: |
+          terraform plan -target=module.database -out=tfplan-database
+          terraform apply -auto-approve tfplan-database
+
+      # Step 2: Extract Database Connection String
+      - name: Extract Database Connection String
+        id: db-connection
+        working-directory: ./terraform/stacks/suga_platform
+        run: |
+          # Extract from Terraform state (example for Neon)
+          STATE_JSON=$(terraform state pull)
+          
+          ROLE_NAME=$(echo "$STATE_JSON" | jq -r '.resources[] | 
+            select(.module == "module.database" and .type == "neon_role") | 
+            .instances[0].attributes.name')
+          ROLE_PASSWORD=$(echo "$STATE_JSON" | jq -r '.resources[] | 
+            select(.module == "module.database" and .type == "neon_role") | 
+            .instances[0].attributes.password')
+          ENDPOINT_HOST=$(echo "$STATE_JSON" | jq -r '.resources[] | 
+            select(.module == "module.database" and .type == "neon_endpoint") | 
+            .instances[0].attributes.host')
+          DATABASE_NAME=$(echo "$STATE_JSON" | jq -r '.resources[] | 
+            select(.module == "module.database" and .type == "neon_database") | 
+            .instances[0].attributes.name')
+          
+          DATABASE_URL="postgresql://${ROLE_NAME}:${ROLE_PASSWORD}@${ENDPOINT_HOST}/${DATABASE_NAME}?sslmode=require"
+          echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_OUTPUT
+
+      # Step 3: Run Database Migrations
+      - name: Setup Go  # Or your migration tool runtime
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Run Database Migrations
+        working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ steps.db-connection.outputs.DATABASE_URL }}
+        run: |
+          go mod download
+          go run cmd/migrate/main.go -action=up
+
+      # Step 4: Deploy Complete Application
+      - name: Deploy Application
+        working-directory: ./terraform/stacks/suga_platform
+        run: |
+          terraform plan -out=tfplan-app
+          terraform apply -auto-approve tfplan-app
+```
+
+### Security Considerations
+
+- **Never log database credentials** - Use masked outputs in CI/CD logs
+- **Use secure secret management** - Store credentials in CI/CD secret stores
+- **Rotate credentials regularly** - Implement credential rotation policies
+- **Limit network access** - Use private endpoints or IP allowlisting where possible
+
+
+
+
+## With private databases (Cloud SQL, RDS, etc.)
+
+Coming soon...
