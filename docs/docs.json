@@ -66,6 +66,21 @@
             ]
           }
         ]
+      },
+      {
+        "dropdown": "Guides",
+        "description": "Learn how to use Suga",
+        "icon": "puzzle-piece",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["guides/overview"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["guides/database-migration"]
+          }
+        ]
       }
     ],
     "global": {
