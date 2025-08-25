@@ -9,7 +9,9 @@ Running database migrations against services like Neon, Supabase or Planetscale 
 
 ### Prerequisites
 
-1. **Identify your database module name** from your `suga.yaml` file:
+1. **Ensure your application build is up to date** by running `suga build` to generate the necessary Terraform configuration
+
+2. **Identify your database module name** from your `suga.yaml` file:
 
 ```yaml
 databases:
@@ -17,7 +19,7 @@ databases:
     env_var_key: DATABASE_URL
 ```
 
-2. **Ensure your migration tool is available** in your CI/CD environment (e.g., golang-migrate, flyway, liquibase, or a custom migration script)
+3. **Ensure your migration tool is available** in your CI/CD environment (e.g., golang-migrate, flyway, liquibase, or a custom migration script)
 
 ### Migration Strategy
 
