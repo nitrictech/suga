@@ -27,6 +27,17 @@
         ]
       },
       {
+        "dropdown": "Guides",
+        "description": "In-depth guides for Suga",
+        "icon": "graduation-cap",
+        "groups": [
+          {
+            "group": "Migrations",
+            "pages": ["guides/migrate-existing"]
+          }
+        ]
+      },
+      {
         "dropdown": "CLI Reference",
         "description": "Reference for the Suga CLI",
         "icon": "terminal",
