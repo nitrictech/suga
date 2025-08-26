@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -470,7 +471,7 @@ func (c *HttpClient) PollDeviceToken(deviceCode string) (*DeviceTokenResponse, e
 	var errorResp map[string]string
 	if err := json.Unmarshal(body, &errorResp); err == nil {
 		if errorCode, ok := errorResp["error"]; ok {
-			return nil, errors.New("%s", errorCode)
+			return nil, errors.New(errorCode)
 		}
 	}
 
