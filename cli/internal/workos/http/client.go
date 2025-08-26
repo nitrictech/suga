@@ -290,11 +290,9 @@ func (h *HttpClient) get(path string) (*http.Response, error) {
 	return h.client.Do(req)
 }
 
-// AuthenticateWithRefreshToken authenticates using a refresh token
+// AuthenticateWithRefreshToken authenticates using a refresh token via backend proxy
 func (h *HttpClient) AuthenticateWithRefreshToken(refreshToken string, organizationId *string) (*AuthenticationResponse, error) {
 	body := map[string]interface{}{
-		"client_id":     h.clientID,
-		"grant_type":    "refresh_token",
 		"refresh_token": refreshToken,
 	}
 
@@ -302,7 +300,7 @@ func (h *HttpClient) AuthenticateWithRefreshToken(refreshToken string, organizat
 		body["organization_id"] = *organizationId
 	}
 
-	response, err := h.post("/user_management/authenticate", body)
+	response, err := h.post("/auth/refresh", body)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +318,7 @@ func (h *HttpClient) AuthenticateWithRefreshToken(refreshToken string, organizat
 		return deserializeAuthenticationResponse(data), nil
 	}
 
-	return nil, &RefreshError{Message: fmt.Sprintf("Error authenticating with API, status: %d, body: %s", response.StatusCode, string(resBody))}
+	return nil, &RefreshError{Message: fmt.Sprintf("Error refreshing token: status %d, body: %s", response.StatusCode, string(resBody))}
 }
 
 // GetAuthorizationUrl generates an authorization URL
@@ -419,4 +417,80 @@ func deserializeAuthenticationResponse(raw AuthenticationResponseRaw) *Authentic
 		RefreshToken: raw.RefreshToken,
 		User:         raw.User,
 	}
+}
+
+// RequestDeviceAuthorization requests device authorization from backend
+func (c *HttpClient) RequestDeviceAuthorization() (*DeviceAuthorizationResponse, error) {
+	response, err := c.post("/auth/device", map[string]interface{}{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to make device authorization request: %w", err)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read device authorization response: %w", err)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("device authorization request failed with status %d: %s", response.StatusCode, string(body))
+	}
+
+	var deviceResp DeviceAuthorizationResponse
+	if err := json.Unmarshal(body, &deviceResp); err != nil {
+		return nil, fmt.Errorf("failed to parse device authorization response: %w", err)
+	}
+
+	return &deviceResp, nil
+}
+
+// PollDeviceToken polls for device token from backend
+func (c *HttpClient) PollDeviceToken(deviceCode string) (*DeviceTokenResponse, error) {
+	reqBody := map[string]interface{}{"device_code": deviceCode}
+	response, err := c.post("/auth/device/token", reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make device token request: %w", err)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read device token response: %w", err)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		var tokenResp DeviceTokenResponse
+		if err := json.Unmarshal(body, &tokenResp); err != nil {
+			return nil, fmt.Errorf("failed to parse device token response: %w", err)
+		}
+		return &tokenResp, nil
+	}
+
+	// Handle error response from backend
+	var errorResp map[string]string
+	if err := json.Unmarshal(body, &errorResp); err == nil {
+		if errorCode, ok := errorResp["error"]; ok {
+			return nil, errors.New("%s", errorCode)
+		}
+	}
+
+	return nil, fmt.Errorf("device token request failed with status %d: %s", response.StatusCode, string(body))
+}
+
+// DeviceAuthorizationResponse represents device authorization response
+type DeviceAuthorizationResponse struct {
+	DeviceCode              string `json:"device_code"`
+	UserCode                string `json:"user_code"`
+	VerificationURI         string `json:"verification_uri"`
+	VerificationURIComplete string `json:"verification_uri_complete"`
+	ExpiresIn               int    `json:"expires_in"`
+	Interval                int    `json:"interval"`
+}
+
+// DeviceTokenResponse represents device token response
+type DeviceTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	User         User   `json:"user"`
 }
