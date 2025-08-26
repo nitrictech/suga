@@ -1,19 +1,20 @@
 {
-  "name": "@suga/client",
-  "version": "1.0.0",
-  "description": "suga runtime client",
+  "name": "@nitric/suga-client",
+  "description": "Suga runtime client",
+  "version": "0.0.1",
+  "author": "Nitric <https://github.com/nitrictech>",
+  "repository": "https://github.com/nitrictech/suga",
+  "license": "MPL-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "bump": "standard-version",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prebuild": "npm run clean",
+    "prebuild": "npm run clean && npm run gen:sources",
     "test": "echo \"Error: no test specified\" && exit 1",
     "gen:sources": "mkdir -p ./src/gen && grpc_tools_node_protoc --ts_out=service=grpc-node,mode=grpc-js:./src/gen --js_out=import_style=commonjs,binary:./src/gen --grpc_out=grpc_js:./src/gen -I ../.. ../../proto/*/*/*.proto"
   },
-  "author": "maintainers@nitric.io",
-  "license": "MPL-2.0",
   "devDependencies": {
     "@types/google-protobuf": "^3.15.12",
     "@types/node": "^20.17.58",
