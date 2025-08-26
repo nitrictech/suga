@@ -7,8 +7,8 @@ on:
       - "*"
 
 jobs:
-  publish-go:
-    name: GoReleaser
+  publish-cli:
+    name: Publish Suga CLI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +28,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.NITRIC_BOT_TOKEN }}
 
   publish-node:
+    name: Publish Suga Node Client to NPM
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
