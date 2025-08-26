@@ -1,4 +1,4 @@
-import { grpc, {{if .Buckets}} StorageClient, Bucket {{end}}} from "@suga/client";
+import { grpc, {{if .Buckets}} StorageClient, Bucket {{end}}} from "@nitric/suga-client";
 
 const SERVICE_ADDRESS = `${process.env.SUGA_SERVICE_ADDRESS || "localhost:50051"}`;
 
