@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -330,15 +332,12 @@ func (s *SimulationServer) startBuckets() error {
 		return err
 	}
 
-	var serveErr chan (error)
 	go func() {
-		serveErr <- http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), handler)
+		err := http.ListenAndServe(fmt.Sprintf(":%d", reservedPort), handler)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("storage server error: %v", err)
+		}
 	}()
-
-	err = <-serveErr
-	if err != nil {
-		return err
-	}
 
 	s.fileServerPort = int(reservedPort)
 
