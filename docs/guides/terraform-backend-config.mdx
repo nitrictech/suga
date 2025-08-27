@@ -51,7 +51,7 @@ After running `suga build`, add a backend configuration file to the synthesized 
     Create `backend.tf` in the synthesized stack directory:
     
     ```bash
-    touch cdktf.out/stacks/<stack_name>/backend.tf
+    touch terraform/stacks/<stack_name>/backend.tf
     ```
   </Step>
 
@@ -62,7 +62,7 @@ After running `suga build`, add a backend configuration file to the synthesized 
 
   <Step title="Initialize and Deploy">
     ```bash
-    cd cdktf.out/stacks/<stack_name>
+    cd terraform/stacks/<stack_name>
     terraform init
     terraform apply
     ```
