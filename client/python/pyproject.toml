@@ -1,5 +1,5 @@
 [project]
-name = "suga-client"
+name = "suga"
 version = "0.1.0"
 description = "Suga Python Client"
 dependencies = [
