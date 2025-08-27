@@ -34,10 +34,6 @@ The synthesized output can be found in the `cdktf.out` directory.
 
 ## Adding Backend Configuration
 
-Since Suga uses CDKTF, you have two options for configuring backends:
-
-### Option 1: Post-Synthesis Configuration (Recommended for Simple Cases)
-
 After running `suga build`, add a backend configuration file to the synthesized output:
 
 <Steps>
@@ -68,6 +64,8 @@ After running `suga build`, add a backend configuration file to the synthesized 
     ```
   </Step>
 </Steps>
+
+> Only the cdktf files are managed by Suga. You can safely add custom `.tf` files to the stack directory to extend the configuration.
 
 ## Managing state for Multiple Environments
 
