@@ -59,7 +59,16 @@ func (e *TerraformEngine) GetPluginManifestsForType(typ string) (map[string]*Res
 }
 
 // Apply the engine to the target environment
-func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (string, error) {
+func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result string, err error) {
+	// Defer panic recovery to gracefully handle any panics
+	defer func() {
+		if r := recover(); r != nil {
+			// Convert panic to error
+			err = fmt.Errorf("%v", r)
+			result = ""
+		}
+	}()
+
 	tfDeployment := NewTerraformDeployment(e, appSpec.Name)
 
 	// Platform variables are now created lazily when referenced
