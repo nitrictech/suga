@@ -28,12 +28,16 @@
       },
       {
         "dropdown": "Guides",
-        "description": "In-depth guides for Suga",
+        "description": "Learn how to use Suga",
         "icon": "graduation-cap",
         "groups": [
           {
-            "group": "Migrations",
-            "pages": ["guides/migrate-existing"]
+            "group": "Overview",
+            "pages": ["guides/overview"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["guides/database-migration", "guides/migrate-existing"]
           }
         ]
       },

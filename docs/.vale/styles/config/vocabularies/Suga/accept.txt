@@ -6,7 +6,9 @@ Dockerfile
 Subcommands
 SDKs
 Supabase
-
+Planetscale
+liquibase
+allowlisting
 
 # Defaults from mintlify
 Mintlify
