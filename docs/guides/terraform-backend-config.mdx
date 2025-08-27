@@ -1,0 +1,76 @@
+---
+title: 'Terraform Backend Configuration'
+description: 'Configure remote state management for Terraform stacks generated with Suga'
+---
+
+## Overview
+
+Suga uses CDKTF (Cloud Development Kit for Terraform) to generate Terraform configurations. By default, the generated stacks use local state files. For production environments and team collaboration, you'll want to configure a remote backend to store your Terraform state securely and enable state locking.
+
+This guide covers how to add backend configuration to your Suga-generated Terraform stacks for common backend providers.
+
+## Prerequisites
+
+Before configuring a backend:
+
+1. **Generate your Terraform stack** using `suga build` (this runs CDKTF synthesis)
+2. **Choose a backend provider** (AWS S3, Google Cloud Storage, Azure Storage, Terraform Cloud, etc.)
+3. **Create the backend storage resources** (bucket, storage account, workspace, etc.)
+4. **Ensure proper permissions** are configured for accessing the backend
+
+## Understanding Suga's CDKTF Output
+
+When you run `suga build`, CDKTF synthesizes your infrastructure into standard Terraform JSON configuration files:
+
+```
+terraform/
+└── stacks/
+    └── <stack_name>/
+        ├── cdk.tf.json      # Main configuration
+        └── ...
+```
+
+The synthesized output can be found in the `cdktf.out` directory.
+
+## Adding Backend Configuration
+
+Since Suga uses CDKTF, you have two options for configuring backends:
+
+### Option 1: Post-Synthesis Configuration (Recommended for Simple Cases)
+
+After running `suga build`, add a backend configuration file to the synthesized output:
+
+<Steps>
+  <Step title="Generate the Stack">
+    ```bash
+    suga build
+    ```
+  </Step>
+
+  <Step title="Create Backend Configuration">
+    Create `backend.tf` in the synthesized stack directory:
+    
+    ```bash
+    touch cdktf.out/stacks/<stack_name>/backend.tf
+    ```
+  </Step>
+
+  <Step title="Add Backend Configuration">
+    Add your configuration.
+    See terraform docs on [backend configuration](https://www.terraform.io/docs/language/settings/backends/configuration.html)
+  </Step>
+
+  <Step title="Initialize and Deploy">
+    ```bash
+    cd cdktf.out/stacks/<stack_name>
+    terraform init
+    terraform apply
+    ```
+  </Step>
+</Steps>
+
+## Managing state for Multiple Environments
+
+For managing multiple environments we recommend using terraform workspaces.
+
+For documentation on best practices for managing multiple environments with terraform see the [official docs](https://developer.hashicorp.com/terraform/language/state/workspaces).
