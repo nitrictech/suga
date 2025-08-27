@@ -1,4 +1,4 @@
-OUTPUT := src/suga/gen
+OUTPUT := src/suga_client/gen
 VENV := .venv
 PYTHON := $(VENV)/bin/python
 CONTRACTS := ../../proto

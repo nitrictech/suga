@@ -1,9 +1,9 @@
 import os
 import re
 
-GENERATED_ROOT = "src/suga/gen"
+GENERATED_ROOT = "src/suga_client/gen"
 FROM_PATTERN = r'^from (storage|pubsub)\.v2\b'
-REPLACEMENT = r'from suga.gen.\1.v2'
+REPLACEMENT = r'from suga_client.gen.\1.v2'
 
 def patch_file(path):
     with open(path, "r", encoding="utf-8") as f:
