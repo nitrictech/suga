@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -286,13 +287,8 @@ func (s *SimulationServer) handleServiceOutputs(output io.Writer, events <-chan 
 		}
 
 		err = s.fs.Remove(serviceLogPath)
-		if err != nil {
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			log.Fatalf("failed to remove service log path for service %s: %v", serviceName, err)
-		}
-
-		_, err = s.fs.Create(serviceLogPath)
-		if err != nil {
-			log.Fatalf("failed to create service log path for service %s: %v", serviceName, err)
 		}
 
 		file, err := s.fs.OpenFile(serviceLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
