@@ -46,14 +46,3 @@ clean:
 	@echo "Cleaning up build artifacts..."
 	@rm -rf build/ $(BUILD_DIR)/ *.egg-info $(OUTPUT)
 
-
-publish-test: build
-	@echo "Publishing to Test PyPI..."
-	@$(VENV)/bin/uv pip install -q twine
-	@$(PYTHON) -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*.tar.gz dist/*.whl
-
-publish-prod: build
-	@echo "Publishing to PyPI..."
-	@$(VENV)/bin/uv pip install -q twine
-	@$(PYTHON) -m twine upload dist/*.tar.gz dist/*.whl
-
