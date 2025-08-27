@@ -11,11 +11,16 @@ func (td *TerraformDeployment) createVariablesForIntent(intentName string, spec 
 			td.instancedTerraformVariables[intentName] = make(map[string]cdktf.TerraformVariable)
 		}
 
+		tfDefault := variable.Default
+		if tfDefault == nil && variable.Nullable {
+			tfDefault = cdktf.Token_NullValue()
+		}
+
 		td.instancedTerraformVariables[intentName][varName] = cdktf.NewTerraformVariable(td.stack, jsii.Sprintf("%s_%s", intentName, varName), &cdktf.TerraformVariableConfig{
 			Description: jsii.String(variable.Description),
 			Type:        jsii.String(variable.Type),
 			Nullable:    jsii.Bool(variable.Nullable),
-			Default:     variable.Default,
+			Default:     tfDefault,
 		})
 	}
 }
@@ -33,10 +38,15 @@ func (td *TerraformDeployment) getPlatformVariable(varName string) (cdktf.Terraf
 		return nil, false
 	}
 
+	tfDefault := variableSpec.Default
+	if tfDefault == nil && variableSpec.Nullable {
+		tfDefault = cdktf.Token_NullValue()
+	}
+
 	// Create the variable lazily
 	tfVar := cdktf.NewTerraformVariable(td.stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
 		Description: jsii.String(variableSpec.Description),
-		Default:     variableSpec.Default,
+		Default:     tfDefault,
 		Nullable:    jsii.Bool(variableSpec.Nullable),
 		Type:        jsii.String(variableSpec.Type),
 	})
