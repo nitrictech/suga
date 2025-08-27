@@ -62,7 +62,12 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deviceResp.ExpiresIn)*time.Second)
 	defer cancel()
 
+	// Enforce a minimum polling interval to prevent aggressive polling
+	const minInterval = 5 * time.Second
 	pollInterval := time.Duration(deviceResp.Interval) * time.Second
+	if pollInterval <= 0 || pollInterval < minInterval {
+		pollInterval = minInterval
+	}
 	currentInterval := pollInterval
 	
 	// Track when we can make the next request

@@ -3,6 +3,7 @@ package workos
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/workos/http"
@@ -39,7 +40,20 @@ func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
 	config := do.MustInvoke[*config.Config](inj)
 	sugaServerUrl := config.GetSugaServerUrl()
 
-	httpClient := http.NewHttpClient("", http.WithHostname(sugaServerUrl.Host), http.WithScheme(sugaServerUrl.Scheme))
+	if sugaServerUrl.Host == "" || sugaServerUrl.Scheme == "" {
+		return nil, fmt.Errorf("invalid Suga server URL: missing scheme or host")
+	}
+
+	opts := []http.ClientOption{
+		http.WithHostname(sugaServerUrl.Hostname()),
+		http.WithScheme(sugaServerUrl.Scheme),
+	}
+	if p := sugaServerUrl.Port(); p != "" {
+		if pn, err := strconv.Atoi(p); err == nil {
+			opts = append(opts, http.WithPort(pn))
+		}
+	}
+	httpClient := http.NewHttpClient("", opts...)
 
 	tokenStore := do.MustInvokeAs[TokenStore](inj)
 	tokens, _ := tokenStore.GetTokens()
