@@ -2,6 +2,7 @@ package workos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -62,25 +63,59 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 	defer cancel()
 
 	pollInterval := time.Duration(deviceResp.Interval) * time.Second
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
+	currentInterval := pollInterval
+	
+	// Track when we can make the next request
+	nextPollTime := time.Now()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("device authorization timed out")
-		case <-ticker.C:
-			tokenResp, err := a.httpClient.PollDeviceToken(deviceResp.DeviceCode)
+		default:
+			// Wait until it's time for the next poll
+			waitTime := time.Until(nextPollTime)
+			if waitTime > 0 {
+				select {
+				case <-ctx.Done():
+					return fmt.Errorf("device authorization timed out")
+				case <-time.After(waitTime):
+					// Continue to poll
+				}
+			}
+
+			// Set the next poll time before making the request
+			// This ensures consistent intervals regardless of request duration
+			nextPollTime = time.Now().Add(currentInterval)
+
+			// Create a context with timeout for this specific request
+			reqCtx, reqCancel := context.WithTimeout(ctx, 10*time.Second)
+			tokenResp, err := a.httpClient.PollDeviceTokenWithContext(reqCtx, deviceResp.DeviceCode)
+			reqCancel()
+
 			if err != nil {
+				// Check if it's a context error (timeout or cancellation)
+				if errors.Is(err, context.DeadlineExceeded) {
+					// Request timed out, continue with next poll
+					fmt.Printf("%s Request timed out, retrying...\n", style.Yellow(icons.Warning))
+					continue
+				}
+				if errors.Is(err, context.Canceled) {
+					// Overall timeout reached
+					return fmt.Errorf("device authorization timed out")
+				}
+
 				// Check for specific error messages from backend
 				errMsg := err.Error()
 				switch {
 				case containsError(errMsg, "authorization_pending"):
-					// Continue polling
+					// Continue polling at normal interval
 					continue
 				case containsError(errMsg, "slow_down"):
-					// Increase polling interval
-					ticker.Reset(pollInterval * 2)
+					// Server asked us to slow down - add 5 seconds to interval
+					currentInterval = pollInterval + (5 * time.Second)
+					// Adjust next poll time to respect the new interval
+					nextPollTime = time.Now().Add(currentInterval)
 					continue
 				case containsError(errMsg, "expired_token"):
 					return fmt.Errorf("device code expired, please try again")

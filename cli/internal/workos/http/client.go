@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -445,10 +446,31 @@ func (c *HttpClient) RequestDeviceAuthorization() (*DeviceAuthorizationResponse,
 	return &deviceResp, nil
 }
 
-// PollDeviceToken polls for device token from backend
-func (c *HttpClient) PollDeviceToken(deviceCode string) (*DeviceTokenResponse, error) {
+// PollDeviceTokenWithContext polls for device token from backend with a context for cancellation/timeout
+func (c *HttpClient) PollDeviceTokenWithContext(ctx context.Context, deviceCode string) (*DeviceTokenResponse, error) {
 	reqBody := map[string]interface{}{"device_code": deviceCode}
-	response, err := c.post("/auth/device/token", reqBody)
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	baseURL, err := url.Parse(c.baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid base URL: %w", err)
+	}
+
+	// Join the base URL with the path safely
+	fullURL := baseURL.JoinPath("/auth/device/token")
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fullURL.String(), bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Content-Type", "application/json")
+
+	response, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make device token request: %w", err)
 	}
