@@ -61,6 +61,9 @@ func (e *TerraformEngine) GetPluginManifestsForType(typ string) (map[string]*Res
 // Apply the engine to the target environment
 func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result string, err error) {
 	// Defer panic recovery to gracefully handle any panics
+	// We need to do this as we aren't given the opportunity to handle errors directly from
+	// terraform methods as they are managed by the jsii runtime/kernel and only panic in the go wrapper
+	// rather than returning errors
 	defer func() {
 		if r := recover(); r != nil {
 			// Convert panic to error
