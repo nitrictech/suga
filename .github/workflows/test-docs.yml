@@ -41,4 +41,9 @@ jobs:
 
       - name: Check for broken links
         working-directory: docs
-        run: npx --yes mint@latest broken-links
+        run: |
+          output=$(npx --yes mint@latest broken-links)
+          echo "$output"
+          if echo "$output" | grep -q "found.*broken links"; then
+            exit 1
+          fi
