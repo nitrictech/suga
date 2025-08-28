@@ -39,6 +39,19 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Cache npx packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: ${{ runner.os }}-npx-mint-4.1.57
+          restore-keys: |
+            ${{ runner.os }}-npx-mint-
+
       - name: Check for broken links
         working-directory: docs
-        run: npx --yes mint@latest broken-links
+        run: |
+          output=$(npx --yes mint@4.1.57 broken-links)
+          echo "$output"
+          if echo "$output" | grep -q "found.*broken links"; then
+            exit 1
+          fi
