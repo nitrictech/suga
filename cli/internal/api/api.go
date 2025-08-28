@@ -41,8 +41,9 @@ func NewSugaApiClient(injector do.Injector) (*SugaApiClient, error) {
 	}, nil
 }
 
-// doRequestWithRetry executes an HTTP request and automatically retries with a refreshed token on 401/403
-func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool, bodyBytes []byte) (*http.Response, error) {
+// doRequestWithRetry executes an HTTP request and retries once with a refreshed token on 401/403.
+// Reuses req.Context() and req.GetBody (when available) to rebuild the body.
+func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool) (*http.Response, error) {
 	if requiresAuth {
 		if c.tokenProvider == nil {
 			return nil, errors.Wrap(ErrPreconditionFailed, "no token provider provided")
@@ -72,23 +73,23 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool,
 			return nil, errors.Wrap(ErrUnauthenticated, "token refresh failed: "+err.Error())
 		}
 
-		// Clone the request for retry - use bodyBytes to recreate the body if needed
+		// Clone the request for retry - use GetBody to recreate the body if available
 		var bodyReader io.Reader
-		if bodyBytes != nil {
-			bodyReader = bytes.NewBuffer(bodyBytes)
+		if req.GetBody != nil {
+			rc, err := req.GetBody()
+			if err != nil {
+				return nil, err
+			}
+			bodyReader = rc
 		}
-		
-		retryReq, err := http.NewRequest(req.Method, req.URL.String(), bodyReader)
+
+		retryReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), bodyReader)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Copy headers
-		for key, values := range req.Header {
-			for _, value := range values {
-				retryReq.Header.Add(key, value)
-			}
-		}
+		retryReq.Header = req.Header.Clone()
 		
 		// Update authorization header with new token
 		retryReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
@@ -113,7 +114,7 @@ func (c *SugaApiClient) get(path string, requiresAuth bool) (*http.Response, err
 
 	req.Header.Set("Accept", "application/json")
 
-	return c.doRequestWithRetry(req, requiresAuth, nil)
+	return c.doRequestWithRetry(req, requiresAuth)
 }
 
 func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http.Response, error) {
@@ -122,7 +123,7 @@ func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiUrl, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -130,5 +131,5 @@ func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	return c.doRequestWithRetry(req, requiresAuth, body)
+	return c.doRequestWithRetry(req, requiresAuth)
 }
