@@ -52,7 +52,7 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 		// First attempt with existing token
 		token, err := c.tokenProvider.GetAccessToken(false)
 		if err != nil {
-			return nil, errors.Wrap(ErrUnauthenticated, err.Error())
+			return nil, fmt.Errorf("%w: %v", ErrUnauthenticated, err)
 		}
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
@@ -70,21 +70,30 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 		// Force token refresh
 		token, err := c.tokenProvider.GetAccessToken(true)
 		if err != nil {
-			return nil, errors.Wrap(ErrUnauthenticated, "token refresh failed: "+err.Error())
+			return nil, fmt.Errorf("%w: token refresh failed: %v", ErrUnauthenticated, err)
 		}
 
 		// Clone the request for retry - use GetBody to recreate the body if available
 		var bodyReader io.Reader
+		var retryBodyRC io.ReadCloser
+		// Cannot safely retry request with a consumed, non-rewindable body
+		if req.Body != nil && req.GetBody == nil && req.ContentLength != 0 {
+			return nil, fmt.Errorf("%w: cannot retry request with non-rewindable body", ErrUnauthenticated)
+		}
 		if req.GetBody != nil {
-			rc, err := req.GetBody()
-			if err != nil {
-				return nil, err
+			var err2 error
+			retryBodyRC, err2 = req.GetBody()
+			if err2 != nil {
+				return nil, err2
 			}
-			bodyReader = rc
+			bodyReader = retryBodyRC
 		}
 
 		retryReq, err := http.NewRequestWithContext(req.Context(), req.Method, req.URL.String(), bodyReader)
 		if err != nil {
+			if retryBodyRC != nil {
+				_ = retryBodyRC.Close()
+			}
 			return nil, err
 		}
 

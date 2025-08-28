@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/style"
@@ -137,7 +138,12 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 
 // containsError checks if the error message contains a specific error code
 func containsError(errMsg, errorCode string) bool {
-	return fmt.Sprintf("\"%s\"", errorCode) == errMsg ||
-		fmt.Sprintf("error: %s", errorCode) == errMsg ||
-		errorCode == errMsg
+	// Match common wrappers but default to substring containment
+	if strings.Contains(errMsg, fmt.Sprintf("\"%s\"", errorCode)) {
+		return true
+	}
+	if strings.Contains(errMsg, fmt.Sprintf("error: %s", errorCode)) {
+		return true
+	}
+	return strings.Contains(errMsg, errorCode)
 }
