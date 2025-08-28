@@ -1,0 +1,238 @@
+---
+title: "Local Database Setup"
+description: "Set up PostgreSQL for Suga local development."
+---
+
+This guide shows you how to set up PostgreSQL for local development with your Suga project.
+
+<Note>
+  **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see our [Getting Started Guide](/quickstart).
+</Note>
+
+<AccordionGroup>
+  <Accordion title="Step 1: Setup PostgreSQL with Docker" icon="docker">
+    Create a `docker-compose.yml` file in your project root:
+
+    ```yaml
+    services:
+      postgres:
+        image: postgres:15
+        environment:
+          POSTGRES_USER: ${POSTGRES_USER:-admin}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+          POSTGRES_DB: ${POSTGRES_DB:-myapp}
+        ports:
+          - '5433:5432'
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+        command: postgres -c ssl=off
+    
+    volumes:
+      postgres_data:
+    ```
+
+    Create an `.env` file for local credentials:
+
+    ```bash
+    POSTGRES_USER=admin
+    POSTGRES_PASSWORD=secure_password
+    POSTGRES_DB=myapp
+    ```
+
+    Add database commands to your `Makefile`:
+
+    ```makefile
+    .PHONY: db-start db-stop db-reset
+    
+    db-start:
+    	@echo "🐳 Starting database..."
+    	@docker compose up -d
+    	@echo "✅ Database ready!"
+    
+    db-stop:
+    	@echo "🛑 Stopping database..."
+    	@docker compose down
+    
+    db-reset:
+    	@echo "🔄 Resetting database..."
+    	@docker compose down -v
+    	@docker compose up -d
+    	@sleep 2
+    	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
+    	@echo "✅ Database reset with fresh data!"
+    ```
+  </Accordion>
+  <Accordion title="Step 2: Configure Database in Suga" icon="plug">
+    Open the Suga dashboard:
+
+    ```bash
+    suga edit
+    ```
+
+    Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
+
+    ![Database Configuration](/images/database.png)
+
+    This automatically updates your `suga.yaml`:
+
+    ```yaml
+    name: test-db
+    description: Simple project to test our local database
+    targets: []
+    services:
+      app:
+        container:
+          docker:
+            dockerfile: Dockerfile
+            context: .
+        dev:
+          script: go run main.go
+    entrypoints:
+      entrypoint:
+        routes:
+          /:
+            name: app
+    databases:
+      mydb:
+        access:
+          app:
+            - query
+        env_var_key: DATABASE_URL
+    ```
+
+    Add the connection string to your `.env` file:
+
+    ```bash
+    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+    ```
+  </Accordion>
+  <Accordion title="Step 3: Initialize Database Schema" icon="table">
+    Create an `init.sql` file with your schema and test data:
+
+    ```sql
+    DROP TABLE IF EXISTS users;
+    
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    
+    INSERT INTO users (email) VALUES
+      ('admin@example.com'),
+      ('user@example.com');
+    ```
+
+    Start the database and apply your schema:
+
+    ```bash
+    make db-reset
+    ```
+
+    <Note>
+      For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
+    </Note>
+  </Accordion>
+  <Accordion title="Step 4: Test Your Database Connection" icon="code">
+    Add database connectivity to your existing service.
+
+    Install the required dependencies:
+
+    ```bash
+    go get github.com/lib/pq
+    go get github.com/joho/godotenv
+    ```
+
+    Update your `main.go` to include database support:
+
+    ```go
+    package main
+
+    import (
+      "database/sql"
+      "encoding/json"
+      "log"
+      "net/http"
+      "os"
+
+      "github.com/joho/godotenv"
+      _ "github.com/lib/pq"
+    )
+
+    func main() {
+      // Load .env file
+      _ = godotenv.Load()
+
+      // Connect to database
+      dbURL := os.Getenv("DATABASE_URL")
+      db, err := sql.Open("postgres", dbURL)
+      if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+      }
+      defer db.Close()
+
+      // Create router
+      router := http.NewServeMux()
+
+      // Add users endpoint
+      router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
+        rows, err := db.Query("SELECT id, email, created_at FROM users")
+        if err != nil {
+          http.Error(w, err.Error(), 500)
+          return
+        }
+        defer rows.Close()
+
+        var users []map[string]interface{}
+        for rows.Next() {
+          var id int
+          var email, createdAt string
+          rows.Scan(&id, &email, &createdAt)
+          users = append(users, map[string]interface{}{
+            "id":         id,
+            "email":      email,
+            "created_at": createdAt,
+          })
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(users)
+      })
+
+      log.Println("Server starting on :3000")
+      log.Fatal(http.ListenAndServe(":3000", router))
+    }
+    ```
+
+    Test your API:
+
+    ```bash
+    suga dev
+    ```
+
+    In another terminal, test the endpoint:
+
+    ```bash
+    curl http://localhost:3000/users
+    ```
+
+    You'll see your user data:
+
+    ```json
+    [
+      {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
+      {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
+    ]
+    ```
+
+    <Note>
+      Stop the database when finished: `make db-stop`
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+- For production, configure your `DATABASE_URL` with your cloud provider (Neon, Supabase, RDS, etc.)
+- Consider using migration tools like golang-migrate or Flyway for schema management
+- Add proper error handling and connection pooling for production use
