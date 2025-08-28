@@ -93,6 +93,12 @@ func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
 		if err := a.RefreshToken(RefreshTokenOptions{}); err != nil {
 			return "", fmt.Errorf("token refresh failed: %w", err)
 		}
+		
+		// Reload tokens after refresh to get the updated access token
+		tokens, err = a.tokenStore.GetTokens()
+		if err != nil {
+			return "", fmt.Errorf("failed to reload tokens after refresh: %w", err)
+		}
 	}
 
 	// Since we're proxying through the backend, we don't validate the JWT here
