@@ -16,4 +16,6 @@ var (
 	Teal   = lipgloss.NewStyle().Foreground(colors.Teal).Render
 	Blue   = lipgloss.NewStyle().Foreground(colors.Blue).Render
 	Purple = lipgloss.NewStyle().Foreground(colors.Purple).Render
+	Cyan   = lipgloss.NewStyle().Foreground(colors.Teal).Render
+	Bold   = lipgloss.NewStyle().Bold(true).Render
 )

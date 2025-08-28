@@ -145,7 +145,9 @@ func (t *TeamApp) showInteractiveTeamPicker(teams []api.Team) error {
 func (t *TeamApp) performTeamSwitch(team *api.Team) error {
 	fmt.Printf("Switching to team: %s\n", style.Teal(team.Name))
 
-	err := t.auth.RefreshTokenForOrganization(team.WorkOsID)
+	err := t.auth.RefreshToken(workos.RefreshTokenOptions{
+		OrganizationID: team.WorkOsID,
+	})
 	if err != nil {
 		fmt.Printf("%s Failed to refresh token for organization: %v\n", style.Red(icons.Cross), err)
 		fmt.Printf("Try running %s to re-authenticate\n", style.Teal(version.CommandName+" login"))
