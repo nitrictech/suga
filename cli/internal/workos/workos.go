@@ -32,7 +32,6 @@ type Tokens struct {
 
 type WorkOSAuth struct {
 	tokenStore TokenStore
-	tokens     *Tokens
 	httpClient *http.HttpClient
 }
 
@@ -56,46 +55,42 @@ func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
 	httpClient := http.NewHttpClient("", opts...)
 
 	tokenStore := do.MustInvokeAs[TokenStore](inj)
-	tokens, _ := tokenStore.GetTokens()
 
-	return &WorkOSAuth{tokenStore: tokenStore, httpClient: httpClient, tokens: tokens}, nil
+	return &WorkOSAuth{tokenStore: tokenStore, httpClient: httpClient}, nil
 }
 
 func (a *WorkOSAuth) Login() (*http.User, error) {
-	// If we have existing tokens, try to validate/refresh them first
-	if a.tokens != nil {
-		// Attempt to refresh the token to verify it's still valid
-		err := a.refreshToken()
-		if err == nil {
-			// Token is valid and refreshed successfully
-			return a.tokens.User, nil
+	tokens, _ := a.tokenStore.GetTokens()
+
+	if tokens != nil {
+		if err := a.RefreshToken(RefreshTokenOptions{}); err == nil {
+			return tokens.User, nil
 		}
-		
-		// Token refresh failed - clear the invalid tokens and proceed with new login
-		a.tokens = nil
-		_ = a.tokenStore.Clear() // Clear stored tokens since they're invalid
+
+		_ = a.tokenStore.Clear()
 	}
 
-	// Perform new device authentication
 	err := a.performDeviceAuth()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.tokens.User, nil
+	tokens, err = a.tokenStore.GetTokens()
+	if err != nil {
+		return nil, err
+	}
+
+	return tokens.User, nil
 }
 
 func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
-	if a.tokens == nil {
-		tokens, err := a.tokenStore.GetTokens()
-		if err != nil {
-			return "", fmt.Errorf("no stored tokens found, please login: %w", err)
-		}
-		a.tokens = tokens
+	tokens, err := a.tokenStore.GetTokens()
+	if err != nil {
+		return "", fmt.Errorf("no stored tokens found, please login: %w", err)
 	}
 
 	if forceRefresh {
-		if err := a.refreshToken(); err != nil {
+		if err := a.RefreshToken(RefreshTokenOptions{}); err != nil {
 			return "", fmt.Errorf("token refresh failed: %w", err)
 		}
 	}
@@ -103,65 +98,34 @@ func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
 	// Since we're proxying through the backend, we don't validate the JWT here
 	// The backend will handle token validation
 	// Just return the access token
-	return a.tokens.AccessToken, nil
+	return tokens.AccessToken, nil
 }
 
-func (a *WorkOSAuth) refreshToken() error {
-	if a.tokens.RefreshToken == "" {
+type RefreshTokenOptions struct {
+	OrganizationID string
+}
+
+func (a *WorkOSAuth) RefreshToken(options RefreshTokenOptions) error {
+	tokens, err := a.tokenStore.GetTokens()
+	if err != nil {
+		return fmt.Errorf("no stored tokens found, please login: %w", err)
+	}
+
+	if tokens.RefreshToken == "" {
 		return fmt.Errorf("%w: no refresh token", ErrUnauthenticated)
 	}
 
-	// Store existing user data before refresh
-	existingUser := a.tokens.User
-
-	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(a.tokens.RefreshToken, nil)
+	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(tokens.RefreshToken, http.AuthenticatedWithRefreshTokenOptions{
+		OrganizationID: options.OrganizationID,
+	})
 	if err != nil {
 		return err
 	}
 
-	a.tokens = &Tokens{
-		AccessToken:  workosToken.AccessToken,
-		RefreshToken: workosToken.RefreshToken,
-		User:         existingUser, // Preserve existing user data since refresh doesn't return it
-	}
+	tokens.AccessToken = workosToken.AccessToken
+	tokens.RefreshToken = workosToken.RefreshToken
 
-	err = a.tokenStore.SaveTokens(a.tokens)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *WorkOSAuth) RefreshTokenForOrganization(organizationId string) error {
-	if a.tokens == nil {
-		tokens, err := a.tokenStore.GetTokens()
-		if err != nil {
-			return fmt.Errorf("no stored tokens found, please login: %w", err)
-		}
-		a.tokens = tokens
-	}
-
-	if a.tokens.RefreshToken == "" {
-		return fmt.Errorf("%w: no refresh token available", ErrUnauthenticated)
-	}
-
-	// Store existing user data before refresh
-	existingUser := a.tokens.User
-
-	// Use organization-scoped refresh token
-	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(a.tokens.RefreshToken, &organizationId)
-	if err != nil {
-		return err
-	}
-
-	a.tokens = &Tokens{
-		AccessToken:  workosToken.AccessToken,
-		RefreshToken: workosToken.RefreshToken,
-		User:         existingUser, // Preserve existing user data since refresh doesn't return it
-	}
-
-	err = a.tokenStore.SaveTokens(a.tokens)
+	err = a.tokenStore.SaveTokens(tokens)
 	if err != nil {
 		return err
 	}
@@ -170,6 +134,5 @@ func (a *WorkOSAuth) RefreshTokenForOrganization(organizationId string) error {
 }
 
 func (a *WorkOSAuth) Logout() error {
-	a.tokens = nil
 	return a.tokenStore.Clear()
 }

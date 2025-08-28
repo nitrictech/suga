@@ -24,40 +24,30 @@ type DeviceAuthResponse struct {
 
 // DeviceTokenResponse represents the token response from backend
 type DeviceTokenResponse struct {
-	AccessToken  string     `json:"access_token"`
-	RefreshToken string     `json:"refresh_token"`
-	TokenType    string     `json:"token_type"`
-	User         http.User  `json:"user"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	TokenType    string    `json:"token_type"`
+	User         http.User `json:"user"`
 }
 
 // performDeviceAuth performs the WorkOS device authorization flow via backend proxy
 func (a *WorkOSAuth) performDeviceAuth() error {
-	// Step 1: Request device authorization from backend
-	fmt.Printf("\n%s Requesting device authorization...\n", style.Purple(icons.Lightning))
-
 	deviceResp, err := a.httpClient.RequestDeviceAuthorization()
 	if err != nil {
 		return fmt.Errorf("failed to request device authorization: %w", err)
 	}
 
-	// Step 2: Display verification URL and open browser
-	fmt.Printf("\n%s Opening browser to complete authentication...\n", style.Gray(icons.Arrow))
-	
-	// Open browser to verification URL with pre-filled code
+	fmt.Printf("\nYour code is: %s\n", style.Bold(style.Yellow(deviceResp.UserCode)))
+
 	err = browser.OpenURL(deviceResp.VerificationURIComplete)
 	if err != nil {
-		// If browser fails to open, show manual instructions
-		fmt.Printf("%s Failed to open browser: %s\n", style.Yellow(icons.Warning), err)
-		fmt.Printf("\n%s Please visit: %s\n", style.Green(icons.Globe), style.Cyan(deviceResp.VerificationURI))
-		fmt.Printf("%s And enter this code: %s\n", style.Green(icons.Key), style.Bold(style.Yellow(deviceResp.UserCode)))
+		fmt.Printf("\nPlease visit: %s\n", style.Cyan(deviceResp.VerificationURI))
+		fmt.Println("and enter the code above to login")
 	} else {
-		// Browser opened successfully - show code for verification
-		fmt.Printf("%s Browser opened with authentication page\n", style.Green(icons.Check))
-		fmt.Printf("%s Your verification code is: %s\n", style.Gray(icons.Info), style.Bold(style.Yellow(deviceResp.UserCode)))
+		fmt.Printf("\nOpening your browser to the login page, please use the code shown above to confirm the login.\n")
 	}
 
-	// Step 3: Poll for token completion
-	fmt.Printf("\n%s Waiting for authentication...\n", style.Purple(icons.Clock))
+	fmt.Println("\nWaiting for authentication...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deviceResp.ExpiresIn)*time.Second)
 	defer cancel()
@@ -69,8 +59,7 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 		pollInterval = minInterval
 	}
 	currentInterval := pollInterval
-	
-	// Track when we can make the next request
+
 	nextPollTime := time.Now()
 
 	for {
@@ -99,18 +88,15 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 			reqCancel()
 
 			if err != nil {
-				// Check if it's a context error (timeout or cancellation)
 				if errors.Is(err, context.DeadlineExceeded) {
-					// Request timed out, continue with next poll
 					fmt.Printf("%s Request timed out, retrying...\n", style.Yellow(icons.Warning))
 					continue
 				}
+
 				if errors.Is(err, context.Canceled) {
-					// Overall timeout reached
 					return fmt.Errorf("device authorization timed out")
 				}
 
-				// Check for specific error messages from backend
 				errMsg := err.Error()
 				switch {
 				case containsError(errMsg, "authorization_pending"):
@@ -131,14 +117,11 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 				}
 			}
 
-			// Success! Save tokens
-			a.tokens = &Tokens{
+			err = a.tokenStore.SaveTokens(&Tokens{
 				AccessToken:  tokenResp.AccessToken,
 				RefreshToken: tokenResp.RefreshToken,
 				User:         &tokenResp.User,
-			}
-
-			err = a.tokenStore.SaveTokens(a.tokens)
+			})
 			if err != nil {
 				return fmt.Errorf("failed to save tokens: %w", err)
 			}
@@ -150,7 +133,7 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 
 // containsError checks if the error message contains a specific error code
 func containsError(errMsg, errorCode string) bool {
-	return fmt.Sprintf("\"%s\"", errorCode) == errMsg || 
-		   fmt.Sprintf("error: %s", errorCode) == errMsg ||
-		   errorCode == errMsg
+	return fmt.Sprintf("\"%s\"", errorCode) == errMsg ||
+		fmt.Sprintf("error: %s", errorCode) == errMsg ||
+		errorCode == errMsg
 }
