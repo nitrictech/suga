@@ -32,8 +32,8 @@ type ServiceSimulation struct {
 	apiPort netx.ReservedPort
 
 	// Rapid failure detection
-	consecutiveFailures int // Count of consecutive rapid failures
-	maxFailures         int // Maximum consecutive failures allowed
+	consecutiveFailures []error // Captures consecutive failures
+	maxFailures         int     // Maximum consecutive failures allowed
 }
 
 var _ SimulatedService = (*ServiceSimulation)(nil)
@@ -117,7 +117,7 @@ func (s *ServiceSimulation) hasExceededFailureLimit() bool {
 	if s.maxFailures <= 0 {
 		return false // No limit configured
 	}
-	return s.consecutiveFailures >= s.maxFailures
+	return len(s.consecutiveFailures) >= s.maxFailures
 }
 
 func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Writer) (*cron.Cron, error) {
@@ -183,11 +183,11 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 
 		// Check if we've exceeded the failure limit before attempting to restart
 		if s.hasExceededFailureLimit() {
-			fmt.Fprintf(stderrWriter, "\n[ERROR] Service '%s' has failed %d consecutive times. Stopping restart attempts to prevent crash loop.\n",
-				s.name, s.maxFailures)
+			fmt.Fprintf(stderrWriter, "\n[ERROR] Service '%s' has failed %d consecutive times. Stopping restart attempts to prevent crash loop.\n Last error: %v\n",
+				s.name, s.maxFailures, s.consecutiveFailures[len(s.consecutiveFailures)-1])
 			s.updateStatus(Status_Fatal)
-			return fmt.Errorf("service '%s' exceeded maximum consecutive restart attempts (%d failures)",
-				s.name, s.maxFailures)
+			return fmt.Errorf("service '%s' exceeded maximum consecutive restart attempts (%d failures). Last error: %w",
+				s.name, s.maxFailures, s.consecutiveFailures[len(s.consecutiveFailures)-1])
 		}
 
 		commandParts := strings.Split(s.intent.Dev.Script, " ")
@@ -251,11 +251,11 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 		// Check if the service ran for a meaningful duration
 		if runDuration < minSuccessfulRuntime {
 			// Service crashed quickly - likely a startup issue
-			s.consecutiveFailures++
+			s.consecutiveFailures = append(s.consecutiveFailures, err)
 			fmt.Fprintf(stderrWriter, "\nService crashed after only %v\n", runDuration)
 		} else {
 			// Service ran for a while before crashing - reset failure count
-			s.consecutiveFailures = 0
+			s.consecutiveFailures = []error{}
 		}
 
 		s.updateStatus(Status_Stopped)
