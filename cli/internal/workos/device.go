@@ -49,7 +49,11 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 
 	fmt.Println("\nWaiting for authentication...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(deviceResp.ExpiresIn)*time.Second)
+	timeout := time.Duration(deviceResp.ExpiresIn) * time.Second
+	if timeout <= 0 {
+		timeout = 5 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// Enforce a minimum polling interval to prevent aggressive polling
