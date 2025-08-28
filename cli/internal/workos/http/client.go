@@ -292,14 +292,18 @@ func (h *HttpClient) get(path string) (*http.Response, error) {
 	return h.client.Do(req)
 }
 
+type AuthenticatedWithRefreshTokenOptions struct {
+	OrganizationID string `json:"organization_id,omitempty"`
+}
+
 // AuthenticateWithRefreshToken authenticates using a refresh token via backend proxy
-func (h *HttpClient) AuthenticateWithRefreshToken(refreshToken string, organizationId *string) (*AuthenticationResponse, error) {
+func (h *HttpClient) AuthenticateWithRefreshToken(refreshToken string, options AuthenticatedWithRefreshTokenOptions) (*AuthenticationResponse, error) {
 	body := map[string]interface{}{
 		"refresh_token": refreshToken,
 	}
 
-	if organizationId != nil {
-		body["organization_id"] = *organizationId
+	if options.OrganizationID != "" {
+		body["organization_id"] = options.OrganizationID
 	}
 
 	response, err := h.post("/auth/refresh", body)
