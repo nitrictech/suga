@@ -5,7 +5,7 @@ description: 'Configure remote state management for Terraform stacks generated w
 
 ## Overview
 
-Suga uses CDKTF (Cloud Development Kit for Terraform) to generate Terraform configurations. By default, the generated stacks use local state files. For production environments and team collaboration, you'll want to configure a remote backend to store your Terraform state securely and enable state locking.
+Suga uses [CDKTF](https://developer.hashicorp.com/terraform/cdktf) (Cloud Development Kit for Terraform) to generate Terraform configurations. By default, the generated stacks use local [state](https://developer.hashicorp.com/terraform/language/state) files. For production environments and team collaboration, you'll want to configure a remote backend to store your Terraform state securely and enable state locking.
 
 This guide covers how to add backend configuration to your Suga-generated Terraform stacks for common backend providers.
 
@@ -30,7 +30,7 @@ terraform/
         └── ...
 ```
 
-The synthesized output can be found in the `cdktf.out` directory.
+The synthesized output can be found in the `terraform` directory.
 
 ## Adding Backend Configuration
 
@@ -65,10 +65,12 @@ After running `suga build`, add a backend configuration file to the synthesized 
   </Step>
 </Steps>
 
-> Only the cdktf files are managed by Suga. You can safely add custom `.tf` files to the stack directory to extend the configuration.
+<Note>
+  Only the cdktf files are managed by Suga. You can safely add custom `.tf` files to the stack directory to extend the configuration.
+</Note>
 
 ## Managing state for Multiple Environments
 
-For managing multiple environments we recommend using terraform workspaces.
+For managing multiple environments we recommend using Terraform workspaces.
 
 For documentation on best practices for managing multiple environments with terraform see the [official docs](https://developer.hashicorp.com/terraform/language/state/workspaces).
