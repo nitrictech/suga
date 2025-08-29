@@ -28,5 +28,3 @@ tools/protoc*.zip
 tools/readme.txt
 
 *.coverprofile
-
-client/python/dist/
