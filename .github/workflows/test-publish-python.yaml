@@ -22,15 +22,16 @@ jobs:
           fetch-depth: 0 # needed for setuptools-scm to get version from git
       
       - name: Set up Python '3.11'
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
-      - name: Create virtual environment and install uv
+      - name: Create virtual environment and install build tools
         run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install uv
+          .venv/bin/python -m pip install build setuptools wheel
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
       
       - name: Generate protobuf files
         run: make generate-proto
@@ -42,14 +43,34 @@ jobs:
         run: |
           echo "=== Package files created ==="
           ls -la dist/
-          echo "=== Package metadata ==="
-          .venv/bin/python -c "
+          echo "=== Package contents ==="
+          python -c "
+          import glob
           import tarfile
+          import zipfile
           import sys
-          with tarfile.open('dist/suga-client-*.tar.gz', 'r:gz') as tf:
-              print('Package contents:')
-              for member in tf.getnames()[:20]:  # Show first 20 files
-                  print(f'  {member}')
+          
+          # Find sdists and wheels
+          sdists = glob.glob('dist/*.tar.gz')
+          wheels = glob.glob('dist/*.whl')
+          
+          if not sdists and not wheels:
+              print('ERROR: No package artifacts found in dist/')
+              sys.exit(1)
+          
+          # List sdist contents
+          for sdist in sdists:
+              print(f'\\n=== {sdist} contents (first 20) ===')
+              with tarfile.open(sdist, 'r:gz') as tf:
+                  for member in tf.getnames()[:20]:
+                      print(f'  {member}')
+          
+          # List wheel contents  
+          for wheel in wheels:
+              print(f'\\n=== {wheel} contents (first 20) ===')
+              with zipfile.ZipFile(wheel, 'r') as zf:
+                  for name in zf.namelist()[:20]:
+                      print(f'  {name}')
           "
       
       - name: Publish to TestPyPI
@@ -59,3 +80,4 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: ./client/python/dist/
           verbose: true
+          skip_existing: true
