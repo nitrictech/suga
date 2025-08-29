@@ -80,6 +80,9 @@ jobs:
   publish-python:
     name: Publish - Python Client PyPI
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: ./client/python
@@ -109,5 +112,4 @@ jobs:
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: ./client/python/dist/
