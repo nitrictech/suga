@@ -12,21 +12,23 @@ def patch_file(path):
         lines = f.readlines()
 
     changed = False
-    with open(path, "w", encoding="utf-8") as f:
-        for line in lines:
-            # Try both patterns with re.subn
-            new_line, from_count = re.subn(FROM_PATTERN, FROM_REPLACEMENT, line)
-            if from_count > 0:
+    out_lines = []
+    for line in lines:
+        # Try both patterns with re.subn
+        new_line, from_count = re.subn(FROM_PATTERN, FROM_REPLACEMENT, line)
+        if from_count > 0:
+            line = new_line
+            changed = True
+        else:
+            new_line, import_count = re.subn(IMPORT_PATTERN, IMPORT_REPLACEMENT, line)
+            if import_count > 0:
                 line = new_line
                 changed = True
-            else:
-                new_line, import_count = re.subn(IMPORT_PATTERN, IMPORT_REPLACEMENT, line)
-                if import_count > 0:
-                    line = new_line
-                    changed = True
-            f.write(line)
+        out_lines.append(line)
 
     if changed:
+        with open(path, "w", encoding="utf-8") as f:
+            f.writelines(out_lines)
         print(f"Patched: {path}")
 
 def patch_all():
