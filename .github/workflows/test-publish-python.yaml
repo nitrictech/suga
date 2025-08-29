@@ -1,0 +1,61 @@
+name: Test Publish Python Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for test publish'
+        required: false
+        default: 'Manual test publish'
+
+jobs:
+  test-publish-python:
+    name: Test Publish - Python Client to TestPyPI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client/python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed for setuptools-scm to get version from git
+      
+      - name: Set up Python '3.11'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Create virtual environment and install uv
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install uv
+      
+      - name: Generate protobuf files
+        run: make generate-proto
+      
+      - name: Build package
+        run: make build
+      
+      - name: Check package contents
+        run: |
+          echo "=== Package files created ==="
+          ls -la dist/
+          echo "=== Package metadata ==="
+          .venv/bin/python -c "
+          import tarfile
+          import sys
+          with tarfile.open('dist/suga-client-*.tar.gz', 'r:gz') as tf:
+              print('Package contents:')
+              for member in tf.getnames()[:20]:  # Show first 20 files
+                  print(f'  {member}')
+          "
+      
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: ./client/python/dist/
+          verbose: true
