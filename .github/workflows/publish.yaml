@@ -60,7 +60,7 @@ jobs:
 
       - name: Set Version
         # Tag will already be created by release flow
-        run: npm version --no-git-tag-version ${{ github.event.release.tag_name }}
+        run: npm version --no-git-tag-version ${{ github.ref_name }}
 
       - name: Install Dependencies
         run: npm ci
@@ -68,14 +68,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^.*(-rc|-beta|-alpha).*$ ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Publish latest to NPM
-        if: "!github.event.release.prerelease"
+        if: steps.prerelease.outputs.is_prerelease == 'false'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish latest RC to NPM
-        if: "github.event.release.prerelease"
+        if: steps.prerelease.outputs.is_prerelease == 'true'
         run: npm publish --access public --tag rc-latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -105,6 +114,11 @@ jobs:
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install uv
+      
+      - name: Set Version
+        run: |
+          # Set version in pyproject.toml for setuptools-scm
+          echo "SETUPTOOLS_SCM_PRETEND_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
       
       - name: Generate protobuf files
         run: make generate-proto
