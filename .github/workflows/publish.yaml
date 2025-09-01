@@ -60,7 +60,11 @@ jobs:
 
       - name: Set Version
         # Tag will already be created by release flow
-        run: npm version --no-git-tag-version ${{ github.event.release.tag_name }}
+        run: |
+          VER="${{ github.ref_name }}"
+          # Strip leading "v" from tag name (e.g., v1.2.3 -> 1.2.3)
+          VER="${VER#v}"
+          npm version --no-git-tag-version "$VER"
 
       - name: Install Dependencies
         run: npm ci
@@ -68,14 +72,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^.*(-rc|-beta|-alpha).*$ ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Publish latest to NPM
-        if: "!github.event.release.prerelease"
+        if: steps.prerelease.outputs.is_prerelease == 'false'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish latest RC to NPM
-        if: "github.event.release.prerelease"
+        if: steps.prerelease.outputs.is_prerelease == 'true'
         run: npm publish --access public --tag rc-latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -105,6 +118,18 @@ jobs:
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install uv
+      
+      - name: Set Version
+        run: |
+          # Normalize git tag to PEP 440 compliant version for setuptools-scm
+          VER="${{ github.ref_name }}"
+          # Strip leading "v" (v1.2.3 -> 1.2.3)
+          VER="${VER#v}"
+          # Convert SemVer prerelease tokens to PEP 440 format
+          VER=$(echo "$VER" | sed -E 's/-rc\.?([0-9]+)/rc\1/g')
+          VER=$(echo "$VER" | sed -E 's/-beta\.?([0-9]+)/b\1/g') 
+          VER=$(echo "$VER" | sed -E 's/-alpha\.?([0-9]+)/a\1/g')
+          echo "SETUPTOOLS_SCM_PRETEND_VERSION=$VER" >> $GITHUB_ENV
       
       - name: Generate protobuf files
         run: make generate-proto
