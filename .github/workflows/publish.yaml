@@ -30,6 +30,9 @@ jobs:
   publish-node:
     name: Publish - NodeJS Client NPM
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client/node
     steps:
       - name: Checkout
         uses: actions/checkout@v4
