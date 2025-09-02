@@ -2,9 +2,9 @@
 
 import os
 import grpc
-from sdk.gen.storage.v2 import storage_pb2_grpc
+from suga.gen.storage.v2 import storage_pb2_grpc
 {{if .Buckets}}
-from sdk.buckets import Bucket
+from suga.buckets import Bucket
 {{end}}
 
 class SugaClient:
