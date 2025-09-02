@@ -65,7 +65,7 @@ func GenerateTypeScript(fs afero.Fs, appSpec schema.Application, outputDir strin
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	filePath := filepath.Join(outputDir, "client.ts")
+	filePath := filepath.Join(outputDir, "index.ts")
 	err = afero.WriteFile(fs, filePath, buf.Bytes(), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write generated file: %w", err)
