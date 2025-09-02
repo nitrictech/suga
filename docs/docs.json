@@ -37,7 +37,12 @@
           },
           {
             "group": "Guides",
-            "pages": ["guides/database-migration", "guides/migrate-existing", "guides/terraform-backend-config"]
+            "pages": [
+              "guides/add-suga",
+              "guides/database-migration",
+              "guides/migrate-existing",
+              "guides/terraform-backend-config"
+            ]
           }
         ]
       },
@@ -121,6 +126,11 @@
       "x": "https://x.com/sugasrc",
       "github": "https://github.com/nitrictech/suga",
       "linkedin": "https://www.linkedin.com/company/nitrictech"
+    }
+  },
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_XwujEojDf0Qq5EeBqOTo0Xf9ZAi7NZZIrIvvLGr8sZ6"
     }
   }
 }

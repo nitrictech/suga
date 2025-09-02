@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sdk.gen.storage.v2 import storage_pb2, storage_pb2_grpc
+from suga.gen.storage.v2 import storage_pb2, storage_pb2_grpc
 from google.protobuf.duration_pb2 import Duration
 
 
