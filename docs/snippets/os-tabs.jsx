@@ -1,4 +1,5 @@
 // Mintlify build warnings about Tab children can be safely ignored
+// Hydration mismatch on SSR is acceptable - doesn't affect client navigation
 export const OSTabs = ({ children, ...props }) => {
   function detectOS() {
     // Server-side safe OS detection
