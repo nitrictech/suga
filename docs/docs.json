@@ -37,7 +37,7 @@
           },
           {
             "group": "Guides",
-            "pages": ["guides/database-migration", "guides/migrate-existing"]
+            "pages": ["guides/database-migration", "guides/migrate-existing", "guides/terraform-backend-config"]
           }
         ]
       },
