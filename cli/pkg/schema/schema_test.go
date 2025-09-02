@@ -481,9 +481,13 @@ entrypoints:
       /api/:
         name: user-api
 databases:
-  user-db: {}
+  user-db:
+    env_var_key: USER_DB_URL
 websites:
-  public-site: {}
+  public-site:
+    base_dir: ./public
+    asset_dir: ./assets
+    error_page: 404.html
 `
 
 	app, result, err := ApplicationFromYaml(yaml)
