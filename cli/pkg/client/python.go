@@ -44,7 +44,8 @@ func AppSpecToPyTemplateData(appSpec schema.Application) (PySDKTemplateData, err
 
 func GeneratePython(fs afero.Fs, appSpec schema.Application, outputDir string) error {
 	if outputDir == "" {
-		outputDir = version.CommandName
+		// Add _gen suffix so the generated client doesn't shadow the 'suga' import from Pypi
+		outputDir = fmt.Sprintf("%s_gen", version.CommandName)
 	}
 
 	tmpl := template.Must(template.New("client").Parse(pyClientTemplate))
