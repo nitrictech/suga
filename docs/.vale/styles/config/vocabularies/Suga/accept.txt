@@ -9,6 +9,7 @@ Supabase
 Planetscale
 liquibase
 allowlisting
+cdktf
 
 # Defaults from mintlify
 Mintlify
