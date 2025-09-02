@@ -13,224 +13,240 @@ This guide shows you how to set up PostgreSQL for local development with your Su
 
 Create a `docker-compose.yml` file in your project root:
 
-    ```yaml
-    services:
-      postgres:
-        image: postgres:15
-        environment:
-          POSTGRES_USER: ${POSTGRES_USER:-admin}
-          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
-          POSTGRES_DB: ${POSTGRES_DB:-myapp}
-        ports:
-          - '5433:5432'
-        volumes:
-          - postgres_data:/var/lib/postgresql/data
-        command: postgres -c ssl=off
-    
+```yaml
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-myapp}
+    ports:
+      - '5433:5432'
     volumes:
-      postgres_data:
-    ```
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c ssl=off
 
-    Create an `.env` file for local credentials:
+volumes:
+  postgres_data:
+```
 
-    ```bash
-    POSTGRES_USER=admin
-    POSTGRES_PASSWORD=secure_password
-    POSTGRES_DB=myapp
-    ```
+Create an `.env` file with local credentials:
 
-    Add database commands to your `Makefile`:
+```bash
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=secure_password
+POSTGRES_DB=myapp
+```
 
-    ```makefile
-    .PHONY: db-start db-stop db-reset
-    
-    db-start:
-    	@echo "🐳 Starting database..."
-    	@docker compose up -d
-    	@echo "✅ Database ready!"
-    
-    db-stop:
-    	@echo "🛑 Stopping database..."
-    	@docker compose down
-    
-    db-reset:
-    	@echo "🔄 Resetting database..."
-    	@docker compose down -v
-    	@docker compose up -d
-    	@sleep 2
-    	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
-    	@echo "✅ Database reset with fresh data!"
-    ```
+<Note>
+  **Security:** Change the default password before using in any shared environment.
+</Note>
+
+Add database commands to your `Makefile`:
+
+```makefile
+.PHONY: db-start db-stop db-reset
+
+db-start:
+	@echo "🐳 Starting database..."
+	@docker compose up -d
+	@echo "✅ Database ready!"
+
+db-stop:
+	@echo "🛑 Stopping database..."
+	@docker compose down
+
+db-reset:
+	@echo "🔄 Resetting database..."
+	@docker compose down -v
+	@docker compose up -d
+	@sleep 2
+	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
+	@echo "✅ Database reset with fresh data!"
+```
+
+Start your database:
+
+```bash
+make db-start
+```
 
 ## Step 2: Configure Database in Suga
 
 Open the Suga dashboard:
 
-    ```bash
-    suga edit
-    ```
+```bash
+suga edit
+```
 
-    Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
+Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
 
-    ![Database Configuration](/images/database.png)
+![Database Configuration](/images/database.png)
 
-    This automatically updates your `suga.yaml`:
+This automatically updates your `suga.yaml`:
 
-    ```yaml
-    name: test-db
-    description: Simple project to test our local database
-    targets: []
-    services:
+```yaml
+name: test-db
+description: Simple project to test our local database
+targets: []
+services:
+  app:
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    dev:
+      script: go run main.go
+entrypoints:
+  entrypoint:
+    routes:
+      /:
+        name: app
+databases:
+  mydb:
+    access:
       app:
-        container:
-          docker:
-            dockerfile: Dockerfile
-            context: .
-        dev:
-          script: go run main.go
-    entrypoints:
-      entrypoint:
-        routes:
-          /:
-            name: app
-    databases:
-      mydb:
-        access:
-          app:
-            - query
-        env_var_key: DATABASE_URL
-    ```
+        - query
+    env_var_key: DATABASE_URL
+```
 
-    Add the connection string to your `.env` file:
+Add the connection string to your `.env` file:
 
-    ```bash
-    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
-    ```
+```bash
+DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+```
 
 ## Step 3: Initialize Database Schema
 
-Create an `init.sql` file with your schema and test data:
+Create an `init.sql` file in your project root:
 
-    ```sql
-    DROP TABLE IF EXISTS users;
-    
-    CREATE TABLE users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-    
-    INSERT INTO users (email) VALUES
-      ('admin@example.com'),
-      ('user@example.com');
-    ```
+```sql
+DROP TABLE IF EXISTS users;
 
-    Start the database and apply your schema:
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
-    ```bash
-    make db-reset
-    ```
+INSERT INTO users (email) VALUES
+  ('admin@example.com'),
+  ('user@example.com');
+```
 
-    <Note>
-      For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
-    </Note>
+Apply your schema:
+
+```bash
+make db-reset
+```
+
+<Note>
+  For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
+</Note>
 
 ## Step 4: Test Your Database Connection
 
-Add database connectivity to your existing service.
+Install the required dependencies:
 
-    Install the required dependencies:
+```bash
+go get github.com/lib/pq
+go get github.com/joho/godotenv
+```
 
-    ```bash
-    go get github.com/lib/pq
-    go get github.com/joho/godotenv
-    ```
+Update your `main.go` to include database support:
 
-    Update your `main.go` to include database support:
+```go
+package main
 
-    ```go
-    package main
+import (
+  "database/sql"
+  "encoding/json"
+  "log"
+  "net/http"
+  "os"
 
-    import (
-      "database/sql"
-      "encoding/json"
-      "log"
-      "net/http"
-      "os"
+  "github.com/joho/godotenv"
+  _ "github.com/lib/pq"
+)
 
-      "github.com/joho/godotenv"
-      _ "github.com/lib/pq"
-    )
+func main() {
+  // Load .env file
+  _ = godotenv.Load()
 
-    func main() {
-      // Load .env file
-      _ = godotenv.Load()
+  // Connect to database
+  dbURL := os.Getenv("DATABASE_URL")
+  db, err := sql.Open("postgres", dbURL)
+  if err != nil {
+    log.Fatalf("Failed to connect to database: %v", err)
+  }
+  defer db.Close()
 
-      // Connect to database
-      dbURL := os.Getenv("DATABASE_URL")
-      db, err := sql.Open("postgres", dbURL)
-      if err != nil {
-        log.Fatalf("Failed to connect to database: %v", err)
-      }
-      defer db.Close()
+  // Test connection
+  if err := db.Ping(); err != nil {
+    log.Fatalf("Failed to ping database: %v", err)
+  }
 
-      // Create router
-      router := http.NewServeMux()
+  // Create router
+  router := http.NewServeMux()
 
-      // Add users endpoint
-      router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
-        rows, err := db.Query("SELECT id, email, created_at FROM users")
-        if err != nil {
-          http.Error(w, err.Error(), 500)
-          return
-        }
-        defer rows.Close()
-
-        var users []map[string]interface{}
-        for rows.Next() {
-          var id int
-          var email, createdAt string
-          rows.Scan(&id, &email, &createdAt)
-          users = append(users, map[string]interface{}{
-            "id":         id,
-            "email":      email,
-            "created_at": createdAt,
-          })
-        }
-
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(users)
-      })
-
-      log.Println("Server starting on :3000")
-      log.Fatal(http.ListenAndServe(":3000", router))
+  // Add users endpoint
+  router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
+    rows, err := db.Query("SELECT id, email, created_at FROM users")
+    if err != nil {
+      http.Error(w, err.Error(), 500)
+      return
     }
-    ```
+    defer rows.Close()
 
-    Test your API:
+    var users []map[string]interface{}
+    for rows.Next() {
+      var id int
+      var email, createdAt string
+      if err := rows.Scan(&id, &email, &createdAt); err != nil {
+        http.Error(w, err.Error(), 500)
+        return
+      }
+      users = append(users, map[string]interface{}{
+        "id":         id,
+        "email":      email,
+        "created_at": createdAt,
+      })
+    }
 
-    ```bash
-    suga dev
-    ```
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(users)
+  })
 
-    In another terminal, test the endpoint:
+  log.Println("Server starting on :3000")
+  log.Fatal(http.ListenAndServe(":3000", router))
+}
+```
 
-    ```bash
-    curl http://localhost:3000/users
-    ```
+Start your application:
 
-    You'll see your user data:
+```bash
+suga dev
+```
 
-    ```json
-    [
-      {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
-      {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
-    ]
-    ```
+Test the endpoint in another terminal:
 
-    <Note>
-      Stop the database when finished: `make db-stop`
-    </Note>
+```bash
+curl http://localhost:3000/users
+```
+
+You should see your user data:
+
+```json
+[
+  {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
+  {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
+]
+```
+
+<Note>
+  Stop the database when finished: `make db-stop`
+</Note>
 
 ## Next Steps
 
