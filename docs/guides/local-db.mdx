@@ -3,10 +3,10 @@ title: "Local Database Setup"
 description: "Set up PostgreSQL for Suga local development."
 ---
 
-This guide shows you how to set up PostgreSQL for local development with your Suga project.
+Suga doesn't currently auto-provision databases for local development. This guide shows you how to manually set up PostgreSQL locally until auto-provisioning is added in a future release. For production, you can use any PostgreSQL provider like Neon, Supabase, or RDS with the same Suga database configuration.
 
 <Note>
-  **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see our [Getting Started Guide](/quickstart).
+  **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see the [Getting Started Guide](/quickstart).
 </Note>
 
 ## Step 1: Setup PostgreSQL with Docker
@@ -43,33 +43,10 @@ POSTGRES_DB=myapp
   **Security:** Change the default password before using in any shared environment.
 </Note>
 
-Add database commands to your `Makefile`:
-
-```makefile
-.PHONY: db-start db-stop db-reset
-
-db-start:
-	@echo "🐳 Starting database..."
-	@docker compose up -d
-	@echo "✅ Database ready!"
-
-db-stop:
-	@echo "🛑 Stopping database..."
-	@docker compose down
-
-db-reset:
-	@echo "🔄 Resetting database..."
-	@docker compose down -v
-	@docker compose up -d
-	@sleep 2
-	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
-	@echo "✅ Database reset with fresh data!"
-```
-
 Start your database:
 
 ```bash
-make db-start
+docker compose up -d
 ```
 
 ## Step 2: Configure Database in Suga
@@ -87,26 +64,14 @@ Drag a database resource onto your project canvas and connect it to your service
 This automatically updates your `suga.yaml`:
 
 ```yaml
-name: test-db
-description: Simple project to test our local database
-targets: []
+name: my-app
 services:
-  app:
-    container:
-      docker:
-        dockerfile: Dockerfile
-        context: .
-    dev:
-      script: go run main.go
-entrypoints:
-  entrypoint:
-    routes:
-      /:
-        name: app
+  api:
+    # Your service configuration here
 databases:
   mydb:
     access:
-      app:
+      api:
         - query
     env_var_key: DATABASE_URL
 ```
@@ -117,7 +82,13 @@ Add the connection string to your `.env` file:
 DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
 ```
 
+<Note>
+  For local development, you manually set `DATABASE_URL` to point to your Docker database. When deployed, Suga automatically configures this same environment variable with your production database URL.
+</Note>
+
 ## Step 3: Initialize Database Schema
+
+You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
 
 Create an `init.sql` file in your project root:
 
@@ -138,7 +109,10 @@ INSERT INTO users (email) VALUES
 Apply your schema:
 
 ```bash
-make db-reset
+docker compose down -v
+docker compose up -d
+sleep 2
+docker compose exec -T postgres psql -U admin -d myapp < init.sql
 ```
 
 <Note>
@@ -147,80 +121,11 @@ make db-reset
 
 ## Step 4: Test Your Database Connection
 
-Install the required dependencies:
+Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
 
-```bash
-go get github.com/lib/pq
-go get github.com/joho/godotenv
+Example connection string format:
 ```
-
-Update your `main.go` to include database support:
-
-```go
-package main
-
-import (
-  "database/sql"
-  "encoding/json"
-  "log"
-  "net/http"
-  "os"
-
-  "github.com/joho/godotenv"
-  _ "github.com/lib/pq"
-)
-
-func main() {
-  // Load .env file
-  _ = godotenv.Load()
-
-  // Connect to database
-  dbURL := os.Getenv("DATABASE_URL")
-  db, err := sql.Open("postgres", dbURL)
-  if err != nil {
-    log.Fatalf("Failed to connect to database: %v", err)
-  }
-  defer db.Close()
-
-  // Test connection
-  if err := db.Ping(); err != nil {
-    log.Fatalf("Failed to ping database: %v", err)
-  }
-
-  // Create router
-  router := http.NewServeMux()
-
-  // Add users endpoint
-  router.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
-    rows, err := db.Query("SELECT id, email, created_at FROM users")
-    if err != nil {
-      http.Error(w, err.Error(), 500)
-      return
-    }
-    defer rows.Close()
-
-    var users []map[string]interface{}
-    for rows.Next() {
-      var id int
-      var email, createdAt string
-      if err := rows.Scan(&id, &email, &createdAt); err != nil {
-        http.Error(w, err.Error(), 500)
-        return
-      }
-      users = append(users, map[string]interface{}{
-        "id":         id,
-        "email":      email,
-        "created_at": createdAt,
-      })
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(users)
-  })
-
-  log.Println("Server starting on :3000")
-  log.Fatal(http.ListenAndServe(":3000", router))
-}
+postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
 ```
 
 Start your application:
@@ -229,27 +134,14 @@ Start your application:
 suga dev
 ```
 
-Test the endpoint in another terminal:
-
-```bash
-curl http://localhost:3000/users
-```
-
-You should see your user data:
-
-```json
-[
-  {"id":1,"email":"admin@example.com","created_at":"2025-08-14T17:12:05Z"},
-  {"id":2,"email":"user@example.com","created_at":"2025-08-14T17:12:05Z"}
-]
-```
+Your application now has access to the `DATABASE_URL` environment variable and can connect to PostgreSQL. Test your database connection by querying the users table from your application code.
 
 <Note>
-  Stop the database when finished: `make db-stop`
+  Stop the database when finished: `docker compose down`
 </Note>
 
 ## Next Steps
 
-- For production, configure your `DATABASE_URL` with your cloud provider (Neon, Supabase, RDS, etc.)
-- Consider using migration tools like golang-migrate or Flyway for schema management
-- Add proper error handling and connection pooling for production use
+- For production, deploy your app and Suga will automatically configure the `DATABASE_URL` with your chosen PostgreSQL provider
+- Consider using proper migration tools or ORM migrations for schema management
+- Review your database configuration and connection handling for production requirements
