@@ -11,7 +11,9 @@ This guide covers how to add backend configuration to your Suga-generated Terraf
 
 ## Prerequisites
 
-Before configuring a backend:
+<Info>
+  Ensure you have completed these steps before configuring a backend.
+</Info>
 
 1. **Generate your Terraform stack** using `suga build` (this runs CDKTF synthesis)
 2. **Choose a backend provider** (AWS S3, Google Cloud Storage, Azure Storage, Terraform Cloud, etc.)
@@ -22,7 +24,7 @@ Before configuring a backend:
 
 When you run `suga build`, CDKTF synthesizes your infrastructure into standard Terraform JSON configuration files:
 
-```
+```bash title="Generated Directory Structure" icon="folder-tree"
 terraform/
 └── stacks/
     └── <stack_name>/
@@ -37,40 +39,114 @@ The synthesized output can be found in the `terraform` directory.
 After running `suga build`, add a backend configuration file to the synthesized output:
 
 <Steps>
-  <Step title="Generate the Stack">
-    ```bash
+  <Step title="Generate the Stack" icon="hammer">
+    ```bash title="Generate Terraform Stack" icon="hammer"
     suga build
     ```
   </Step>
 
-  <Step title="Create Backend Configuration">
+  <Step title="Create Backend Configuration" icon="file-plus">
     Create `backend.tf` in the synthesized stack directory:
     
-    ```bash
+    ```bash title="Create Backend File" icon="file-plus"
     touch terraform/stacks/<stack_name>/backend.tf
     ```
   </Step>
 
   <Step title="Add Backend Configuration">
-    Add your configuration.
-    See terraform docs on [backend configuration](https://developer.hashicorp.com/terraform/language/backend)
+    Choose your backend provider and add the appropriate configuration:
+
+    <Expandable title="AWS S3 Backend" defaultOpen={false}>
+      ```hcl title="backend.tf - AWS S3" icon="aws"
+      terraform {
+        backend "s3" {
+          bucket         = "my-terraform-state-bucket"
+          key            = "suga/terraform.tfstate"
+          region         = "us-east-1"
+          encrypt        = true
+          dynamodb_table = "terraform-locks"
+        }
+      }
+      ```
+
+      <Warning>
+        Ensure your S3 bucket has versioning enabled and consider enabling MFA delete for production environments.
+      </Warning>
+    </Expandable>
+
+    <Expandable title="Google Cloud Storage Backend" defaultOpen={false}>
+      ```hcl title="backend.tf - Google Cloud" icon="cloud"
+      terraform {
+        backend "gcs" {
+          bucket = "my-terraform-state-bucket"
+          prefix = "suga/terraform/state"
+        }
+      }
+      ```
+
+      <Tip>
+        Enable object versioning on your GCS bucket to maintain state history.
+      </Tip>
+    </Expandable>
+
+    <Expandable title="Azure Storage Backend" defaultOpen={false}>
+      ```hcl title="backend.tf - Azure Storage" icon="cloud"
+      terraform {
+        backend "azurerm" {
+          resource_group_name  = "terraform-state-rg"
+          storage_account_name = "terraformstatestorage"
+          container_name       = "terraform-state"
+          key                  = "suga.terraform.tfstate"
+        }
+      }
+      ```
+    </Expandable>
+
+    <Expandable title="Terraform Cloud Backend" defaultOpen={false}>
+      ```hcl title="backend.tf - Terraform Cloud" icon="cloud"
+      terraform {
+        backend "remote" {
+          organization = "my-org"
+          workspaces {
+            name = "suga-production"
+          }
+        }
+      }
+      ```
+    </Expandable>
   </Step>
 
-  <Step title="Initialize and Deploy">
-    ```bash
+  <Step title="Initialize and Deploy" icon="rocket">
+    ```bash title="Initialize Terraform" icon="terminal"
     cd terraform/stacks/<stack_name>
     terraform init
+    ```
+
+    ```bash title="Deploy Infrastructure" icon="rocket"
     terraform apply
     ```
   </Step>
 </Steps>
 
-<Note>
+<Info>
   Only the cdktf files are managed by Suga. You can safely add custom `.tf` files to the stack directory to extend the configuration.
-</Note>
+</Info>
 
-## Managing state for Multiple Environments
+## Managing Multiple Environments
 
-For managing multiple environments we recommend using Terraform workspaces.
+For managing multiple environments, we recommend using Terraform workspaces:
 
-For documentation on best practices for managing multiple environments with terraform see the [official docs](https://developer.hashicorp.com/terraform/language/state/workspaces).
+```bash title="Create and Switch Workspaces" icon="git-branch"
+# Create and switch to staging environment
+terraform workspace new staging
+
+# Switch to production environment
+terraform workspace new production
+terraform workspace select production
+```
+
+<Tip>
+  Each workspace maintains its own state file, allowing you to manage different environments with the same configuration.
+</Tip>
+
+For comprehensive documentation on best practices, see the [official Terraform workspace docs](https://developer.hashicorp.com/terraform/language/state/workspaces).
