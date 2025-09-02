@@ -3,8 +3,11 @@ title: "Installation"
 description: "Install the Suga CLI"
 ---
 
+import { OSSelectTabs } from '/snippets/os-select-tabs.jsx';
+
 ## Quick Install
 
+<OSSelectTabs>
 <Tabs>
   <Tab title="macOS">
     ```bash
@@ -12,8 +15,8 @@ description: "Install the Suga CLI"
     ```
   </Tab>
   <Tab title="Windows">
-    ```powershell
-    scoop bucket add nitrictech https://github.com/nitrictech/scoop-bucket
+    ```bash
+    scoop bucket add suga https://github.com/nitrictech/suga-scoop-bucket
     scoop install suga
     ```
   </Tab>
@@ -23,6 +26,7 @@ description: "Install the Suga CLI"
     ```
   </Tab>
 </Tabs>
+</OSSelectTabs>
 
 ## Verify Installation
 
@@ -32,6 +36,7 @@ suga --version
 
 ## Update
 
+<OSSelectTabs>
 <Tabs>
   <Tab title="macOS">
     ```bash
@@ -39,7 +44,7 @@ suga --version
     ```
   </Tab>
   <Tab title="Windows">
-    ```powershell
+    ```bash
     scoop update suga
     ```
   </Tab>
@@ -49,8 +54,9 @@ suga --version
     ```
   </Tab>
 </Tabs>
+</OSSelectTabs>
 
-## Pre-requisits
+## Prerequisites
 
 **For local development:**
 
