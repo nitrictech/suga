@@ -9,9 +9,9 @@ This guide shows you how to set up PostgreSQL for local development with your Su
   **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see our [Getting Started Guide](/quickstart).
 </Note>
 
-<AccordionGroup>
-  <Accordion title="Step 1: Setup PostgreSQL with Docker" icon="docker">
-    Create a `docker-compose.yml` file in your project root:
+## Step 1: Setup PostgreSQL with Docker
+
+Create a `docker-compose.yml` file in your project root:
 
     ```yaml
     services:
@@ -61,9 +61,10 @@ This guide shows you how to set up PostgreSQL for local development with your Su
     	@docker compose exec -T postgres psql -U admin -d myapp < init.sql
     	@echo "✅ Database reset with fresh data!"
     ```
-  </Accordion>
-  <Accordion title="Step 2: Configure Database in Suga" icon="plug">
-    Open the Suga dashboard:
+
+## Step 2: Configure Database in Suga
+
+Open the Suga dashboard:
 
     ```bash
     suga edit
@@ -105,9 +106,10 @@ This guide shows you how to set up PostgreSQL for local development with your Su
     ```bash
     DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
     ```
-  </Accordion>
-  <Accordion title="Step 3: Initialize Database Schema" icon="table">
-    Create an `init.sql` file with your schema and test data:
+
+## Step 3: Initialize Database Schema
+
+Create an `init.sql` file with your schema and test data:
 
     ```sql
     DROP TABLE IF EXISTS users;
@@ -132,9 +134,10 @@ This guide shows you how to set up PostgreSQL for local development with your Su
     <Note>
       For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
     </Note>
-  </Accordion>
-  <Accordion title="Step 4: Test Your Database Connection" icon="code">
-    Add database connectivity to your existing service.
+
+## Step 4: Test Your Database Connection
+
+Add database connectivity to your existing service.
 
     Install the required dependencies:
 
@@ -228,8 +231,6 @@ This guide shows you how to set up PostgreSQL for local development with your Su
     <Note>
       Stop the database when finished: `make db-stop`
     </Note>
-  </Accordion>
-</AccordionGroup>
 
 ## Next Steps
 
