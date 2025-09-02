@@ -9,139 +9,157 @@ Suga doesn't currently auto-provision databases for local development. This guid
   **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see the [Getting Started Guide](/quickstart).
 </Note>
 
-## Step 1: Setup PostgreSQL with Docker
+<Steps>
+  <Step title="Setup PostgreSQL with Docker" icon="docker">
+    Create these files in your project root:
 
-Create a `docker-compose.yml` file in your project root:
+    ```yaml title="docker-compose.yml" icon="docker"
+    services:
+      postgres:
+        image: postgres:15
+        environment:
+          POSTGRES_USER: ${POSTGRES_USER:-admin}
+          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+          POSTGRES_DB: ${POSTGRES_DB:-myapp}
+        ports:
+          - '5433:5432'
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+        command: postgres -c ssl=off
 
-```yaml
-services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
-      POSTGRES_DB: ${POSTGRES_DB:-myapp}
-    ports:
-      - '5433:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    command: postgres -c ssl=off
+      postgres_data:
+    ```
 
-volumes:
-  postgres_data:
-```
+    ```bash title=".env" icon="shield-check"
+    POSTGRES_USER=admin
+    POSTGRES_PASSWORD=secure_password
+    POSTGRES_DB=myapp
+    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+    ```
 
-Create an `.env` file with local credentials:
+    <Warning>
+      Change the default password before using in any shared environment.
+    </Warning>
 
-```bash
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=secure_password
-POSTGRES_DB=myapp
-```
+    Start your database:
 
-<Note>
-  **Security:** Change the default password before using in any shared environment.
-</Note>
+    ```bash title="Start Database" icon="play"
+    docker compose up -d
+    ```
 
-Start your database:
+    Verify it's running:
 
-```bash
-docker compose up -d
-```
+    ```bash title="Verify Database" icon="check-circle"
+    docker compose ps
+    ```
 
-## Step 2: Configure Database in Suga
+    You should see the postgres service in "Up" status.
+  </Step>
 
-Open the Suga dashboard:
+  <Step title="Configure Database in Suga" icon="settings">
+    Open the Suga dashboard:
 
-```bash
-suga edit
-```
+    ```bash title="Open Suga Editor" icon="edit"
+    suga edit
+    ```
 
-Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
+    Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
 
-![Database Configuration](/images/database.png)
+    ![Database Configuration](/images/database.png)
 
-This automatically updates your `suga.yaml`:
+    This automatically updates your `suga.yaml`:
 
-```yaml
-name: my-app
-services:
-  api:
-    # Your service configuration here
-databases:
-  mydb:
-    access:
+    ```yaml title="suga.yaml" icon="file-code"
+    name: my-app
+    services:
       api:
-        - query
-    env_var_key: DATABASE_URL
-```
+        # Your service configuration here
+    databases:
+      mydb:
+        access:
+          api:
+            - query
+        env_var_key: DATABASE_URL
+    ```
 
-Add the connection string to your `.env` file:
+    <Info>
+      For local development, you manually set `DATABASE_URL` to point to your Docker database. When deployed, Suga automatically configures this same environment variable with your production database URL.
+    </Info>
+  </Step>
 
-```bash
-DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
-```
+  <Step title="Initialize Database Schema" icon="database">
+    You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
 
-<Note>
-  For local development, you manually set `DATABASE_URL` to point to your Docker database. When deployed, Suga automatically configures this same environment variable with your production database URL.
-</Note>
+    Create an `init.sql` file in your project root:
 
-## Step 3: Initialize Database Schema
+    ```sql title="init.sql" icon="database"
+    DROP TABLE IF EXISTS users;
 
-You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
+    CREATE TABLE users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
 
-Create an `init.sql` file in your project root:
+    INSERT INTO users (email) VALUES
+      ('admin@example.com'),
+      ('user@example.com');
+    ```
 
-```sql
-DROP TABLE IF EXISTS users;
+    Apply your schema:
 
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
+    ```bash title="Reset Database with Schema" icon="refresh-cw"
+    docker compose down -v
+    docker compose up -d
+    sleep 2
+    docker compose exec -T postgres psql -U admin -d myapp < init.sql
+    ```
 
-INSERT INTO users (email) VALUES
-  ('admin@example.com'),
-  ('user@example.com');
-```
+    <Tip>
+      For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
+    </Tip>
+  </Step>
 
-Apply your schema:
+  <Step title="Test Your Database Connection" icon="plug">
+    Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
 
-```bash
-docker compose down -v
-docker compose up -d
-sleep 2
-docker compose exec -T postgres psql -U admin -d myapp < init.sql
-```
+    First, verify you can connect to the database directly:
 
-<Note>
-  For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
-</Note>
+    ```bash title="Test Direct Connection" icon="database"
+    docker compose exec postgres psql -U admin -d myapp -c "SELECT * FROM users;"
+    ```
 
-## Step 4: Test Your Database Connection
+    You should see your test data. Now start your application:
 
-Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
+    ```bash title="Start Your Application" icon="rocket"
+    suga dev
+    ```
 
-Example connection string format:
-```
-postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
-```
+    Your application now has access to the `DATABASE_URL` environment variable and can connect to PostgreSQL. Create a simple endpoint or function in your application to test the database connection and verify everything works end-to-end.
+  </Step>
+</Steps>
 
-Start your application:
+<Expandable title="Troubleshooting" defaultOpen={false}>
+  **Database won't start:**
+  - Check if port 5433 is already in use: `lsof -i :5433`
+  - Try a different port in docker-compose.yml
 
-```bash
-suga dev
-```
+  **Connection refused errors:**
+  - Verify database is running: `docker compose ps`
+  - Check DATABASE_URL matches your docker-compose.yml settings
 
-Your application now has access to the `DATABASE_URL` environment variable and can connect to PostgreSQL. Test your database connection by querying the users table from your application code.
+  **Application can't connect:**
+  - Ensure your `.env` file is in the same directory as where you run `suga dev`
+  - Verify the DATABASE_URL format matches PostgreSQL connection string requirements
+</Expandable>
 
-<Note>
+<Info>
   Stop the database when finished: `docker compose down`
-</Note>
+</Info>
 
 ## Next Steps
 
 - For production, deploy your app and Suga will automatically configure the `DATABASE_URL` with your chosen PostgreSQL provider
-- Consider using proper migration tools or ORM migrations for schema management
+- Consider using proper migration tools or ORM migrations for schema management  
 - Review your database configuration and connection handling for production requirements
