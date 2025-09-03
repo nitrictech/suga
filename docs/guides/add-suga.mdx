@@ -1,152 +1,138 @@
 ---
 title: "Add Suga to Your Application"
-sidebarTitle: "Add Suga"
-description: "This guide shows how to bring your existing applications to Suga. We'll use a simple Go web service that stores files in AWS S3 as our example - a common pattern in many cloud applications."
+description: "Migrate existing applications to Suga for cloud-agnostic deployment."
 ---
 
-## Why Suga?
-
-- **Local development** with real cloud services (no mocks\!)
-- **Deploy anywhere** - AWS, GCP, or Azure from the same code
-- **Auto-generated Terraform** - production-ready infrastructure
+Suga helps you migrate existing applications to a cloud-agnostic architecture. This guide shows you how to add Suga to an existing Go web service that uses AWS S3 - a common pattern that can be easily adapted to other services and languages.
 
 <Note>
-  **Before you begin:** Make sure you have Suga CLI installed. See the
-  [Installation Guide](https://suga.io/docs/installation) for platform-specific
-  instructions.
+  **Prerequisites:** This guide assumes you have an existing application that uses cloud services. If you're starting fresh, see the [Getting Started Guide](/quickstart).
 </Note>
 
-<AccordionGroup>
-  <Accordion title="Step 1: Initialize Suga" icon="folder-plus">
-    **Add Suga to your existing project**
+<Expandable title="Migration Planning Checklist" defaultOpen={false}>
+  **Before starting:**
+  - Identify all cloud service dependencies (S3, DynamoDB, SQS, etc.)
+  - Document environment variables and configuration
+  - Review authentication and authorization requirements
+  - Note any cloud-specific features you're using
 
-    First, login to Suga if you haven't already:
+  **During migration:**
+  - Replace SDK imports with Suga client
+  - Update all API calls to use Suga methods
+  - Remove cloud-specific error handling
+  - Test each endpoint after migration
 
-    ```bash
+  **After migration:**
+  - Remove unused cloud SDK dependencies
+  - Update CI/CD pipelines to use `suga build`
+  - Document new deployment process for team
+</Expandable>
+
+<Steps>
+  <Step title="Initialize Suga Project" icon="folder-plus">
+    Navigate to your existing project directory and initialize Suga:
+
+    ```bash title="Login to Suga" icon="user"
     suga login
     ```
 
-    Initialize Suga in your existing project:
-
-    ```bash
+    ```bash title="Initialize Project" icon="sparkles"
     suga init
     ```
 
-    When prompted:
-
+    When prompted, provide:
     - **Project name:** `my-app` (or your preferred name)
-    - **Description:** Your project description
+    - **Description:** Brief description of your application
 
-    This will create a `suga.yaml` file in your project root.
+    This creates a `suga.yaml` configuration file in your project root.
+  </Step>
 
-  </Accordion>
-  <Accordion title="Step 2: Define Your Resources" icon="gear">
-    **Configure services and storage in suga.yaml**
+  <Step title="Configure Infrastructure" icon="settings">
+    Open the Suga visual editor to design your infrastructure:
 
-    ```bash
+    ```bash title="Open Suga Editor" icon="edit"
     suga edit
     ```
 
-    We'll design infrastructure for a project that exposes an API to handle HTTP requests for reading from and writing to a storage bucket.
+    Build your infrastructure visually:
+    1. Drag an **entrypoint** onto the canvas and name it `ingress`
+    2. Add a **service** named `app` and connect the entrypoint to it
+    3. Add a **bucket** named `files` and connect the service to it
+    4. Configure bucket permissions to include `read`, `write`, and `delete`
 
-    First, drag an entry point onto your canvas named 'ingress'. Then add a service named 'app' and connect the entry point to the service, leaving the default forwarding route. Next, drag a bucket onto your canvas and name it 'files'. Connect the service to the bucket and edit the permissions to grant 'Write' and 'Delete' permissions.
+    ![Infrastructure Design](/images/migrate.png)
 
-    ![Migrate](/images/migrate.png)
+    This generates your `suga.yaml` configuration:
 
-    This will automatically add a bucket declaration to your `suga.yaml`.
-
-    ```yaml
+    ```yaml title="suga.yaml" icon="file-code"
     targets:
-        - suga/aws@1
+      - suga/aws@1
     name: my-app
-    description: Your project description
+    description: Your application description
     services:
-        app:
-            container:
-                docker:
-                    dockerfile: Dockerfile
-                    context: .
-            dev:
-                script: go run main.go
+      app:
+        container:
+          docker:
+            dockerfile: Dockerfile
+            context: .
+        dev:
+          script: go run main.go
     buckets:
-        files:
-            access:
-                app:
-                    - read
-                    - write
-                    - delete
+      files:
+        access:
+          app:
+            - read
+            - write
+            - delete
     entrypoints:
-        ingress:
-            routes:
-                /:
-                    name: app
+      ingress:
+        routes:
+          /:
+            name: app
     ```
 
-  </Accordion>
-  <Accordion title="Step 3: Create Dockerfile" icon="docker">
-    **Add a Dockerfile for containerized deployment**
+    <Info>
+      The visual editor automatically maintains valid YAML syntax and ensures proper resource relationships.
+    </Info>
+  </Step>
 
-    <Note>
-      Skip this step if you already have a Dockerfile in your project and simply configure it in your suga.yaml to ensure naming.
-    </Note>
-    Create a `Dockerfile` in your project root:
+  <Step title="Add Container Support" icon="docker">
+    Create a Dockerfile for production deployment:
 
-    ```dockerfile
+    ```dockerfile title="Dockerfile" icon="docker"
     FROM golang:1.24-alpine as builder
 
     WORKDIR /app
-
     COPY . .
-
     RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
 
     FROM alpine:latest
-
     RUN apk --no-cache add ca-certificates
-
     COPY --from=builder /app/main .
-
     ENTRYPOINT ["/main"]
     ```
 
-    This multi-stage build creates a minimal container image for your application.
+    <Tip>
+      If you already have a Dockerfile, ensure it's referenced correctly in your `suga.yaml` configuration.
+    </Tip>
+  </Step>
 
-  </Accordion>
-  <Accordion title="Step 4: Generate SDK and Migrate Your Code" icon="code">
-    **Generate your SDK and replace cloud provider SDKs with Suga's APIs**
+  <Step title="Generate SDK and Migrate Code" icon="code">
+    Generate the Suga SDK for your project:
 
-    Generate the Suga SDK and update dependencies:
-
-    ```bash
+    ```bash title="Generate Go SDK" icon="hammer"
     suga generate --go --go-out ./suga --go-package-name suga
+    ```
+
+    ```bash title="Update Dependencies" icon="package"
     go mod tidy
     ```
 
-    This creates a `suga/` directory with a Go client tailored to your configuration.
-
-    **Now migrate your code:**
-
-    1. **Update imports** - Replace AWS/GCP/Azure SDK imports with:
-
-       ```go
-       import "example/suga"  // Your generated Suga client
-       ```
-    2. **Initialize Suga client** - Replace SDK configuration and client creation with:
-
-       ```go
-       app, err := suga.NewClient()
-       ```
-    3. **Update API calls** - Replace SDK-specific methods with Suga's unified API:
-       - S3 PutObject → `app.Files.Write("filename", data)`
-       - S3 GetObject → `app.Files.Read("filename")`
-       - Add other resources (e.g. databases) in your `suga.yaml` to generate their APIs
-    4. **Simplify error handling** - Remove cloud-specific error checking, Suga handles retries and cloud errors automatically
-
-    **Example transformation:**
+    Now migrate your application code. Here's a complete example showing the transformation:
 
     <Tabs>
-      <Tab title="AWS S3 Sample">
-        ```go
+      <Tab title="Before: AWS SDK">
+        ```go title="main.go" icon="aws"
         package main
 
         import (
@@ -163,8 +149,6 @@ description: "This guide shows how to bring your existing applications to Suga. 
         )
 
         func main() {
-            router := http.NewServeMux()
-
             // Load AWS configuration
             cfg, err := config.LoadDefaultConfig(context.TODO())
             if err != nil {
@@ -174,15 +158,12 @@ description: "This guide shows how to bring your existing applications to Suga. 
             // Create S3 client
             s3Client := s3.NewFromConfig(cfg)
             bucketName := os.Getenv("S3_BUCKET_NAME")
-            if bucketName == "" {
-                bucketName = "cloudscale-analytics-bucket"
-            }
 
-            // setup a basic http server
+            router := http.NewServeMux()
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
 
-                // Use S3 to store file
+                // AWS S3 PutObject
                 _, err := s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
                     Bucket: aws.String(bucketName),
                     Key:    aws.String("example.txt"),
@@ -190,13 +171,11 @@ description: "This guide shows how to bring your existing applications to Suga. 
                 })
                 if err != nil {
                     log.Printf("Failed to upload to S3: %v", err)
-                    w.WriteHeader(http.StatusInternalServerError)
-                    w.Write([]byte("Error uploading to S3"))
+                    http.Error(w, "Error uploading to S3", http.StatusInternalServerError)
                     return
                 }
 
-                w.WriteHeader(http.StatusOK)
-                w.Write([]byte("Hello, " + name + "!"))
+                fmt.Fprintf(w, "Hello, %s!", name)
             })
 
             port := os.Getenv("PORT")
@@ -204,19 +183,13 @@ description: "This guide shows how to bring your existing applications to Suga. 
                 port = "8080"
             }
 
-            server := &http.Server{
-                Addr:    ":" + port,
-                Handler: router,
-            }
-
-            fmt.Printf("Server started on port %s\n", port)
-
-            server.ListenAndServe()
+            log.Printf("Server starting on port %s\n", port)
+            log.Fatal(http.ListenAndServe(":"+port, router))
         }
         ```
       </Tab>
-      <Tab title="Migrate to Suga">
-        ```go
+      <Tab title="After: Suga SDK">
+        ```go title="main.go" icon="rocket"
         package main
 
         import (
@@ -228,83 +201,72 @@ description: "This guide shows how to bring your existing applications to Suga. 
         )
 
         func main() {
-            router := http.NewServeMux()
-
+            // Initialize Suga client
             app, err := suga.NewClient()
             if err != nil {
                 log.Fatalf("Failed to create suga client: %v", err)
             }
 
-            // setup a basic http server
+            router := http.NewServeMux()
             router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
                 name := r.PathValue("name")
 
-                // Use the Suga client to access cloud resources
+                // Simplified file write using Suga
                 if err := app.Files.Write("example.txt", []byte("Hello, "+name+"!")); err != nil {
                     log.Printf("Failed to write file: %v", err)
-                    w.WriteHeader(http.StatusInternalServerError)
-                    w.Write([]byte("Error writing file"))
+                    http.Error(w, "Error writing file", http.StatusInternalServerError)
                     return
                 }
 
-                w.WriteHeader(http.StatusOK)
-                w.Write([]byte("Hello, " + name + "!"))
+                fmt.Fprintf(w, "Hello, %s!", name)
             })
 
             port := os.Getenv("PORT")
-
-            server := &http.Server{
-                Addr:    ":" + port,
-                Handler: router,
-            }
-
-            fmt.Printf("Server started on port %s, however use the entrypoint port to connect to the server\n", port)
-
-            server.ListenAndServe()
+            log.Printf("Server starting on port %s\n", port)
+            log.Fatal(http.ListenAndServe(":"+port, router))
         }
         ```
       </Tab>
     </Tabs>
 
-  </Accordion>
-  <Accordion title="Step 5: Test Locally" icon="play">
-    **Run your application with local cloud services**
+    <Warning>
+      Remove all cloud provider SDK dependencies after migration to avoid conflicts and reduce bundle size.
+    </Warning>
+  </Step>
 
+  <Step title="Test Locally" icon="play">
     Start the Suga development environment:
 
-    ```bash
+    ```bash title="Start Development Server" icon="play"
     suga dev
     ```
 
-    This starts your application with Suga's local development environment.
+    Test your migrated application:
 
-    In another terminal, test your endpoint:
-
-    ```bash
+    ```bash title="Test Endpoint" icon="check-circle"
     curl http://localhost:3003/hello/world
     ```
 
-    You should see:
-
+    Expected response:
     ```
     Hello, world!
     ```
 
-    The file `example.txt` will be created in Suga's local file storage.
+    <Info>
+      Suga dev provides local emulation of cloud services. Files are stored locally during development and in real cloud storage when deployed.
+    </Info>
+  </Step>
 
-  </Accordion>
-  <Accordion title="Step 6: Deploy to Any Cloud" icon="cloud">
-    **Generate Terraform and deploy to AWS, GCP, or Azure**
+  <Step title="Deploy to Cloud" icon="cloud">
+    Build your application and generate Terraform:
 
-    Build your application for deployment:
-
-    ```bash
+    ```bash title="Build Application" icon="hammer"
     suga build
     ```
 
-    You'll be prompted to select your cloud provider and region. The output will show:
+    Select your cloud provider and region when prompted. You'll see:
 
-    ```bash
+    ```
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-app-aws-12345
 
@@ -315,66 +277,54 @@ description: "This guide shows how to bring your existing applications to Suga. 
     4. Deploy with terraform apply
     ```
 
-    **Setup cloud credentials:**
-
-    Configure credentials for your chosen cloud provider:
+    Configure cloud provider credentials:
 
     <Tabs>
       <Tab title="AWS">
-        ```bash
+        ```bash title="Configure AWS" icon="aws"
         aws configure
         ```
       </Tab>
       <Tab title="GCP">
-        ```bash
+        ```bash title="Configure GCP" icon="google"
         gcloud auth application-default login
         ```
       </Tab>
       <Tab title="Azure">
-        ```bash
+        ```bash title="Configure Azure" icon="microsoft"
         az login
         ```
       </Tab>
     </Tabs>
-    **Deploy with Terraform:**
 
-    Navigate to the generated stack directory:
+    Deploy with Terraform:
 
-    ```bash
-    cd .suga/stacks/my-app-aws-12345
+    ```bash title="Navigate to Stack" icon="folder"
+    cd .suga/stacks/my-app-aws-*
     ```
 
-    Initialize Terraform:
-
-    ```bash
+    ```bash title="Initialize Terraform" icon="download"
     terraform init -upgrade
     ```
 
-    Preview the changes:
-
-    ```bash
+    ```bash title="Preview Changes" icon="eye"
     terraform plan
     ```
 
-    Deploy your application:
-
-    ```bash
+    ```bash title="Deploy Infrastructure" icon="rocket"
     terraform apply
     ```
 
-    When prompted, type `yes` to confirm the deployment. Once complete, you'll see your application endpoints in the output.
+    Type `yes` when prompted. After deployment completes, your application endpoints will be displayed in the output.
+  </Step>
+</Steps>
 
-  </Accordion>
-</AccordionGroup>
+<Info>
+  Your application is now cloud-agnostic. Deploy to AWS, GCP, or Azure without code changes.
+</Info>
 
-**What You've Accomplished**
+## Next Steps
 
-- ✅ Replaced AWS SDK with Suga's unified API
-- ✅ Enabled local testing of your project
-- ✅ Generated Terraform for production deployment
-- ✅ Gained multi-cloud capability - same code deploys to AWS, GCP, or Azure
-
-<Note>
-  Your application now works across multiple cloud providers without changing
-  code. Suga handles the cloud-specific implementations automatically.
-</Note>
+- Add more resources like databases or queues to your `suga.yaml`
+- Configure environment-specific settings for staging and production
+- Explore Suga's monitoring and observability features
