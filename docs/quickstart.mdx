@@ -96,11 +96,49 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     Press Ctrl+C to stop the editor
     ```
 
+    Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.  
+
     ![Architecture Design](/images/edit-design.png)
 
     <Tip>
-      Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.
+      The editor automatically updates your `suga.yaml` file as you make changes.
     </Tip>
+
+    Let's review what the template `suga.yaml` has:
+
+    ```yaml title="suga.yaml" icon="file-code"
+    targets:
+      - suga/aws@1
+    name: go-standard
+    description: A Go web service template using the Suga framework for cloud resource access.
+    services:
+      app:
+        env:
+          TEST: test
+        container:
+          docker:
+            dockerfile: Dockerfile
+            context: .
+        dev:
+          script: go run main.go
+    buckets:
+      files:
+        access:
+          app:
+            - read
+            - write
+    entrypoints:
+      ingress:
+        routes:
+          /:
+            name: app
+    ```
+
+    The template includes:
+    - **targets**: AWS deployment configuration
+    - **services**: Your `app` service with local dev script and Docker container setup
+    - **buckets**: A `files` bucket that your app can read from and write to
+    - **entrypoints**: An HTTP endpoint that routes traffic to your app
   </Step>
 
   <Step title="Develop Locally" icon="code">
