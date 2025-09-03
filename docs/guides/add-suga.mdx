@@ -212,6 +212,10 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. T
             })
 
             port := os.Getenv("PORT")
+            if port == "" {
+                port = "8080"
+            }
+
             log.Printf("Server starting on port %s\n", port)
             log.Fatal(http.ListenAndServe(":"+port, router))
         }
@@ -234,7 +238,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. T
     Test your migrated application:
 
     ```bash title="Test Endpoint" icon="check-circle"
-    curl http://localhost:3003/hello/world
+    curl http://localhost:3000/hello/world
     ```
 
     Expected response:
