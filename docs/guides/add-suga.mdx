@@ -9,25 +9,6 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. T
   **Prerequisites:** This guide assumes you have an existing application that uses cloud services. If you're starting fresh, see the [Getting Started Guide](/quickstart).
 </Note>
 
-<Expandable title="Migration Planning Checklist" defaultOpen={false}>
-  **Before starting:**
-  - Identify all cloud service dependencies (S3, DynamoDB, SQS, etc.)
-  - Document environment variables and configuration
-  - Review authentication and authorization requirements
-  - Note any cloud-specific features you're using
-
-  **During migration:**
-  - Replace SDK imports with Suga client
-  - Update all API calls to use Suga methods
-  - Remove cloud-specific error handling
-  - Test each endpoint after migration
-
-  **After migration:**
-  - Remove unused cloud SDK dependencies
-  - Update CI/CD pipelines to use `suga build`
-  - Document new deployment process for team
-</Expandable>
-
 <Steps>
   <Step title="Initialize Suga Project" icon="folder-plus">
     Navigate to your existing project directory and initialize Suga:
@@ -127,6 +108,15 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. T
     ```bash title="Update Dependencies" icon="package"
     go mod tidy
     ```
+
+    <Expandable title="Migration Checklist" defaultOpen={true}>
+      **Key migration steps:**
+      - Replace cloud SDK imports with `import "example/suga"`
+      - Initialize Suga client with `app, err := suga.NewClient()`
+      - Update API calls (e.g., S3 PutObject → `app.Files.Write()`)
+      - Remove cloud-specific error handling
+      - Test each endpoint after changes
+    </Expandable>
 
     Now migrate your application code. Here's a complete example showing the transformation:
 
