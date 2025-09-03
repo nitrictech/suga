@@ -1,0 +1,8 @@
+name: my-db
+type: database
+icon: ./icon.svg
+required_identities: []
+deployment:
+  terraform: ./module
+inputs: {}
+outputs: {}

@@ -1,0 +1,8 @@
+name: my-identity
+type: identity
+identity_type: my:identity:type
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+inputs: {}
+outputs: {}

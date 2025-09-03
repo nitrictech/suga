@@ -1,0 +1,9 @@
+name: my-entrypoint
+type: entrypoint
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+
+inputs: {}
+
+outputs: {}

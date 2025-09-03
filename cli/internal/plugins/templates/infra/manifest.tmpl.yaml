@@ -1,0 +1,7 @@
+name: my-infra
+type: infra
+icon: ./icon.svg
+deployment:
+  terraform: ./module
+inputs: {}
+outputs: {}

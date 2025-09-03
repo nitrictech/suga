@@ -1,0 +1,13 @@
+name: my-service
+type: service
+icon: ./icon.svg
+required_identities: []
+capabilities:
+  - schedules
+deployment:
+  terraform: ./module
+runtime:
+  go_module: github.com/yourorg/plugins/service
+
+inputs: {}
+outputs: {}
