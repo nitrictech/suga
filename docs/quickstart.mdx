@@ -1,138 +1,118 @@
 ---
 title: "Quickstart"
-description: "The Suga CLI provides everything you need to build, test, and deploy cloud-native applications with automatic infrastructure generation."
+description: "Get started with Suga in minutes - build, test, and deploy cloud-native applications with automatic infrastructure generation."
 ---
 
-## Get started with Suga in minutes
-
-Deploy your first application on the Suga platform in just a few steps.
+Deploy your first application on the Suga platform in just a few steps. The Suga CLI provides everything you need to build cloud-native applications with automatic infrastructure generation and multi-cloud deployment capabilities.
 
 <Note>
-  **Before you begin:** Make sure you have Suga CLI installed. See our [Installation Guide](/cli/installation) for platform-specific instructions.
+  **Prerequisites:** This guide assumes you have Suga CLI installed. If you need to install it, see our [Installation Guide](/cli/installation) for platform-specific instructions.
 </Note>
 
-<AccordionGroup>
-  <Accordion title="Step 1: Setup" defaultOpen="false" icon="rocket">
-    **Create and initialize your project:**
+<Steps>
+  <Step title="Create Your Project" icon="rocket">
+    Create a new project from a template:
 
-    Create a new project from a template using the following command:
-
-    ```bash
+    ```bash title="Create New Project" icon="sparkles"
     suga new my-first-app
     ```
 
-    You'll be prompted to select a template that matches your use case:
+    Select a template that matches your use case:
 
-    ```bash
+    ```
     Welcome to Suga, this command will help you create a project from a template.
-    
+    If you already have a project, run suga init instead.
+
     Project name: my-first-app
+    Template:
+    ➜ suga/go-standard
+      suga/python-django-pip
+      suga/python-fastapi-uv
+      suga/typescript-express
+
+    Template: suga/go-standard
     
-    ? Template: 
-      > acme/api-starter - REST API template
-        acme/web-app - Full-stack web application
-        acme/microservice - Microservice template
-    
-    Template: acme/api-starter
-    
-    ✓ Project created!
+    ✓ Project created!      
     ```
 
-    <Tip>
-      Choose a template that matches your use case or preferred framework.
-    </Tip>
-    Navigate to your new project directory:
+    Navigate to your project and install dependencies:
 
-    ```bash
+    ```bash title="Navigate to Project" icon="folder"
     cd my-first-app
     ```
 
-    Review the generated project structure:
-
-    ```bash
-    ls -la
-    ```
-
-    Your project will have the following structure:
-
-    ```bash
-    my-first-app/
-    ├── suga.yaml          # Project configuration
-    ├── package.json       # Dependencies (Node.js)
-    ├── services/
-    │    └── api.ts        # Your API service code
-    └── README.md          # Project documentation
-    ```
-
-    Install the project dependencies based on your language:
-
     <Tabs>
       <Tab title="Node.js">
-        ```bash
+        ```bash title="Install Dependencies" icon="package"
         npm install
         ```
       </Tab>
       <Tab title="Python">
-        ```bash
+        ```bash title="Install Dependencies (uv)" icon="package"
+        uv sync
+        ```
+        
+        Or with pip:
+        ```bash title="Install Dependencies (pip)" icon="package"
         pip install -r requirements.txt
         ```
       </Tab>
       <Tab title="Go">
-        ```bash
+        ```bash title="Install Dependencies" icon="package"
         go mod tidy
         ```
       </Tab>
     </Tabs>
-  </Accordion>
-  <Accordion title="Step 2: Design" icon="pen-to-square">
-    **Configure or review your application architecture:**
 
-    First, log in to the Suga platform:
+    <Info>
+      Your project structure will include `suga.yaml` for configuration, service code, and language-specific dependencies.
+    </Info>
+  </Step>
 
-    ```bash
+  <Step title="Design Your Architecture" icon="pen-to-square">
+    Log in and open the visual editor:
+
+    ```bash title="Login to Suga" icon="user"
     suga login
     ```
 
-    You'll see a confirmation message:
-
-    ```bash
+    You'll see a confirmation:
+    ```
     ⚡ Suga Logging in...
     
     ✓ Logged in as User
     ```
 
-    Open the visual editor to review and modify your application architecture:
+    Open the visual editor:
 
-    ```bash
+    ```bash title="Open Visual Editor" icon="edit"
     suga edit
     ```
 
-    The editor will launch in your browser:
-
-    ```bash
+    The editor launches in your browser:
+    ```
     ⚡ Suga Editor
     Opening visual editor at http://localhost:3001
     Press Ctrl+C to stop the editor
     ```
 
-    ![review.png](/images/edit-design.png)
+    ![Architecture Design](/images/edit-design.png)
 
-    <Note>
-      Design your APIs, databases, storage, and other cloud resources
-    </Note>
-  </Accordion>
-  <Accordion title="Step 3: Develop" icon="code">
-    **Run your application locally:**
+    <Tip>
+      Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.
+    </Tip>
+  </Step>
 
-    Start the development server with hot reload enabled:
+  <Step title="Develop Locally" icon="code">
+    Start the development server:
 
-    ```bash
+    ```bash title="Start Development Server" icon="play"
     suga dev
     ```
 
-    The development server will start and display connection information:
+    Your application starts with hot reload:
 
-    ```bash
+    ```
     ⚡ Suga v1.0.0
        - App: my-first-app
        - Addr: http://localhost:50051
@@ -149,54 +129,40 @@ Deploy your first application on the Suga platform in just a few steps.
     Use Ctrl-C to exit
     ```
 
-    <Tip>
-      Services automatically restart when you update your application code
-    </Tip>
-    **Test your application**
+    Test your application:
 
-    Send a test request to verify your application is running:
-
-    ```bash
+    ```bash title="Test Application" icon="check-circle"
     curl http://localhost:3000/hello
     ```
 
     Expected response:
-
     ```json
     {"message": "Hello World"}
     ```
-  </Accordion>
-  <Accordion title="Step 4: Deploy" icon="cloud">
-    **Configure deployment target and deploy to production:**
 
-    Use the visual editor to choose from available deployment targets:
+    <Info>
+      Services automatically restart when you update your code, providing instant feedback during development.
+    </Info>
+  </Step>
 
-    ```bash
-    suga edit
-    ```
+  <Step title="Deploy to Cloud" icon="cloud">
+    Configure your deployment targets in the visual editor or add them to `suga.yaml`:
 
-    ![deploy targets.png](/images/deploy-targets.png)
-
-    Alternatively, you can manually add deployment targets to your `suga.yaml` file:
-
-    ```yaml
+    ```yaml title="suga.yaml" icon="file-code"
     targets:
       - suga/aws@latest
       - suga/gcp@latest
       - suga/azure@latest
     ```
 
-    **Generate Terraform:**
+    Generate Terraform configuration:
 
-    Build the Terraform configuration for your chosen deployment target:
-
-    ```bash
+    ```bash title="Build Application" icon="hammer"
     suga build
     ```
 
-    The build process will generate infrastructure code:
-
-    ```bash
+    You'll see the build output:
+    ```
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-first-app-aws-12345
     
@@ -207,76 +173,46 @@ Deploy your first application on the Suga platform in just a few steps.
     4. Deploy with terraform apply
     ```
 
-    **Setup cloud credentials:**
-
-    Configure credentials for your chosen cloud provider:
+    Configure cloud provider credentials:
 
     <Tabs>
       <Tab title="AWS">
-        ```bash
+        ```bash title="Configure AWS" icon="aws"
         aws configure
         ```
       </Tab>
       <Tab title="GCP">
-        ```bash
+        ```bash title="Configure GCP" icon="google"
         gcloud auth application-default login
         ```
       </Tab>
       <Tab title="Azure">
-        ```bash
+        ```bash title="Configure Azure" icon="microsoft"
         az login
         ```
       </Tab>
     </Tabs>
-    **Deploy with Terraform:**
 
-    Navigate to the generated stack directory:
+    Deploy with Terraform:
 
-    ```bash
-    cd .suga/stacks/my-first-app-aws-xyz
+    ```bash title="Navigate to Stack" icon="folder"
+    cd .suga/stacks/my-first-app-aws-*
     ```
 
-    Initialize Terraform:
-
-    ```bash
+    ```bash title="Initialize Terraform" icon="download"
     terraform init -upgrade
     ```
 
-    You'll see a success message:
-
-    ```bash
-    Terraform has been successfully initialized!
-    ```
-
-    Preview the changes Terraform will make:
-
-    ```bash
+    ```bash title="Preview Changes" icon="eye"
     terraform plan
     ```
 
-    Review the planned infrastructure changes:
-
-    ```bash
-    Terraform will perform the following actions:
-    
-      # aws_s3_bucket.storage will be created
-      + resource "aws_s3_bucket" "storage" {
-          + bucket = "my-first-app-storage"
-          ...
-      }
-    
-    Plan: 15 to add, 0 to change, 0 to destroy.
-    ```
-
-    Apply the Terraform configuration to deploy your application:
-
-    ```bash
+    ```bash title="Deploy Application" icon="rocket"
     terraform apply
     ```
 
-    Confirm the deployment when prompted:
-
-    ```bash
+    Confirm when prompted:
+    ```
     Do you want to perform these actions?
       Terraform will perform the actions described above.
       Only 'yes' will be accepted to approve.
@@ -288,37 +224,19 @@ Deploy your first application on the Suga platform in just a few steps.
     Outputs:
     api_endpoint = "https://api.my-first-app.example.com"
     ```
-  </Accordion>
-</AccordionGroup>
 
-**What you just accomplished:**
+    <Warning>
+      Review the Terraform plan carefully before applying to understand what resources will be created in your cloud account.
+    </Warning>
+  </Step>
+</Steps>
 
-- ✅ Developed and tested an application locally with Suga
-- ✅ Generated Terraform deployment scripts for your application
-- ✅ Deployed the application to your chosen cloud provider
+**What you've accomplished:**
 
-## Everyday Commands
-
-<CardGroup cols={2}>
-  <Card title="Create Projects" icon="folder" href="/cli/new.mdx">
-    Use `suga new` to create projects from templates or `suga init` to add Suga to existing apps
-  </Card>
-  <Card title="Visual Editor" icon="pen-to-square" href="/cli/edit.mdx">
-    Use `suga edit` to design your application architecture and configure deployment targets
-  </Card>
-  <Card title="Local Development" icon="play" href="/cli/dev.mdx">
-    Use `suga dev` to run your application locally with hot reload and instant feedback
-  </Card>
-  <Card title="Generate Clients" icon="code" href="/cli/generate.mdx">
-    Use `suga generate` to create type-safe client libraries for your APIs
-  </Card>
-  <Card title="Build Terraform" icon="hammer" href="/cli/build.mdx">
-    Use `suga build` to generate Terraform infrastructure code for your deployment target
-  </Card>
-  <Card title="Team Authentication" icon="key" href="/cli/login.mdx">
-    Use `suga login` to connect to Suga Platform
-  </Card>
-</CardGroup>
+- ✅ Created and configured a Suga application from a template
+- ✅ Developed and tested your application locally with hot reload
+- ✅ Generated production-ready Terraform infrastructure code
+- ✅ Deployed your application to your chosen cloud provider
 
 <Note>
   **Need help?** Contact [support@addsuga.com](mailto:support@addsuga.com) or check our [GitHub](https://github.com/nitrictech/suga).
