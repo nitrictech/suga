@@ -3,17 +3,14 @@ export default {
   plugins: [
     {
       rules: {
-        "scope-empty-for-type": ({ type, scope }) => {
-          // Allow empty scope for docs, ci, and chore commits
-          const typesAllowingEmptyScope = ["docs", "ci", "chore"];
-          if (typesAllowingEmptyScope.includes(type) && !scope) {
-            return [true];
-          }
-          // Require scope for other types
-          if (!typesAllowingEmptyScope.includes(type) && !scope) {
-            return [false, `scope is required for type '${type}'`];
-          }
-          return [true];
+        "scope-empty-for-type": (parsed, when = "always", allowed = ["docs", "ci", "chore"]) => {
+          const { type, scope } = parsed ?? {};
+          const isEmpty = !scope;
+          const allowEmptyForType = allowed.includes(type);
+          // When = "always": require scope for non-allowed types. "never" would disable requirement.
+          const requireScope = when !== "never" && !allowEmptyForType;
+          const pass = requireScope ? !isEmpty : true;
+          return [pass, pass ? undefined : `scope is required for type '${type}'`];
         },
       },
     },
@@ -50,6 +47,6 @@ export default {
         "release",
       ],
     ],
-    "scope-empty-for-type": [2, "always"],
+    "scope-empty-for-type": [2, "always", ["docs", "ci", "chore"]],
   },
 };
