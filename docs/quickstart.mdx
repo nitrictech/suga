@@ -188,10 +188,14 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
     ```yaml title="suga.yaml" icon="file-code"
     targets:
-      - suga/aws@latest
-      - suga/gcp@latest
-      - suga/azure@latest
+      - suga/aws@1
+      - suga/gcp@1
+      - suga/azure@1
     ```
+
+    <Note>
+      The template has been set up to use AWS, you can also use GCP or Azure. These targets are officially supported.
+    </Note>
 
     Generate Terraform configuration:
 
