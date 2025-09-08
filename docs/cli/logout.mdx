@@ -1,12 +1,28 @@
 ---
 title: 'logout'
-description: 'Log out from your Suga account'
+description: 'Logout from Suga'
 ---
 
-Log out from your Suga account.
+Logout from the Suga CLI.
 
 ```bash
 suga logout
 ```
 
-Clears your authentication session.
+Clears your local authentication session and revokes stored credentials. After logging out, you'll need to run `suga login` again to use CLI commands that require authentication.
+
+## What happens during logout
+
+1. Revokes your current authentication session
+2. Clears locally stored credentials
+3. Requires re-authentication for future CLI operations
+
+## Example
+
+```bash
+suga logout
+```
+
+<Note>
+  After logging out, most CLI commands will require you to login again using `suga login`.
+</Note>

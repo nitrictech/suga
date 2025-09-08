@@ -1,25 +1,41 @@
 ---
 title: 'generate'
-description: 'Generate client libraries for your application'
+description: 'Generate client libraries for Suga'
 ---
 
-Generate client libraries for your Suga application.
+Generate client libraries for different programming languages based on the Suga application specification.
 
 ```bash
-suga generate
+suga generate [flags]
 ```
 
 ## Options
 
-- `--language` - Target language for client library
-- `--output` - Output directory
+### Language Selection
+- `--go` - Generate Go client
+- `--js` - Generate JavaScript client
+- `--python` - Generate Python client
+- `--ts` - Generate TypeScript client
+
+### Output Configuration
+- `--go-out string` - Output directory for Go client
+- `--go-package-name string` - Package name for Go client
+- `--js-out string` - Output directory for JavaScript client
+- `--python-out string` - Output directory for Python client
+- `--ts-out string` - Output directory for TypeScript client
 
 ## Examples
 
 ```bash
 # Generate TypeScript client
-suga generate --language typescript --output ./client
+suga generate --ts --ts-out ./client
 
-# Generate Python client  
-suga generate --language python --output ./python-client
+# Generate Go client with custom package name
+suga generate --go --go-out ./suga --go-package-name suga
+
+# Generate Python client
+suga generate --python --python-out ./python-client
+
+# Generate multiple clients at once
+suga generate --ts --ts-out ./ts-client --go --go-out ./go-client --go-package-name suga
 ```

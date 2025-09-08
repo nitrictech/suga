@@ -1,15 +1,19 @@
 ---
 title: 'access-token'
-description: 'Get an access token for programmatic access'
+description: 'Get access token'
 ---
 
-Get an access token for programmatic access.
+Get the current access token.
 
 ```bash
 suga access-token
 ```
 
 Returns an access token for use in CI/CD pipelines and automated workflows.
+
+## Options
+
+- `-r, --refresh` - Retrieve a new access token, ignoring any cached tokens
 
 ## Example
 

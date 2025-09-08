@@ -9,10 +9,23 @@ Create a new Suga project from a template.
 suga new [project-name]
 ```
 
+Use this command when you want to **create a new project from scratch** using Suga. This command sets up a complete new application with both application code and infrastructure configuration based on a template.
+
+The command creates a new directory with your project name, including:
+- Application code (Python, TypeScript, Go, etc.)
+- Suga configuration (`suga.yaml`)
+- Dockerfile and other necessary files
+- Example infrastructure setup
+
+## When to use `suga new`
+
+- You're starting a completely new project
+- You want to use a pre-built template with best practices
+- You prefer to have the application code and infrastructure set up together
+
 ## Options
 
-- `--template` - Specify a template to use
-- `--force` - Overwrite existing directory
+- `-f, --force` - Force overwrite existing project directory
 
 ## Examples
 
@@ -20,9 +33,10 @@ suga new [project-name]
 # Create project with default template
 suga new my-app
 
-# Use specific template
-suga new my-app --template typescript-api
-
 # Force overwrite existing directory
 suga new my-app --force
 ```
+
+## Alternative
+
+If you **already have an existing application** and want to add Suga infrastructure management to it, use [`suga init`](/cli/init) instead.

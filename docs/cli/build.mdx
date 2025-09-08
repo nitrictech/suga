@@ -1,30 +1,42 @@
 ---
 title: 'build'
-description: 'Build your application and generate Terraform modules'
+description: 'Builds the Suga application'
 ---
 
-Build your application and generate Terraform modules.
+Builds an application using the suga.yaml application spec and referenced platform.
 
 ```bash
 suga build
 ```
 
-## Build Process
+The build command transforms your Suga application configuration into production-ready Terraform infrastructure code. This is typically the step you run before deploying to cloud providers.
 
-1. Validates your configuration
-2. Compiles your services
-3. Generates Terraform modules
-4. Outputs infrastructure-as-code ready for deployment
+## What happens during build
 
-## Output
+1. **Validates configuration** - Checks your `suga.yaml` for errors
+2. **Analyzes dependencies** - Reviews your application services and resources
+3. **Generates Terraform** - Creates cloud provider-specific infrastructure code
+4. **Outputs deployment stack** - Produces a complete Terraform directory ready for deployment
 
-Generated files are placed in the build output directory, ready for deployment with Terraform.
+## Output Structure
+
+The build process creates a `.suga/stacks/` directory containing:
+- **Terraform configuration** - Cloud provider resources (AWS, GCP, Azure)
+- **Application containers** - Dockerized services ready for deployment  
+- **Networking setup** - Load balancers, security groups, routing
+- **Resource definitions** - Databases, storage buckets, queues, etc.
+
+## Next Steps After Build
+
+1. Navigate to the generated stack directory: `cd .suga/stacks/your-app-{provider}-{id}`
+2. Initialize Terraform: `terraform init -upgrade`
+3. Preview changes: `terraform plan`
+4. Deploy: `terraform apply`
 
 ## Example
 
 ```bash
 suga build
-# Building application...
-# Generating Terraform modules...
-# Build complete: terraform/
 ```
+
+The command will prompt you to select your deployment target (AWS, GCP, or Azure) and region if not already configured.
