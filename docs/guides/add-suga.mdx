@@ -3,10 +3,10 @@ title: "Add Suga to Your Application"
 description: "Migrate existing applications to Suga for cloud-agnostic deployment."
 ---
 
-Suga helps you migrate existing applications to a cloud-agnostic architecture. With Suga, you get local development with local emulation of cloud services (no mocks!), the ability to deploy anywhere - AWS, GCP, or Azure from the same code, and auto-generated Terraform for production-ready infrastructure. This guide walks through migrating a Go web service as an example that can be easily adapted to other languages and services.
+Suga helps you migrate existing applications to a cloud-agnostic architecture. With Suga, you get local development with local emulation of cloud services, the ability to deploy anywhere - AWS or GCP from the same code, and auto-generated Terraform for production-ready infrastructure. This guide walks through migrating a Go web service as an example that can be easily adapted to other languages and services.
 
 <Note>
-  **Prerequisites:** This guide assumes you have an existing application that uses cloud services. If you're starting fresh, see the [Getting Started Guide](/quickstart).
+  **Prerequisites:** Make sure you have the [Suga CLI installed](/cli/installation). This guide assumes you have an existing application that uses cloud services. If you're starting fresh, see the [Getting Started Guide](/quickstart).
 </Note>
 
 <Steps>
@@ -40,6 +40,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     2. Add a **service** named `app` and connect the entrypoint to it
     3. Add a **bucket** named `files` and connect the service to it
     4. Configure bucket permissions to include `read`, `write`, and `delete`
+    5. Configure the service with a command to run locally (e.g., `go run main.go` or `npm run dev`)
 
     ![Infrastructure Design](/images/migrate.png)
 
@@ -62,9 +63,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
       files:
         access:
           app:
-            - read
-            - write
-            - delete
+            - all
     entrypoints:
       ingress:
         routes:
@@ -114,7 +113,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
       - Replace cloud SDK imports with `import "example/suga"`
       - Initialize Suga client with `app, err := suga.NewClient()`
       - Update API calls (e.g., S3 PutObject → `app.Files.Write()`)
-      - Remove cloud-specific error handling
+      - Simplify error handling (no need for AWS/GCP-specific error types)
       - Test each endpoint after changes
     </Expandable>
 
@@ -284,11 +283,6 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
         gcloud auth application-default login
         ```
       </Tab>
-      <Tab title="Azure">
-        ```bash title="Configure Azure" icon="microsoft"
-        az login
-        ```
-      </Tab>
     </Tabs>
 
     Deploy with Terraform:
@@ -314,7 +308,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
 </Steps>
 
 <Info>
-  Your application is now cloud-agnostic. Deploy to AWS, GCP, or Azure without code changes.
+  Your application is now cloud-agnostic. Deploy to AWS or GCP without code changes.
 </Info>
 
 ## Next Steps
