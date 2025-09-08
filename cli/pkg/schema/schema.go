@@ -21,7 +21,6 @@ type Application struct {
 	BucketIntents     map[string]*BucketIntent     `json:"buckets,omitempty" yaml:"buckets,omitempty"`
 	EntrypointIntents map[string]*EntrypointIntent `json:"entrypoints,omitempty" yaml:"entrypoints,omitempty"`
 	DatabaseIntents   map[string]*DatabaseIntent   `json:"databases,omitempty" yaml:"databases,omitempty"`
-	WebsiteIntents    map[string]*WebsiteIntent    `json:"websites,omitempty" yaml:"websites,omitempty"`
 }
 
 func (a *Application) GetTypeForIntent(intent interface{}) (string, error) {
@@ -34,8 +33,6 @@ func (a *Application) GetTypeForIntent(intent interface{}) (string, error) {
 		return "entrypoint", nil
 	case *DatabaseIntent:
 		return "database", nil
-	case *WebsiteIntent:
-		return "website", nil
 	default:
 		return "", fmt.Errorf("unknown intent type: %T", intent)
 	}
@@ -60,10 +57,6 @@ func (a *Application) GetResourceIntents() map[string]IResource {
 		resourceIntents[name] = intent
 	}
 
-	for name, intent := range a.WebsiteIntents {
-		resourceIntents[name] = intent
-	}
-
 	return resourceIntents
 }
 
@@ -82,10 +75,6 @@ func (a *Application) GetResourceIntent(name string) (interface{}, bool) {
 
 	if database, ok := a.DatabaseIntents[name]; ok {
 		return database, true
-	}
-
-	if website, ok := a.WebsiteIntents[name]; ok {
-		return website, true
 	}
 
 	return nil, false
