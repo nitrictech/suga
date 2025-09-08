@@ -190,11 +190,10 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     targets:
       - suga/aws@1
       - suga/gcp@1
-      - suga/azure@1
     ```
 
     <Note>
-      The template has been set up to use AWS, you can also use GCP or Azure. These targets are officially supported.
+      The template has been set up to use AWS, you can also use GCP. These targets are officially supported.
     </Note>
 
     Generate Terraform configuration:
@@ -226,11 +225,6 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
       <Tab title="GCP">
         ```bash title="Configure GCP" icon="google"
         gcloud auth application-default login
-        ```
-      </Tab>
-      <Tab title="Azure">
-        ```bash title="Configure Azure" icon="microsoft"
-        az login
         ```
       </Tab>
     </Tabs>
