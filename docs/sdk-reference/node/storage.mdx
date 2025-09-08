@@ -1,0 +1,172 @@
+---
+title: Storage
+description: Storage resources provide async methods for interacting with cloud storage in your Suga infrastructure.
+---
+
+## Methods
+
+### read
+
+Read a file from the bucket.
+
+```typescript
+async read(key: string): Promise<Buffer>
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to read
+</ParamField>
+
+#### Returns
+
+<ResponseField name="Promise<Buffer>" type="Promise<Buffer>">
+  The file contents as a Buffer
+</ResponseField>
+
+**Example:**
+
+```typescript
+const content = await bucket.read("path/to/file.txt");
+console.log(content.toString('utf-8'));
+```
+
+### write
+
+Write a file to the bucket.
+
+```typescript
+async write(key: string, data: Buffer): Promise<void>
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path where the file should be stored
+</ParamField>
+
+<ParamField path="data" type="Buffer" required>
+  The file contents as a Buffer
+</ParamField>
+
+**Example:**
+
+```typescript
+await bucket.write("path/to/file.txt", Buffer.from("Hello, World!"));
+```
+
+### delete
+
+Delete a file from the bucket.
+
+```typescript
+async delete(key: string): Promise<void>
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to delete
+</ParamField>
+
+**Example:**
+
+```typescript
+await bucket.delete("path/to/file.txt");
+```
+
+### list
+
+List files in the bucket with a given prefix.
+
+```typescript
+async list(prefix: string): Promise<string[]>
+```
+
+#### Parameters
+
+<ParamField path="prefix" type="string" required>
+  Filter results to keys starting with this prefix
+</ParamField>
+
+#### Returns
+
+<ResponseField name="Promise<string[]>" type="Promise<string[]>">
+  Array of file keys matching the prefix
+</ResponseField>
+
+**Example:**
+
+```typescript
+// List all files with empty prefix
+const allFiles = await bucket.list("");
+
+// List files in a specific directory
+const docs = await bucket.list("documents/");
+```
+
+### exists
+
+Check if a file exists in the bucket.
+
+```typescript
+async exists(key: string): Promise<boolean>
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to check
+</ParamField>
+
+#### Returns
+
+<ResponseField name="Promise<boolean>" type="Promise<boolean>">
+  True if the file exists, false otherwise
+</ResponseField>
+
+**Example:**
+
+```typescript
+if (await bucket.exists("config.json")) {
+    const config = await bucket.read("config.json");
+}
+```
+
+### Presigned URLs
+
+Generate presigned URLs for secure file access without exposing credentials.
+
+```typescript
+async getDownloadUrl(key: string, options?: {expiry: number}): Promise<string>
+async getUploadUrl(key: string, options?: {expiry: number}): Promise<string>
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file
+</ParamField>
+
+<ParamField path="options" type="object" default="{expiry: 300}">
+  Configuration with expiry in seconds
+</ParamField>
+
+#### Returns
+
+<ResponseField name="Promise<string>" type="Promise<string>">
+  The presigned URL for the file
+</ResponseField>
+
+**Example:**
+
+```typescript
+// Download URL (default 5 minute expiry)
+const downloadUrl = await suga.image.getDownloadUrl("document.pdf");
+
+// Upload URL with custom expiry (1 hour)
+const uploadUrl = await suga.image.getUploadUrl("uploads/newfile.pdf", {
+    expiry: 3600
+});
+```

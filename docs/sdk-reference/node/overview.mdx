@@ -1,0 +1,39 @@
+---
+title: "Overview"
+description: "Node.js SDK for Suga infrastructure resources"
+---
+
+
+## Import
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { SugaClient } from './suga/client';
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const { SugaClient } = require('./suga/client');
+    ```
+  </Tab>
+</Tabs>
+
+## Usage
+
+```javascript
+// Initialize client
+const suga = new SugaClient();
+
+// Access your resources (names from your suga.yaml)
+await suga.image.write("key", Buffer.from("data"));
+const content = await suga.image.read("key");
+```
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Storage" icon="database" href="/sdk-reference/node/storage">
+    Object storage operations - read, write, delete, list files
+  </Card>
+</CardGroup>

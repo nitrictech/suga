@@ -35,6 +35,37 @@
             ]
           }
         ]
+      },      
+      {
+        "anchor": "SDK Reference",
+        "icon": "code",
+              "groups": [
+          {
+            "group": "Overview",
+            "pages": ["sdk-reference/overview"]
+          },
+          {
+            "group": "Python",
+            "pages": [
+              "sdk-reference/python/overview",
+              "sdk-reference/python/storage"
+            ]
+          },
+          {
+            "group": "Node.js",
+            "pages": [
+              "sdk-reference/node/overview",
+              "sdk-reference/node/storage"
+            ]
+          },
+          {
+            "group": "Go",
+            "pages": [
+              "sdk-reference/go/overview",
+              "sdk-reference/go/storage"
+            ]
+          }
+        ]
       },
       {
         "anchor": "CLI Reference",

@@ -1,0 +1,32 @@
+---
+title: "Overview"
+description: "Go SDK for Suga infrastructure resources"
+---
+
+## Import
+
+```go
+import "example/suga"
+```
+
+## Usage
+
+```go
+// Initialize client
+app, err := suga.NewClient()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Access your resources (names from your suga.yaml)
+app.Files.Write("key", []byte("data"))
+content, err := app.Files.Read("key")
+```
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Storage" icon="database" href="/sdk-reference/go/storage">
+    Object storage operations - read, write, delete, list files
+  </Card>
+</CardGroup>

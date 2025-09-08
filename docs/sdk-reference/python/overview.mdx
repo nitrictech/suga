@@ -1,0 +1,29 @@
+---
+title: "Overview"
+description: "Python SDK for Suga infrastructure resources"
+---
+
+## Import
+
+```python
+from suga_gen.client import SugaClient
+```
+
+## Usage
+
+```python
+# Initialize client
+suga = SugaClient()
+
+# Access your resources (names from your suga.yaml)
+suga.image.write("key", b"data")
+content = suga.image.read("key")
+```
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Storage" icon="database" href="/sdk-reference/python/storage">
+    Object storage operations - read, write, delete, list files
+  </Card>
+</CardGroup>
