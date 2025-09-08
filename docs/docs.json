@@ -41,7 +41,8 @@
               "guides/add-suga",
               "guides/database-migration",
               "guides/terraform-backend-config",
-              "guides/local-database-setup"
+              "guides/local-database-setup",
+              "guides/environment-management"
             ]
           }
         ]
