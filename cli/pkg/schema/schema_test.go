@@ -272,9 +272,6 @@ func TestApplication_IsValid_NameConflicts(t *testing.T) {
 		EntrypointIntents: map[string]*EntrypointIntent{
 			"api": {},
 		},
-		WebsiteIntents: map[string]*WebsiteIntent{
-			"api": {}, // Same name as service
-		},
 	}
 
 	violations := app.IsValid()
@@ -284,7 +281,6 @@ func TestApplication_IsValid_NameConflicts(t *testing.T) {
 	assert.Contains(t, errString, "api:    # <-- bucket name api is already in use by a service")
 	assert.Contains(t, errString, "api:    # <-- database name api is already in use by a service")
 	assert.Contains(t, errString, "api:    # <-- entrypoint name api is already in use by a service")
-	assert.Contains(t, errString, "api:    # <-- website name api is already in use by a service")
 }
 
 func TestApplication_IsValid_ReservedNames(t *testing.T) {
@@ -304,9 +300,6 @@ func TestApplication_IsValid_ReservedNames(t *testing.T) {
 		EntrypointIntents: map[string]*EntrypointIntent{
 			"backend": {},
 		},
-		WebsiteIntents: map[string]*WebsiteIntent{
-			"backend": {},
-		},
 		BucketIntents: map[string]*BucketIntent{
 			"backend": {},
 		},
@@ -319,7 +312,6 @@ func TestApplication_IsValid_ReservedNames(t *testing.T) {
 	assert.Contains(t, errString, "backend:    # <-- service name backend is a reserved name")
 	assert.Contains(t, errString, "backend:    # <-- database name backend is a reserved name")
 	assert.Contains(t, errString, "backend:    # <-- entrypoint name backend is a reserved name")
-	assert.Contains(t, errString, "backend:    # <-- website name backend is a reserved name")
 	assert.Contains(t, errString, "backend:    # <-- bucket name backend is a reserved name")
 }
 
@@ -365,10 +357,6 @@ func TestApplication_IsValid_ValidSnakeCaseNames(t *testing.T) {
 			"session_store": {
 				EnvVarKey: "TEST_2",
 			},
-		},
-		WebsiteIntents: map[string]*WebsiteIntent{
-			"public_site": {},
-			"admin_panel": {},
 		},
 	}
 
@@ -419,10 +407,6 @@ func TestApplication_IsValid_InvalidSnakeCaseNames(t *testing.T) {
 			"user-db": {}, // kebab-case
 			"UserDB":  {}, // PascalCase
 		},
-		WebsiteIntents: map[string]*WebsiteIntent{
-			"public-site": {}, // kebab-case
-			"PublicSite":  {}, // PascalCase
-		},
 	}
 
 	violations := app.IsValid()
@@ -448,10 +432,6 @@ func TestApplication_IsValid_InvalidSnakeCaseNames(t *testing.T) {
 	// Check database violations
 	assert.Contains(t, errString, "user-db:    # <-- database name user-db must be in snake_case format")
 	assert.Contains(t, errString, "UserDB:    # <-- database name UserDB must be in snake_case format")
-
-	// Check website violations
-	assert.Contains(t, errString, "public-site:    # <-- website name public-site must be in snake_case format")
-	assert.Contains(t, errString, "PublicSite:    # <-- website name PublicSite must be in snake_case format")
 }
 
 func TestApplicationFromYaml_InvalidResourceNames(t *testing.T) {
@@ -505,5 +485,4 @@ websites:
 	assert.Contains(t, errString, "file-storage:    # <-- bucket name file-storage must be in snake_case format")
 	assert.Contains(t, errString, "main-api:    # <-- entrypoint name main-api must be in snake_case format")
 	assert.Contains(t, errString, "user-db:    # <-- database name user-db must be in snake_case format")
-	assert.Contains(t, errString, "public-site:    # <-- website name public-site must be in snake_case format")
 }

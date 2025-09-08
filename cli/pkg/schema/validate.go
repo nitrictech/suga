@@ -94,14 +94,6 @@ func (a *Application) checkNoNameConflicts() []gojsonschema.ResultError {
 		resourceNames[name] = "database"
 	}
 
-	for name := range a.WebsiteIntents {
-		if existingType, ok := resourceNames[name]; ok {
-			violations = append(violations, newValidationError(fmt.Sprintf("websites.%s", name), fmt.Sprintf("website name %s is already in use by a %s", name, existingType)))
-			continue
-		}
-		resourceNames[name] = "website"
-	}
-
 	return violations
 }
 
@@ -135,12 +127,6 @@ func (a *Application) checkNoReservedNames() []gojsonschema.ResultError {
 		}
 	}
 
-	for name := range a.WebsiteIntents {
-		if slices.Contains(reservedNames, name) {
-			violations = append(violations, newValidationError(fmt.Sprintf("websites.%s", name), fmt.Sprintf("website name %s is a reserved name", name)))
-		}
-	}
-
 	return violations
 }
 
@@ -169,12 +155,6 @@ func (a *Application) checkSnakeCaseNames() []gojsonschema.ResultError {
 	for name := range a.DatabaseIntents {
 		if !snakeCasePattern.MatchString(name) {
 			violations = append(violations, newValidationError(fmt.Sprintf("databases.%s", name), fmt.Sprintf("database name %s must be in snake_case format", name)))
-		}
-	}
-
-	for name := range a.WebsiteIntents {
-		if !snakeCasePattern.MatchString(name) {
-			violations = append(violations, newValidationError(fmt.Sprintf("websites.%s", name), fmt.Sprintf("website name %s must be in snake_case format", name)))
 		}
 	}
 
