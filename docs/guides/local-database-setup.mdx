@@ -10,7 +10,7 @@ Suga doesn't currently auto-provision databases for local development. This guid
 </Note>
 
 <Steps>
-  <Step title="Setup PostgreSQL with Docker" icon="docker">
+  <Step title="Setup PostgreSQL with Docker">
     Create these files in your project root:
 
     ```yaml title="docker-compose.yml" icon="docker"
@@ -57,7 +57,7 @@ Suga doesn't currently auto-provision databases for local development. This guid
     You should see the postgres service in "Up" status.
   </Step>
 
-  <Step title="Configure Database in Suga" icon="settings">
+  <Step title="Configure Database in Suga">
     Open the Suga dashboard:
 
     ```bash title="Open Suga Editor" icon="edit"
@@ -88,7 +88,7 @@ Suga doesn't currently auto-provision databases for local development. This guid
     </Info>
   </Step>
 
-  <Step title="Initialize Database Schema" icon="database">
+  <Step title="Initialize Database Schema">
     You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
 
     Create an `init.sql` file in your project root:
@@ -121,7 +121,7 @@ Suga doesn't currently auto-provision databases for local development. This guid
     </Tip>
   </Step>
 
-  <Step title="Test Your Database Connection" icon="plug">
+  <Step title="Test Your Database Connection">
     Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
 
     First, verify you can connect to the database directly:

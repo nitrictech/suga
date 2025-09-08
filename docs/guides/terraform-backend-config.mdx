@@ -39,13 +39,13 @@ The synthesized output can be found in the `terraform` directory.
 After running `suga build`, add a backend configuration file to the synthesized output:
 
 <Steps>
-  <Step title="Generate the Stack" icon="hammer">
+  <Step title="Generate the Stack">
     ```bash title="Generate Terraform Stack" icon="hammer"
     suga build
     ```
   </Step>
 
-  <Step title="Create Backend Configuration" icon="file-plus">
+  <Step title="Create Backend Configuration">
     Create `backend.tf` in the synthesized stack directory:
     
     ```bash title="Create Backend File" icon="file-plus"
@@ -116,7 +116,7 @@ After running `suga build`, add a backend configuration file to the synthesized 
     </Expandable>
   </Step>
 
-  <Step title="Initialize and Deploy" icon="rocket">
+  <Step title="Initialize and Deploy">
     ```bash title="Initialize Terraform" icon="terminal"
     cd terraform/stacks/<stack_name>
     terraform init
