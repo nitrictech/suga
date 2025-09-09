@@ -1,66 +1,156 @@
 ---
 title: "Welcome to Suga"
 sidebarTitle: "Introduction"
-description: "Bring Software Best Practices to Infrastructure - Empower developers, protect your platform"
+description: "Cloud development with visual design, local testing, and multi-cloud deployment"
 ---
 
-## Launch apps faster and stay in control
-
-Suga transforms infrastructure into a self-service platform where developers ship instantly and platform teams govern everything.
+Suga makes cloud development simple by combining visual infrastructure design with automatic Terraform generation. Build applications with any framework, test locally with emulated cloud resources, and deploy anywhere with production-ready Terraform.
 
 <Card title="Get Started" icon="rocket" href="/quickstart" horizontal>
-  Deploy your first application in minutes with our quickstart guide.
+  Deploy your first application in minutes with the quickstart guide.
 </Card>
 
-## Core Capabilities
+## What is Suga?
 
-<Columns cols={2}>
-  <Card title="Paved Roads" icon="road" href="/quickstart">
-    Go beyond templates. Build paved roads with guardrails that ensure that
-    every project is secure and compliant.
-  </Card>
-  <Card title="Reliable Infrastructure" icon="cubes" href="/quickstart">
-    Use a Terraform registry built for production. Modules that work on day one,
-    and keep working day two and onward.
-  </Card>
-  <Card title="Accelerate Your Workflow" icon="bolt" href="/quickstart">
-    Visually design infrastructure with AI assistance tailored to your
-    application's requirements, then generate production ready Terraform.
-  </Card>
-  <Card title="Reimagine Self-Service" icon="hand-pointer" href="/quickstart">
-    Build locally with any framework. Access cloud resources with an ORM-like
-    experience. Skip the queues, deploy to any environment when ready.
-  </Card>
-</Columns>
+Suga is a cloud development platform that adds infrastructure capabilities to your applications. You can add Suga to your existing app with minimal changes, or create a new project from scratch using templates.
 
-## Turn Vibe coding into Safe coding
+<div style={{position: 'relative', height: '400px', overflow: 'hidden'}}>
+  <video width="100%" autoPlay loop muted playsInline style={{width: '100%', objectFit: 'cover', objectPosition: 'top'}}>
+    <source src="/images/project-editor.webm" type="video/webm" />
+    Your browser does not support the video tag.
+  </video>
+  <div style={{
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60px',
+    background: 'linear-gradient(transparent, var(--background-color, white))',
+    pointerEvents: 'none'
+  }}></div>
+</div>
 
-Enterprise governance that keeps pace with AI development.
+Suga provides:
 
-<Columns cols={3}>
-  <Card title="Speed with Safety for Devs" icon="gauge-high" href="/quickstart">
-    Build with any AI model, any framework, any tool. Safely and confidently
-    deploy to any environment when ready.
-  </Card>
-  <Card title="AI Guided Architecture" icon="brain" href="/quickstart">
-    Design and share AI-assisted architectures across your entire organization.
-  </Card>
-  <Card
-    title="Control for Platform Engineers"
-    icon="shield-check"
-    href="/quickstart"
-  >
-    Define the guardrails. Every AI assisted design is secure by default.
-  </Card>
-</Columns>
+- **Visual infrastructure design** - Design your cloud architecture with drag-and-drop components
+- **Framework flexibility** - Works as an add-on to Express, Django, FastAPI, Go HTTP, and other frameworks
+- **Local cloud emulation** - Develop and test with local versions of cloud services (S3, databases, queues)
+- **Multi-cloud deployment** - Generate Terraform for AWS, GCP, or Azure from the same design
+- **Team collaboration** - Infrastructure definition separate from application code
 
-## CLI Documentation
+## How Suga Works
 
-Complete command reference for the Suga CLI.
+<Steps>
+  <Step title="Design">
+    Use the visual editor to design your application architecture. Drag Entrypoints, databases, storage, and other resources onto the canvas and connect them together.
+  </Step>
+  <Step title="Develop">
+    Optionally, generate type-safe client libraries for your chosen language. Build your application using familiar frameworks while Suga handles cloud resource access.
+  </Step>
+  <Step title="Deploy">
+    Generate production-ready Terraform infrastructure code. Deploy to any cloud provider with confidence, knowing your infrastructure follows best practices.
+  </Step>
+</Steps>
 
-<Card title="CLI Reference" icon="terminal" href="/cli/introduction" horizontal>
-  Explore all available CLI commands and options.
-</Card>
+## Two Ways to Get Started
+
+### Add to Existing Applications
+
+Add Suga to your existing TypeScript, Python, or Go application with minimal changes. Run `suga init` to get started, then use the visual editor to design your cloud infrastructure. Optionally, replace your existing cloud SDK calls with Suga's unified API for seamless multi-cloud compatibility.
+
+- **Minimal integration** - Works with your existing codebase and deployment process
+- **Visual infrastructure design** - Design cloud resources visually or by editing YAML
+- **Unified cloud API** - Replace AWS, GCP, or Azure SDKs with one consistent interface
+- **Production deployment** - Generate battle-tested Terraform for any cloud provider
+
+[Add Suga to your existing app →](/guides/add-suga)
+  
+### Start a new application from a Template
+
+Create new projects from templates that include both application code and infrastructure setup for popular frameworks:
+
+- **Node.js + Express** - REST API with TypeScript
+- **Python + FastAPI** - Modern async API with automatic documentation  
+- **Python + Django** - Full-featured web framework setup
+- **Go + HTTP** - Lightweight HTTP server with standard library
+
+[Create a new project →](/quickstart)
+
+## Visual Infrastructure Design
+
+Design your cloud architecture with a drag-and-drop interface that automatically generates and maintains your infrastructure configuration.
+
+![Infrastructure Design](/images/edit-design.png)
+
+The visual editor provides:
+- **Resource library** - Drag databases, storage, services and entrypoints onto your canvas
+- **Resource connections** - Visual connections configure access permissions and routing
+- **Live validation** - Real-time feedback on architecture constraints
+- **AI Assistant** - Ask the Suga assistant to help you design the perfect architecture
+- **YAML sync** - Changes automatically update your local `suga.yaml` file
+
+## Local Development Experience
+
+Develop and test cloud applications entirely on your local machine with emulated cloud services.
+
+```bash title="terminal" icon="terminal"
+suga dev 
+
+ ⚡ Suga v0.0.1
+    - App: example
+    - Addr: :50051
+    - Dashboard: https://app.addsuga.com/dev
+
+Services
+
+✓ Starting [app]
+
+Entrypoints
+
+✓ Starting [ingress] http://localhost:3001
+
+Use Ctrl-C to exit
+```
+
+Local development includes:
+- **Service emulation** - Local versions of buckets, entrypoints (websites/CDN), databases (coming soon), and other cloud resources
+- **Hot reloading** - Your application restarts automatically when code changes
+- **Real-time logs** - See application and infrastructure logs in one place
+- **Easy debugging** - Standard debugging tools work normally with local services
+
+## Multi-Cloud Deployment
+
+Deploy the same application to different cloud providers or move between services on the same provider without changing your code. Suga generates provider-specific Terraform modules from your infrastructure definition.
+
+```bash title="terminal" icon="terminal"
+suga build
+
+ ✓ Terraform generated successfully
+   output written to terraform/stacks/example
+
+Next steps:
+1. Run cd terraform/stacks/example to move to the stack directory
+2. Initialize the stack terraform init -upgrade
+3. Optionally, preview with terraform plan
+4. Deploy with terraform apply
+```
+
+Supported cloud providers:
+- **AWS** - Lambda, ECS, S3, and more
+- **Google Cloud** - Cloud Run, Cloud Storage, etc.
+- **Azure** - Coming Soon
+- **Kubernetes** - Coming soon and BYO
+
+## Architecture
+
+Suga separates infrastructure definition from application code:
+
+- **Infrastructure as configuration** - Define cloud resources in suga.yaml, separate from application logic
+- **Generated client libraries** - Type-safe resource access generated from your infrastructure definition  
+- **Standard deployment artifacts** - Produces Terraform modules that integrate with existing DevOps workflows
+- **Modular providers** - Granular plugins at the resource level enable custom cloud configurations
+
+Built by the team behind [Nitric](https://nitric.io), Suga incorporates lessons learned from years of cloud framework development.
 
 ## Resources
 
