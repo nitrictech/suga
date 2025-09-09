@@ -3,6 +3,24 @@ title: "Overview"
 description: "Node.js SDK for Suga infrastructure resources"
 ---
 
+## Generate SDK
+
+Generate the TypeScript client based on your `suga.yaml`:
+
+```yaml title="suga.yaml"
+buckets:
+  image:
+    access:
+      app:
+        - read
+        - write
+```
+
+```bash
+suga generate --ts --ts-out ./suga
+```
+
+For all available options, see the [`suga generate`](/cli/generate) command documentation.
 
 ## Import
 
@@ -23,11 +41,11 @@ description: "Node.js SDK for Suga infrastructure resources"
 
 ```javascript
 // Initialize client
-const suga = new SugaClient();
+const client = new SugaClient();
 
 // Access your resources (names from your suga.yaml)
-await suga.image.write("key", Buffer.from("data"));
-const content = await suga.image.read("key");
+await client.image.write("file.txt", Buffer.from("data"));
+const content = await client.image.read("file.txt");
 ```
 
 ## Available Resources

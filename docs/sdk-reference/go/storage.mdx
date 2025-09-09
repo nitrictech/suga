@@ -32,7 +32,7 @@ func (c *Bucket) Read(key string) ([]byte, error)
 **Example:**
 
 ```go
-content, err := app.Files.Read("path/to/file.txt")
+content, err := client.Image.Read("path/to/file.txt")
 if err != nil {
     log.Fatal(err)
 }
@@ -66,7 +66,7 @@ func (c *Bucket) Write(key string, data []byte) error
 **Example:**
 
 ```go
-err := app.Files.Write("path/to/file.txt", []byte("Hello, World!"))
+err := client.Image.Write("path/to/file.txt", []byte("Hello, World!"))
 if err != nil {
     log.Fatal(err)
 }
@@ -95,7 +95,7 @@ func (c *Bucket) Delete(key string) error
 **Example:**
 
 ```go
-err := app.Files.Delete("path/to/file.txt")
+err := client.Image.Delete("path/to/file.txt")
 if err != nil {
     log.Fatal(err)
 }
@@ -129,13 +129,13 @@ func (c *Bucket) List(prefix string) ([]string, error)
 
 ```go
 // List all files
-files, err := app.Files.List("")
+files, err := client.Image.List("")
 if err != nil {
     log.Fatal(err)
 }
 
 // List files in a specific directory
-docs, err := app.Files.List("documents/")
+docs, err := client.Image.List("documents/")
 if err != nil {
     log.Fatal(err)
 }
@@ -172,13 +172,13 @@ func (c *Bucket) Exists(key string) (bool, error)
 **Example:**
 
 ```go
-exists, err := app.Files.Exists("config.json")
+exists, err := client.Image.Exists("file.txt")
 if err != nil {
     log.Fatal(err)
 }
 
 if exists {
-    content, _ := app.Files.Read("config.json")
+    content, _ := client.Image.Read("file.txt")
     // Process content
 }
 ```
@@ -216,9 +216,9 @@ func (c *Bucket) GetUploadURL(key string, opts ...PresignUrlOption) (string, err
 
 ```go
 // Download URL (default 5 minute expiry)
-downloadURL, err := app.Files.GetDownloadURL("document.pdf")
+downloadURL, err := client.Image.GetDownloadURL("file.txt")
 
 // Upload URL with custom expiry (1 hour)
-uploadURL, err := app.Files.GetUploadURL("uploads/newfile.pdf",
+uploadURL, err := client.Image.GetUploadURL("file.txt",
     suga.WithPresignUrlExpiry(time.Hour))
 ```

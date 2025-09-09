@@ -28,7 +28,7 @@ async read(key: string): Promise<Buffer>
 **Example:**
 
 ```typescript
-const content = await bucket.read("path/to/file.txt");
+const content = await client.image.read("path/to/file.txt");
 console.log(content.toString('utf-8'));
 ```
 
@@ -53,7 +53,7 @@ async write(key: string, data: Buffer): Promise<void>
 **Example:**
 
 ```typescript
-await bucket.write("path/to/file.txt", Buffer.from("Hello, World!"));
+await client.image.write("path/to/file.txt", Buffer.from("Hello, World!"));
 ```
 
 ### delete
@@ -73,7 +73,7 @@ async delete(key: string): Promise<void>
 **Example:**
 
 ```typescript
-await bucket.delete("path/to/file.txt");
+await client.image.delete("path/to/file.txt");
 ```
 
 ### list
@@ -100,10 +100,10 @@ async list(prefix: string): Promise<string[]>
 
 ```typescript
 // List all files with empty prefix
-const allFiles = await bucket.list("");
+const allFiles = await client.image.list("");
 
 // List files in a specific directory
-const docs = await bucket.list("documents/");
+const docs = await client.image.list("documents/");
 ```
 
 ### exists
@@ -129,8 +129,8 @@ async exists(key: string): Promise<boolean>
 **Example:**
 
 ```typescript
-if (await bucket.exists("config.json")) {
-    const config = await bucket.read("config.json");
+if (await client.image.exists("file.txt")) {
+    const config = await client.image.read("file.txt");
 }
 ```
 
@@ -139,8 +139,8 @@ if (await bucket.exists("config.json")) {
 Generate presigned URLs for secure file access without exposing credentials.
 
 ```typescript
-async getDownloadUrl(key: string, options?: {expiry: number}): Promise<string>
-async getUploadUrl(key: string, options?: {expiry: number}): Promise<string>
+async getDownloadUrl(key: string, options?: Partial<PresignUrlOptions>): Promise<string>
+async getUploadUrl(key: string, options?: Partial<PresignUrlOptions>): Promise<string>
 ```
 
 #### Parameters
@@ -149,8 +149,8 @@ async getUploadUrl(key: string, options?: {expiry: number}): Promise<string>
   The key/path of the file
 </ParamField>
 
-<ParamField path="options" type="object" default="{expiry: 300}">
-  Configuration with expiry in seconds
+<ParamField path="options" type="Partial<PresignUrlOptions>" default="{mode: Mode.Read, expiry: 300}">
+  Configuration with mode and expiry in seconds
 </ParamField>
 
 #### Returns
@@ -163,10 +163,11 @@ async getUploadUrl(key: string, options?: {expiry: number}): Promise<string>
 
 ```typescript
 // Download URL (default 5 minute expiry)
-const downloadUrl = await suga.image.getDownloadUrl("document.pdf");
+const downloadUrl = await client.image.getDownloadUrl("file.txt");
 
 // Upload URL with custom expiry (1 hour)
-const uploadUrl = await suga.image.getUploadUrl("uploads/newfile.pdf", {
+const uploadUrl = await client.image.getUploadUrl("file.txt", {
+    mode: Mode.Write,
     expiry: 3600
 });
 ```

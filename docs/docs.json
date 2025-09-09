@@ -37,6 +37,32 @@
         ]
       },      
       {
+        "anchor": "CLI Reference",
+        "icon": "terminal",
+        "groups": [
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/introduction",
+              "cli/access-token",
+              "cli/build",
+              "cli/completion",
+              "cli/config",
+              "cli/dev",
+              "cli/edit",
+              "cli/generate",
+              "cli/init",
+              "cli/login",
+              "cli/logout",
+              "cli/new",
+              "cli/team",
+              "cli/templates",
+              "cli/version"
+            ]
+          }
+        ]
+      },
+            {
         "anchor": "SDK Reference",
         "icon": "code",
               "groups": [
@@ -63,32 +89,6 @@
             "pages": [
               "sdk-reference/go/overview",
               "sdk-reference/go/storage"
-            ]
-          }
-        ]
-      },
-      {
-        "anchor": "CLI Reference",
-        "icon": "terminal",
-        "groups": [
-          {
-            "group": "Commands",
-            "pages": [
-              "cli/introduction",
-              "cli/access-token",
-              "cli/build",
-              "cli/completion",
-              "cli/config",
-              "cli/dev",
-              "cli/edit",
-              "cli/generate",
-              "cli/init",
-              "cli/login",
-              "cli/logout",
-              "cli/new",
-              "cli/team",
-              "cli/templates",
-              "cli/version"
             ]
           }
         ]

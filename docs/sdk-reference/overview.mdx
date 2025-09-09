@@ -3,14 +3,9 @@ title: "SDK Reference"
 description: "Language-specific SDK documentation for Suga"
 ---
 
-SDKs for multiple programming languages to interact with your infrastructure resources.
+Suga automatically generates type-safe SDKs from your `suga.yaml` configuration. Define your infrastructure resources and access permissions once, then get pre-configured clients with only the methods your application needs.
 
-## Getting Started
-
-To generate SDK clients for your project, use the
-[`suga generate`](/cli/generate) command.
-
-## Available SDKs
+## Available Languages
 
 <CardGroup cols={3}>
   <Card title="Python" icon="python" href="/sdk-reference/python/overview" />
@@ -18,6 +13,35 @@ To generate SDK clients for your project, use the
   <Card title="Go" icon="golang" href="/sdk-reference/go/overview" />
 </CardGroup>
 
-<Info>
-  For installation and setup instructions, see the [Quickstart Guide](/quickstart).
-</Info>
+## How It Works
+
+1. **Define resources and permissions** using the Suga editor:
+   ```bash
+   suga edit
+   ```
+   Or manually in your `suga.yaml`:
+   ```yaml
+   buckets:
+     images:
+       access:
+         app:
+           - read
+           - write
+   ```
+
+2. **Generate your SDK** with access already configured:
+   ```bash
+   suga generate --python --python-out ./client
+   ```
+
+3. **Use pre-configured resources**:
+   ```python
+   client = SugaClient()
+   client.images.read("file.txt")
+   client.images.write("file.txt")
+   ```
+
+Your SDK automatically handles authentication, permissions, and environment differences. The same code works locally with `suga dev` and when deployed to the cloud.
+
+
+

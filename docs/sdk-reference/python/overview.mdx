@@ -3,6 +3,25 @@ title: "Overview"
 description: "Python SDK for Suga infrastructure resources"
 ---
 
+## Generate SDK
+
+Generate the Python client based on your `suga.yaml`:
+
+```yaml title="suga.yaml"
+buckets:
+  image:
+    access:
+      app:
+        - read
+        - write
+```
+
+```bash
+suga generate --python --python-out ./suga_gen
+```
+
+For all available options, see the [`suga generate`](/cli/generate) command documentation.
+
 ## Import
 
 ```python
@@ -13,11 +32,11 @@ from suga_gen.client import SugaClient
 
 ```python
 # Initialize client
-suga = SugaClient()
+client = SugaClient()
 
 # Access your resources (names from your suga.yaml)
-suga.image.write("key", b"data")
-content = suga.image.read("key")
+client.image.write("file.txt", b"data")
+content = client.image.read("file.txt")
 ```
 
 ## Available Resources

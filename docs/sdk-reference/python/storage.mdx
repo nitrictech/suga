@@ -28,7 +28,7 @@ def read(key: str) -> bytes
 **Example:**
 
 ```python
-content = bucket.read("path/to/file.txt")
+content = client.image.read("path/to/file.txt")
 print(content.decode('utf-8'))
 ```
 
@@ -53,7 +53,7 @@ def write(key: str, data: bytes) -> None
 **Example:**
 
 ```python
-bucket.write("path/to/file.txt", b"Hello, World!")
+client.image.write("path/to/file.txt", b"Hello, World!")
 ```
 
 ### delete
@@ -73,7 +73,7 @@ def delete(key: str) -> None
 **Example:**
 
 ```python
-bucket.delete("path/to/file.txt")
+client.image.delete("path/to/file.txt")
 ```
 
 ### list
@@ -100,10 +100,10 @@ def list(prefix: str = "") -> List[str]
 
 ```python
 # List all files
-all_files = bucket.list()
+all_files = client.image.list()
 
 # List files in a specific directory
-docs = bucket.list("documents/")
+docs = client.image.list("documents/")
 ```
 
 ### exists
@@ -129,8 +129,8 @@ def exists(key: str) -> bool
 **Example:**
 
 ```python
-if bucket.exists("config.json"):
-    config = bucket.read("config.json")
+if client.image.exists("file.txt"):
+    config = client.image.read("file.txt")
 ```
 
 ### Presigned URLs
@@ -162,9 +162,9 @@ def get_upload_url(key: str, options: Optional[PresignUrlOptions] = None) -> str
 
 ```python
 # Download URL (default 5 minute expiry)
-download_url = suga.image.get_download_url("document.pdf")
+download_url = client.image.get_download_url("file.txt")
 
 # Upload URL with custom expiry (1 hour)
-upload_url = suga.image.get_upload_url("uploads/newfile.pdf",
+upload_url = client.image.get_upload_url("file.txt",
                                        PresignUrlOptions(expiry=3600))
 ```
