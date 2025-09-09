@@ -26,12 +26,13 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     - **Description:** Brief description of your application
 
     This creates a `suga.yaml` configuration file in your project root.
+
   </Step>
 
   <Step title="Configure Infrastructure" icon="gear">
     Open the Suga visual editor to design your infrastructure:
 
-    ```bash title="Open Suga Editor" icon="edit"
+    ```bash title="Open Suga Editor" icon="pencil"
     suga edit
     ```
 
@@ -104,7 +105,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     suga generate --go --go-out ./suga --go-package-name suga
     ```
 
-    ```bash title="Update Dependencies" icon="package"
+    ```bash title="Update Dependencies" icon="box"
     go mod tidy
     ```
 
@@ -236,7 +237,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
 
     Test your migrated application:
 
-    ```bash title="Test Endpoint" icon="check-circle"
+    ```bash title="Test Endpoint" icon="circle-check"
     curl http://localhost:3000/hello/world
     ```
 
