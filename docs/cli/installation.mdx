@@ -1,9 +1,17 @@
 ---
 title: "Installation"
-description: "Install the Suga CLI"
+description: "Install the Suga CLI and get started with the platform"
 ---
 
 import { OSTabs } from '/snippets/os-tabs.jsx';
+
+## Install Suga CLI
+
+The Suga CLI is all you need to get started with Suga. It provides everything required to build, test, and deploy cloud-native applications with automatic infrastructure generation.
+
+<Note>
+  **Early Access:** During the early access period, a Suga account is required, you can request an invite at https://addsuga.com. You'll need to run `suga login` after installation to authenticate. We plan to make certain functionality available without an account in future releases.
+</Note>
 
 ## Quick Install
 
@@ -29,7 +37,7 @@ import { OSTabs } from '/snippets/os-tabs.jsx';
 ## Verify Installation
 
 ```bash
-suga --version
+suga version
 ```
 
 ## Update
@@ -51,6 +59,24 @@ suga --version
     ```
   </Tab>
 </OSTabs>
+
+## Web UI
+
+The Suga platform includes a web-based visual editor for designing your application architecture. **No separate installation is required** - simply visit [app.addsuga.com](https://app.addsuga.com) in your browser.
+
+The web UI provides:
+- Visual infrastructure design
+- AI-assisted architecture recommendations  
+- Team collaboration features
+- Deployment target configuration
+
+Access it through the CLI:
+
+```bash
+suga edit
+```
+
+This opens the visual editor in your browser and connects it to your local CLI, with the full platform features available at [app.addsuga.com](https://app.addsuga.com).
 
 ## Prerequisites
 

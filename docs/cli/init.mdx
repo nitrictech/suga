@@ -1,12 +1,24 @@
 ---
 title: 'init'
-description: 'Initialize a new Suga project in the current directory'
+description: 'Setup a new Suga project'
 ---
 
-Initialize a new Suga project in the current directory.
+Setup a new Suga project, including within existing applications.
 
 ```bash
 suga init
 ```
 
-Converts an existing directory into a Suga project by creating the necessary configuration files.
+Use this command when you **already have an existing application** (e.g., a Python Flask app, TypeScript Express server, or any other web application) and want to start using Suga to create and deploy the infrastructure for that app.
+
+This creates the necessary Suga configuration files (`suga.yaml`) to transform your existing application into a Suga project, allowing you to define and manage cloud infrastructure alongside your code.
+
+## When to use `suga init`
+
+- You have an existing Python, TypeScript, Go, or other application
+- You want to add Suga infrastructure management to your current project
+- You prefer to keep your existing project structure and dependencies
+
+## Alternative
+
+If you want to create a **new project from scratch** using Suga templates, use [`suga new`](/cli/new) instead.

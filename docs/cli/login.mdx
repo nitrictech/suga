@@ -1,20 +1,29 @@
 ---
 title: 'login'
-description: 'Authenticate with your Suga account'
+description: 'Login to Suga'
 ---
 
-Authenticate with your Suga account.
+Login to the Suga CLI.
 
 ```bash
 suga login
 ```
 
-Opens your browser to complete the authentication flow.
+Opens your browser to complete the authentication flow with the Suga platform. This is required for all CLI operations during the early access period.
+
+## What happens during login
+
+1. Opens your default web browser
+2. Redirects you to the Suga authentication page
+3. After successful authentication, returns you to the CLI
+4. Securely stores your auth token in your system's keychain
 
 ## Example
 
 ```bash
 suga login
-# Opens browser for authentication
-# Authentication successful
 ```
+
+<Note>
+  You'll need to login before using most Suga CLI commands. Your session will remain active until you explicitly logout or the session expires.
+</Note>
