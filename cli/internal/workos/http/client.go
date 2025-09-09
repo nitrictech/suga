@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rsa"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,15 +13,11 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/nitrictech/suga/cli/internal/utils"
 )
 
 const DEFAULT_HOSTNAME = "api.workos.com"
-
-// calculateSHA256 calculates the SHA256 hash of the given data and returns it as a hex string
-func calculateSHA256(data []byte) string {
-	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:])
-}
 
 // Errors
 type CodeExchangeError struct {
@@ -278,7 +272,7 @@ func (h *HttpClient) post(path string, body map[string]interface{}) (*http.Respo
 
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-amz-content-sha256", calculateSHA256(jsonBody))
+	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
 	return h.client.Do(req)
 }
@@ -482,7 +476,7 @@ func (c *HttpClient) PollDeviceTokenWithContext(ctx context.Context, deviceCode 
 
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-amz-content-sha256", calculateSHA256(jsonBody))
+	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
 	response, err := c.client.Do(req)
 	if err != nil {
