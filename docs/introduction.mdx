@@ -14,20 +14,21 @@ Suga makes cloud development simple by combining visual infrastructure design wi
 
 Suga is a cloud development platform that adds infrastructure capabilities to your applications. You can add Suga to your existing app with minimal changes, or create a new project from scratch using templates.
 
-<div style={{position: 'relative', height: '400px', overflow: 'hidden'}}>
-  <video width="100%" autoPlay loop muted playsInline style={{width: '100%', objectFit: 'cover', objectPosition: 'top'}}>
+<div className="relative h-96 overflow-hidden">
+  <video 
+    className="w-full h-full object-cover object-top"
+    autoPlay 
+    loop 
+    muted 
+    playsInline
+    preload="metadata"
+    poster="/images/project-editor-poster.jpg"
+    aria-label="Demo of the Suga visual project editor showing drag-and-drop infrastructure design"
+  >
     <source src="/images/project-editor.webm" type="video/webm" />
     Your browser does not support the video tag.
   </video>
-  <div style={{
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '60px',
-    background: 'linear-gradient(transparent, var(--background-color, white))',
-    pointerEvents: 'none'
-  }}></div>
+  <div className="absolute bottom-0 left-0 right-0 h-15 bg-gradient-to-t from-white to-transparent dark:from-gray-900 pointer-events-none"></div>
 </div>
 
 Suga provides:
@@ -65,7 +66,7 @@ Add Suga to your existing TypeScript, Python, or Go application with minimal cha
 
 [Add Suga to your existing app →](/guides/add-suga)
   
-### Start a new application from a Template
+### Start a New Application from a Template
 
 Create new projects from templates that include both application code and infrastructure setup for popular frameworks:
 
@@ -86,7 +87,7 @@ The visual editor provides:
 - **Resource library** - Drag databases, storage, services and entrypoints onto your canvas
 - **Resource connections** - Visual connections configure access permissions and routing
 - **Live validation** - Real-time feedback on architecture constraints
-- **AI Assistant** - Ask the Suga assistant to help you design the perfect architecture
+- **AI assistant** - Ask the Suga assistant to help you design the perfect architecture
 - **YAML sync** - Changes automatically update your local `suga.yaml` file
 
 ## Local Development Experience
@@ -138,7 +139,7 @@ Next steps:
 Supported cloud providers:
 - **AWS** - Lambda, ECS, S3, and more
 - **Google Cloud** - Cloud Run, Cloud Storage, etc.
-- **Azure** - Coming Soon
+- **Azure** - Coming soon
 - **Kubernetes** - Coming soon and BYO
 
 ## Architecture
