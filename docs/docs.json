@@ -14,30 +14,19 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "dropdowns": [
+    "anchors": [
       {
-        "dropdown": "Documentation",
-        "description": "Learn how to use Suga",
+        "anchor": "Documentation",
         "icon": "book-open",
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["index", "cli/installation", "quickstart"]
-          }
-        ]
-      },
-      {
-        "dropdown": "Guides",
-        "description": "Learn how to use Suga",
-        "icon": "graduation-cap",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["guides/overview"]
+            "pages": ["introduction", "cli/installation", "quickstart"]
           },
           {
             "group": "Guides",
             "pages": [
+              "guides/overview",
               "guides/add-suga",
               "guides/database-migration",
               "guides/terraform-backend-config",
@@ -48,17 +37,13 @@
         ]
       },
       {
-        "dropdown": "CLI Reference",
-        "description": "Reference for the Suga CLI",
+        "anchor": "CLI Reference",
         "icon": "terminal",
         "groups": [
           {
-            "group": "Getting Started",
-            "pages": ["cli/introduction", "cli/installation"]
-          },
-          {
             "group": "Commands",
             "pages": [
+              "cli/introduction",
               "cli/access-token",
               "cli/build",
               "cli/completion",
