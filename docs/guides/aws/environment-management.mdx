@@ -134,7 +134,10 @@ jobs:
             terraform workspace new ${{ steps.env.outputs.environment }}
           terraform apply -auto-approve
 ```
-
+    This workflow:
+    - Triggers on pushes to staging or production branches
+    - Automatically selects or creates the appropriate workspace
+    - Deploys changes to the corresponding AWS account
 ## Further Reading
 
 - [Terraform Workspaces Documentation](https://developer.hashicorp.com/terraform/language/state/workspaces)
