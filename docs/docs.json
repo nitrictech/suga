@@ -21,7 +21,7 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["index", "cli/installation", "quickstart"]
+            "pages": ["introduction", "cli/installation", "quickstart"]
           },
           {
             "group": "Guides",
