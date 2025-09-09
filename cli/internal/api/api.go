@@ -2,6 +2,8 @@ package api
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +13,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/do/v2"
 )
+
+// calculateSHA256 calculates the SHA256 hash of the given data and returns it as a hex string
+func calculateSHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	return hex.EncodeToString(hash[:])
+}
 
 type TokenProvider interface {
 	// GetAccessToken returns the access token for the user
@@ -139,6 +147,7 @@ func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-amz-content-sha256", calculateSHA256(body))
 
 	return c.doRequestWithRetry(req, requiresAuth)
 }
