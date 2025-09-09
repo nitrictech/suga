@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/nitrictech/suga/cli/internal/config"
+	"github.com/nitrictech/suga/cli/internal/utils"
 	"github.com/pkg/errors"
 	"github.com/samber/do/v2"
 )
@@ -139,6 +140,7 @@ func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(body))
 
 	return c.doRequestWithRetry(req, requiresAuth)
 }

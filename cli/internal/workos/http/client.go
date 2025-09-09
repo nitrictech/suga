@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/nitrictech/suga/cli/internal/utils"
 )
 
 const DEFAULT_HOSTNAME = "api.workos.com"
@@ -270,6 +272,7 @@ func (h *HttpClient) post(path string, body map[string]interface{}) (*http.Respo
 
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
 	return h.client.Do(req)
 }
@@ -473,6 +476,7 @@ func (c *HttpClient) PollDeviceTokenWithContext(ctx context.Context, deviceCode 
 
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
 	response, err := c.client.Do(req)
 	if err != nil {
