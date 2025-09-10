@@ -1,0 +1,24 @@
+---
+title: Storage
+description: Object storage for files, images, and data
+---
+
+## Configuration
+
+<ParamField path="project_id" type="string">
+  Google Cloud Project ID
+  
+  **Example:** `my-project-123`
+</ParamField>
+
+<ParamField path="region" type="string">
+  Google Cloud region for the storage bucket
+  
+  **Example:** `us-central1`
+</ParamField>
+
+<ParamField path="storage_class" type="string" default="STANDARD">
+  Storage class for the bucket (STANDARD, NEARLINE, COLDLINE, ARCHIVE)
+  
+  **Example:** `STANDARD`
+</ParamField>

@@ -12,6 +12,15 @@ allowlisting
 cdktf
 Presigned
 presigned
+Fargate
+subnet
+subnets
+GPUs
+CPUs
+serverless
+Serverless
+autoscaling
+geo
 
 # Defaults from mintlify
 Mintlify

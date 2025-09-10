@@ -1,0 +1,18 @@
+---
+title: IAM Role
+description: Identity and Access Management role for secure access to AWS services
+---
+
+## Configuration
+
+<ParamField path="trusted_actions" type="list(string)">
+  List of trusted actions for the assume role policy
+  
+  **Example:** `["sts:AssumeRole"]`
+</ParamField>
+
+<ParamField path="trusted_services" type="list(string)">
+  List of AWS services that can assume this role
+  
+  **Example:** `["lambda.amazonaws.com", "ecs-tasks.amazonaws.com"]`
+</ParamField>

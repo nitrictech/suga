@@ -1,0 +1,42 @@
+---
+title: Introduction
+description: Official plugins for creating infrastructure platforms
+---
+
+Each plugin provides a specific infrastructure capability - like storage, compute, or networking. Compose these plugins to build complete platforms across multiple cloud providers.
+
+## Official Plugins
+
+<CardGroup cols={3}>
+  <Card title="AWS" icon="aws" href="/plugins/aws" />
+  <Card title="GCP" icon="google" href="/plugins/gcp" />
+  <Card title="Neon" icon="database" href="/plugins/neon" />
+</CardGroup>
+
+## Compose Plugins to Build your Platform
+
+1. **Open the Suga editor** to build your platform:
+
+   ```bash
+   suga edit
+   ```
+
+2. **Add plugins** into your platform and configure parameters using this reference
+
+![Platform Edit](/images/edit-platform.png) 
+
+<Tip>
+Reference outputs from other plugins using `${type.name.output}` syntax, e.g. `${infra.vpc.vpc_id}` or `${databases.main.connection_string}`
+</Tip>
+
+3. **Deploy your platform**:
+   - Click "Commit revision" in the editor to update your platform
+   - Update the target in your `suga.yaml` to build terraform using your platform with the plugins that you have composed:
+
+   ```yaml
+   targets:
+     - suga/aws@2
+   ```
+
+
+

@@ -1,0 +1,42 @@
+---
+title: Load Balancer
+description: Distribute incoming traffic across multiple targets
+---
+
+## Configuration
+
+<ParamField path="internal" type="bool" default="false">
+  Whether the load balancer is internal (true) or internet-facing (false)
+</ParamField>
+
+<ParamField path="load_balancer_type" type="string" default="application">
+  Type of load balancer (application, network, gateway)
+  
+  **Example:** `application`
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Name of the load balancer
+  
+  **Example:** `api-alb`
+</ParamField>
+
+<ParamField path="security_groups" type="list(string)" required>
+  List of security group IDs to assign to the load balancer
+  
+  **Example:** `["sg-0123456789abcdef0", "sg-0987654321fedcba0"]`
+</ParamField>
+
+<ParamField path="subnets" type="list(string)" required>
+  List of subnet IDs to attach to the load balancer
+  
+  **Example:** `["subnet-12345678", "subnet-87654321"]`
+</ParamField>
+
+## Outputs
+
+<ResponseField name="arn" type="string">
+  The ARN of the load balancer
+  
+  **Example:** `arn:aws:elasticloadbalancing:us-west-2:123456789012:loadbalancer/app/my-alb/50dc6c495c0c9188`
+</ResponseField>

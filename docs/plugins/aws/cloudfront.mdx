@@ -1,0 +1,62 @@
+---
+title: CloudFront
+description: Content Delivery Network for fast, global content delivery
+---
+
+## Configuration
+
+<ParamField path="custom_domain" type="string">
+  Custom domain name for CloudFront distribution
+  
+  **Example:** `cdn.example.com`
+</ParamField>
+
+<ParamField path="custom_domain_is_root" type="bool" default="false">
+  Indicates if the custom domain is the root domain for the purposes of hosted zone lookup and record creation
+</ParamField>
+
+<ParamField path="default_cache_policy_id" type="string">
+  Default cache policy for CloudFront distribution
+  
+  **Example:** `658327ea-f89d-4fab-a63d-7e88639e58f6`
+</ParamField>
+
+<ParamField path="default_origin_request_policy_id" type="string" default="b689b0a8-53d0-40ab-baf2-68738e2966ac">
+  Default origin request policy
+  
+  **Example:** `b689b0a8-53d0-40ab-baf2-68738e2966ac`
+</ParamField>
+
+<ParamField path="geo_restriction_locations" type="list(string)">
+  List of ISO 3166-1 alpha-2 country codes for geo restriction
+  
+  **Example:** `["US", "CA", "GB"]`
+</ParamField>
+
+<ParamField path="geo_restriction_type" type="string" default="none">
+  Type of geo restriction (none, whitelist, blacklist)
+  
+  **Example:** `none`
+</ParamField>
+
+<ParamField path="rate_limit_enabled" type="bool" default="true">
+  Enable rate limiting rules for DDoS protection
+  
+  **Example:** `True`
+</ParamField>
+
+<ParamField path="rate_limit_requests_per_5min" type="number" default="2000">
+  Maximum requests per 5-minute period per IP
+  
+  **Example:** `2000`
+</ParamField>
+
+<ParamField path="waf_enabled" type="bool" default="false">
+  Enable AWS WAF for CloudFront distribution
+</ParamField>
+
+<ParamField path="waf_managed_rules" type="list(object)">
+  List of AWS Managed Rule Groups to enable
+  
+  **Example:** `[{"name": "AWSManagedRulesCommonRuleSet", "priority": 10, "override_action": "none"}, {"name": "AWSManagedRulesKnownBadInputsRuleSet", "priority": 20, "override_action": "none"}]`
+</ParamField>

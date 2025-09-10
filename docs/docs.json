@@ -94,6 +94,54 @@
             ]
           }
         ]
+      },
+            {
+        "tab": "Plugins",
+        "icon": "plug",
+        "groups": [
+          {
+            "group": "Plugin Reference",
+            "pages": ["plugins"]
+          },
+          {
+            "group": "Providers",
+            "pages": [
+              {
+                "group": "AWS",
+                "icon": "aws",
+                "pages": [
+                  "plugins/aws",
+                  "plugins/aws/s3",
+                  "plugins/aws/fargate",
+                  "plugins/aws/lambda",
+                  "plugins/aws/cloudfront",
+                  "plugins/aws/loadbalancer",
+                  "plugins/aws/vpc",
+                  "plugins/aws/iamrole"
+                ]
+              },
+              {
+                "group": "GCP",
+                "icon": "google",
+                "pages": [
+                  "plugins/gcp",
+                  "plugins/gcp/storage",
+                  "plugins/gcp/cloudrun",
+                  "plugins/gcp/serviceaccount",
+                  "plugins/gcp/cdn"
+                ]
+              },
+              {
+                "group": "Neon",
+                "icon": "database",
+                "pages": [
+                  "plugins/neon",
+                  "plugins/neon/database"
+                ]
+              }
+            ]
+          }
+        ]
       }
     ],
     "global": {

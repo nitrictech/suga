@@ -1,0 +1,26 @@
+---
+title: Database
+description: serverless PostgreSQL with instant branching, auto scaling, and built-in connection pooling
+---
+
+## Configuration
+
+<ParamField path="branch_id" type="string">
+  Neon branch ID for the database
+  
+  **Example:** `br-cool-sunset-123456`
+</ParamField>
+
+<ParamField path="project_id" type="string">
+  Neon project ID
+  
+  **Example:** `misty-wind-123456`
+</ParamField>
+
+## Outputs
+
+<ResponseField name="connection_string" type="string">
+  PostgreSQL connection URI (scheme postgresql:// or postgres://)
+  
+  **Example:** `postgresql://USER:PASSWORD@HOST:PORT/DB?sslmode=require`
+</ResponseField>
