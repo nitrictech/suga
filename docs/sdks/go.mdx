@@ -1,0 +1,51 @@
+---
+title: "Overview"
+description: "Go SDK for Suga infrastructure resources"
+---
+
+## Generate SDK
+
+Generate the Go client based on your `suga.yaml`:
+
+```yaml title="suga.yaml"
+buckets:
+  image:
+    access:
+      app:
+        - read
+        - write
+```
+
+```bash
+suga generate --go --go-out ./suga --go-package-name suga
+```
+
+For all available options, see the [`suga generate`](/cli/generate) command documentation.
+
+## Import
+
+```go
+import "example/suga"
+```
+
+## Usage
+
+```go
+// Initialize client
+client, err := suga.NewClient()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Access your resources (names from your suga.yaml)
+err = client.Image.Write("file.txt", []byte("data"))
+content, err := client.Image.Read("file.txt")
+```
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Storage" icon="database" href="/sdks/go/storage">
+    Object storage operations - read, write, delete, list files
+  </Card>
+</CardGroup>

@@ -1,0 +1,224 @@
+---
+title: Storage
+description: Storage resources provide methods for interacting with cloud storage in your Suga infrastructure.
+---
+
+## Methods
+
+### Read
+
+Read a file from the bucket.
+
+```go
+func (c *Bucket) Read(key string) ([]byte, error)
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to read
+</ParamField>
+
+#### Returns
+
+<ResponseField name="[]byte" type="[]byte">
+  The file contents as a byte slice
+</ResponseField>
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+content, err := client.Image.Read("path/to/file.txt")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(string(content))
+```
+
+### Write
+
+Write a file to the bucket.
+
+```go
+func (c *Bucket) Write(key string, data []byte) error
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path where the file should be stored
+</ParamField>
+
+<ParamField path="data" type="[]byte" required>
+  The file contents as a byte slice
+</ParamField>
+
+#### Returns
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+err := client.Image.Write("path/to/file.txt", []byte("Hello, World!"))
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Delete
+
+Delete a file from the bucket.
+
+```go
+func (c *Bucket) Delete(key string) error
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to delete
+</ParamField>
+
+#### Returns
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+err := client.Image.Delete("path/to/file.txt")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### List
+
+List files in the bucket with a given prefix.
+
+```go
+func (c *Bucket) List(prefix string) ([]string, error)
+```
+
+#### Parameters
+
+<ParamField path="prefix" type="string" required>
+  Filter results to keys starting with this prefix
+</ParamField>
+
+#### Returns
+
+<ResponseField name="[]string" type="[]string">
+  Slice of file keys matching the prefix
+</ResponseField>
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+// List all files
+files, err := client.Image.List("")
+if err != nil {
+    log.Fatal(err)
+}
+
+// List files in a specific directory
+docs, err := client.Image.List("documents/")
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, file := range docs {
+    fmt.Println(file)
+}
+```
+
+### Exists
+
+Check if a file exists in the bucket.
+
+```go
+func (c *Bucket) Exists(key string) (bool, error)
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file to check
+</ParamField>
+
+#### Returns
+
+<ResponseField name="bool" type="bool">
+  True if the file exists, false otherwise
+</ResponseField>
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+exists, err := client.Image.Exists("file.txt")
+if err != nil {
+    log.Fatal(err)
+}
+
+if exists {
+    content, _ := client.Image.Read("file.txt")
+    // Process content
+}
+```
+
+### Presigned URLs
+
+Generate presigned URLs for secure file access without exposing credentials.
+
+```go
+func (c *Bucket) GetDownloadURL(key string, opts ...PresignUrlOption) (string, error)
+func (c *Bucket) GetUploadURL(key string, opts ...PresignUrlOption) (string, error)
+```
+
+#### Parameters
+
+<ParamField path="key" type="string" required>
+  The key/path of the file
+</ParamField>
+
+<ParamField path="opts" type="...PresignUrlOption" default="WithPresignUrlExpiry(5*time.Minute)">
+  Optional configuration with WithPresignUrlExpiry(duration)
+</ParamField>
+
+#### Returns
+
+<ResponseField name="string" type="string">
+  The presigned URL for the file
+</ResponseField>
+
+<ResponseField name="error" type="error">
+  Error if the operation fails
+</ResponseField>
+
+**Example:**
+
+```go
+// Download URL (default 5 minute expiry)
+downloadURL, err := client.Image.GetDownloadURL("file.txt")
+
+// Upload URL with custom expiry (1 hour)
+uploadURL, err := client.Image.GetUploadURL("file.txt",
+    suga.WithPresignUrlExpiry(time.Hour))
+```

@@ -1,0 +1,170 @@
+---
+title: Storage
+description: Storage resources provide methods for interacting with cloud storage in your Suga infrastructure.
+---
+
+## Methods
+
+### read
+
+Read a file from the bucket.
+
+```python
+def read(key: str) -> bytes
+```
+
+#### Parameters
+
+<ParamField path="key" type="str" required>
+  The key/path of the file to read
+</ParamField>
+
+#### Returns
+
+<ResponseField name="bytes" type="bytes">
+  The file contents as bytes
+</ResponseField>
+
+**Example:**
+
+```python
+content = client.image.read("path/to/file.txt")
+print(content.decode('utf-8'))
+```
+
+### write
+
+Write a file to the bucket.
+
+```python
+def write(key: str, data: bytes) -> None
+```
+
+#### Parameters
+
+<ParamField path="key" type="str" required>
+  The key/path where the file should be stored
+</ParamField>
+
+<ParamField path="data" type="bytes" required>
+  The file contents as bytes
+</ParamField>
+
+**Example:**
+
+```python
+client.image.write("path/to/file.txt", b"Hello, World!")
+```
+
+### delete
+
+Delete a file from the bucket.
+
+```python
+def delete(key: str) -> None
+```
+
+#### Parameters
+
+<ParamField path="key" type="str" required>
+  The key/path of the file to delete
+</ParamField>
+
+**Example:**
+
+```python
+client.image.delete("path/to/file.txt")
+```
+
+### list
+
+List files in the bucket with an optional prefix filter.
+
+```python
+def list(prefix: str = "") -> List[str]
+```
+
+#### Parameters
+
+<ParamField path="prefix" type="str" default='""'>
+  Filter results to keys starting with this prefix
+</ParamField>
+
+#### Returns
+
+<ResponseField name="List[str]" type="List[str]">
+  List of file keys matching the prefix
+</ResponseField>
+
+**Example:**
+
+```python
+# List all files
+all_files = client.image.list()
+
+# List files in a specific directory
+docs = client.image.list("documents/")
+```
+
+### exists
+
+Check if a file exists in the bucket.
+
+```python
+def exists(key: str) -> bool
+```
+
+#### Parameters
+
+<ParamField path="key" type="str" required>
+  The key/path of the file to check
+</ParamField>
+
+#### Returns
+
+<ResponseField name="bool" type="bool">
+  True if the file exists, False otherwise
+</ResponseField>
+
+**Example:**
+
+```python
+if client.image.exists("file.txt"):
+    config = client.image.read("file.txt")
+```
+
+### Presigned URLs
+
+Generate presigned URLs for secure file access without exposing credentials.
+
+```python
+def get_download_url(key: str, options: Optional[PresignUrlOptions] = None) -> str
+def get_upload_url(key: str, options: Optional[PresignUrlOptions] = None) -> str
+```
+
+#### Parameters
+
+<ParamField path="key" type="str" required>
+  The key/path of the file
+</ParamField>
+
+<ParamField path="options" type="PresignUrlOptions" default="PresignUrlOptions(expiry=300)">
+  Configuration with expiry in seconds
+</ParamField>
+
+#### Returns
+
+<ResponseField name="str" type="str">
+  The presigned URL for the file
+</ResponseField>
+
+**Example:**
+
+```python
+# Download URL (default 5 minute expiry)
+download_url = client.image.get_download_url("file.txt")
+
+# Upload URL with custom expiry (1 hour)
+upload_url = client.image.get_upload_url("file.txt",
+                                       PresignUrlOptions(expiry=3600))
+```

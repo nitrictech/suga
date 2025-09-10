@@ -1,0 +1,48 @@
+---
+title: "Overview"
+description: "Python SDK for Suga infrastructure resources"
+---
+
+## Generate SDK
+
+Generate the Python client based on your `suga.yaml`:
+
+```yaml title="suga.yaml"
+buckets:
+  image:
+    access:
+      app:
+        - read
+        - write
+```
+
+```bash
+suga generate --python --python-out ./suga_gen
+```
+
+For all available options, see the [`suga generate`](/cli/generate) command documentation.
+
+## Import
+
+```python
+from suga_gen.client import SugaClient
+```
+
+## Usage
+
+```python
+# Initialize client
+client = SugaClient()
+
+# Access your resources (names from your suga.yaml)
+client.image.write("file.txt", b"data")
+content = client.image.read("file.txt")
+```
+
+## Available Resources
+
+<CardGroup cols={2}>
+  <Card title="Storage" icon="database" href="/sdks/python/storage">
+    Object storage operations - read, write, delete, list files
+  </Card>
+</CardGroup>
