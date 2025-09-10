@@ -6,7 +6,9 @@ description: "Get started with Suga in minutes - build, test, and deploy cloud-n
 Deploy your first application on the Suga platform in just a few steps. The Suga CLI provides everything you need to build cloud-native applications with automatic infrastructure generation and multi-cloud deployment capabilities.
 
 <Note>
-  **Prerequisites:** This guide assumes you have the Suga CLI installed. If you need to install it, see our [Installation Guide](/cli/installation) for platform-specific instructions.
+  **Prerequisites:** This guide assumes you have the Suga CLI installed. If you
+  need to install it, see our [Installation Guide](/installation) for
+  platform-specific instructions.
 </Note>
 
 <Steps>
@@ -31,8 +33,8 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
       suga/typescript-express
 
     Template: suga/go-standard
-    
-    ✓ Project created!      
+
+    ✓ Project created!
     ```
 
     Navigate to your project and install dependencies:
@@ -51,7 +53,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
         ```bash title="Install Dependencies (uv)" icon="package"
         uv sync
         ```
-        
+
         Or with pip:
         ```bash title="Install Dependencies (pip)" icon="package"
         pip install -r requirements.txt
@@ -67,6 +69,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     <Info>
       Your project structure will include `suga.yaml` for configuration, service code, and language-specific dependencies.
     </Info>
+
   </Step>
 
   <Step title="Design Your Architecture" icon="pen-to-square">
@@ -79,7 +82,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     You'll see a confirmation:
     ```
     ⚡ Suga Logging in...
-    
+
     ✓ Logged in as User
     ```
 
@@ -96,7 +99,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     Press Ctrl+C to stop the editor
     ```
 
-    Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.  
+    Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.
 
     ![Architecture Design](/images/edit-design.png)
 
@@ -139,6 +142,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     - **services**: Your `app` service with local dev script and Docker container setup
     - **buckets**: A `files` bucket that your app can read from and write to
     - **entrypoints**: An HTTP endpoint that routes traffic to your app
+
   </Step>
 
   <Step title="Develop Locally" icon="code">
@@ -155,15 +159,15 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
        - App: my-first-app
        - Addr: http://localhost:50051
        - Dashboard: https://app.addsuga.com/dev
-    
+
     Services
-    
+
     ✓ Starting [api]
-    
+
     Entrypoints
-    
+
     ✓ Starting [main] http://localhost:3000
-    
+
     Use Ctrl-C to exit
     ```
 
@@ -181,6 +185,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     <Info>
       Services automatically restart when you update your code, providing instant feedback during development.
     </Info>
+
   </Step>
 
   <Step title="Deploy to Cloud" icon="cloud">
@@ -206,7 +211,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-first-app-aws-12345
-    
+
     Next steps:
     1. Run cd ./.suga/stacks/my-first-app-aws-12345 to move to the stack directory
     2. Initialize the stack terraform init -upgrade
@@ -252,11 +257,11 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     Do you want to perform these actions?
       Terraform will perform the actions described above.
       Only 'yes' will be accepted to approve.
-    
+
       Enter a value: yes
-    
+
     Apply complete! Resources: 15 added, 0 changed, 0 destroyed.
-    
+
     Outputs:
     api_endpoint = "https://api.my-first-app.example.com"
     ```
@@ -264,6 +269,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     <Warning>
       Review the Terraform plan carefully before applying to understand what resources will be created in your cloud account.
     </Warning>
+
   </Step>
 </Steps>
 
@@ -275,5 +281,6 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 - ✅ Deployed your application to your chosen cloud provider
 
 <Note>
-  **Need help?** Contact [support@addsuga.com](mailto:support@addsuga.com) or check our [GitHub](https://github.com/nitrictech/suga).
+  **Need help?** Contact [support@addsuga.com](mailto:support@addsuga.com) or
+  check our [GitHub](https://github.com/nitrictech/suga).
 </Note>
