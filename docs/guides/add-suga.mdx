@@ -6,7 +6,9 @@ description: "Migrate existing applications to Suga for cloud-agnostic deploymen
 Suga helps you migrate existing applications to a cloud-agnostic architecture. With Suga, you get local development with local emulation of cloud services, the ability to deploy anywhere - AWS or GCP from the same code, and auto-generated Terraform for production-ready infrastructure. This guide walks through migrating a Go web service as an example that can be easily adapted to other languages and services.
 
 <Note>
-  **Prerequisites:** Make sure you have the [Suga CLI installed](/cli/installation). This guide assumes you have an existing application that uses cloud services. If you're starting fresh, see the [Getting Started Guide](/quickstart).
+  **Prerequisites:** Make sure you have the [Suga CLI installed](/installation).
+  This guide assumes you have an existing application that uses cloud services.
+  If you're starting fresh, see the [Getting Started Guide](/quickstart).
 </Note>
 
 <Steps>
@@ -75,6 +77,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     <Info>
       The visual editor automatically maintains valid YAML syntax and ensures proper resource relationships.
     </Info>
+
   </Step>
 
   <Step title="Add Container Support" icon="docker">
@@ -96,6 +99,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     <Tip>
       If you already have a Dockerfile, ensure it's referenced correctly in your `suga.yaml` configuration.
     </Tip>
+
   </Step>
 
   <Step title="Generate SDK and Migrate Code" icon="code">
@@ -226,6 +230,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     <Warning>
       Remove all cloud provider SDK dependencies after migration to avoid conflicts and reduce bundle size.
     </Warning>
+
   </Step>
 
   <Step title="Test Locally" icon="play">
@@ -249,6 +254,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     <Info>
       Suga dev provides local emulation of cloud services. Files are stored locally during development and in real cloud storage when deployed.
     </Info>
+
   </Step>
 
   <Step title="Deploy to Cloud" icon="cloud">
@@ -305,11 +311,13 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
     ```
 
     Type `yes` when prompted. After deployment completes, your application endpoints will be displayed in the output.
+
   </Step>
 </Steps>
 
 <Info>
-  Your application is now cloud-agnostic. Deploy to AWS or GCP without code changes.
+  Your application is now cloud-agnostic. Deploy to AWS or GCP without code
+  changes.
 </Info>
 
 ## Next Steps

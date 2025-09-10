@@ -21,12 +21,12 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["introduction", "cli/installation", "quickstart"]
+            "pages": ["introduction", "installation", "quickstart"]
           },
           {
             "group": "Guides",
             "pages": [
-              "guides/overview",
+              "guides",
               "guides/add-suga",
               "guides/database-migration",
               "guides/terraform-backend-config",
@@ -39,22 +39,30 @@
       {
         "tab": "CLI",
         "icon": "square-terminal",
-        "pages": [
-          "cli/introduction",
-          "cli/access-token",
-          "cli/build",
-          "cli/completion",
-          "cli/config",
-          "cli/dev",
-          "cli/edit",
-          "cli/generate",
-          "cli/init",
-          "cli/login",
-          "cli/logout",
-          "cli/new",
-          "cli/team",
-          "cli/templates",
-          "cli/version"
+        "groups": [
+          {
+            "group": "CLI Reference",
+            "pages": ["cli"]
+          },
+          {
+            "group": "Commands",
+            "pages": [
+              "cli/access-token",
+              "cli/build",
+              "cli/completion",
+              "cli/config",
+              "cli/dev",
+              "cli/edit",
+              "cli/generate",
+              "cli/init",
+              "cli/login",
+              "cli/logout",
+              "cli/new",
+              "cli/team",
+              "cli/templates",
+              "cli/version"
+            ]
+          }
         ]
       },
       {
@@ -62,11 +70,11 @@
         "icon": "code",
         "groups": [
           {
-            "group": "SDKs",
+            "group": "SDK Reference",
             "pages": ["sdks"]
           },
           {
-            "group": "Reference",
+            "group": "Languages",
             "pages": [
               {
                 "group": "Python",
