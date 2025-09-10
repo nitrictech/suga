@@ -14,9 +14,9 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "anchors": [
+    "tabs": [
       {
-        "anchor": "Documentation",
+        "tab": "Docs",
         "icon": "book-open",
         "groups": [
           {
@@ -35,60 +35,54 @@
             ]
           }
         ]
-      },      
+      },
       {
-        "anchor": "CLI Reference",
-        "icon": "terminal",
-        "groups": [
-          {
-            "group": "Commands",
-            "pages": [
-              "cli/introduction",
-              "cli/access-token",
-              "cli/build",
-              "cli/completion",
-              "cli/config",
-              "cli/dev",
-              "cli/edit",
-              "cli/generate",
-              "cli/init",
-              "cli/login",
-              "cli/logout",
-              "cli/new",
-              "cli/team",
-              "cli/templates",
-              "cli/version"
-            ]
-          }
+        "tab": "CLI",
+        "icon": "square-terminal",
+        "pages": [
+          "cli/introduction",
+          "cli/access-token",
+          "cli/build",
+          "cli/completion",
+          "cli/config",
+          "cli/dev",
+          "cli/edit",
+          "cli/generate",
+          "cli/init",
+          "cli/login",
+          "cli/logout",
+          "cli/new",
+          "cli/team",
+          "cli/templates",
+          "cli/version"
         ]
       },
-            {
-        "anchor": "SDK Reference",
+      {
+        "tab": "SDKs",
         "icon": "code",
-              "groups": [
+        "groups": [
           {
-            "group": "Overview",
-            "pages": ["sdk-reference/overview"]
+            "group": "SDKs",
+            "pages": ["sdks"]
           },
           {
-            "group": "Python",
+            "group": "Reference",
             "pages": [
-              "sdk-reference/python/overview",
-              "sdk-reference/python/storage"
-            ]
-          },
-          {
-            "group": "Node.js",
-            "pages": [
-              "sdk-reference/node/overview",
-              "sdk-reference/node/storage"
-            ]
-          },
-          {
-            "group": "Go",
-            "pages": [
-              "sdk-reference/go/overview",
-              "sdk-reference/go/storage"
+              {
+                "group": "Python",
+                "icon": "python",
+                "pages": ["sdks/python", "sdks/python/storage"]
+              },
+              {
+                "group": "Node.js",
+                "icon": "node-js",
+                "pages": ["sdks/node", "sdks/node/storage"]
+              },
+              {
+                "group": "Go",
+                "icon": "golang",
+                "pages": ["sdks/go", "sdks/go/storage"]
+              }
             ]
           }
         ]

@@ -1,5 +1,5 @@
 ---
-title: "SDK Reference"
+title: "Introduction"
 description: "Language-specific SDK documentation for Suga"
 ---
 
@@ -8,18 +8,21 @@ Suga automatically generates type-safe SDKs from your `suga.yaml` configuration.
 ## Available Languages
 
 <CardGroup cols={3}>
-  <Card title="Python" icon="python" href="/sdk-reference/python/overview" />
-  <Card title="Node.js" icon="node-js" href="/sdk-reference/node/overview" />
-  <Card title="Go" icon="golang" href="/sdk-reference/go/overview" />
+  <Card title="Python" icon="python" href="/sdks/python" />
+  <Card title="Node.js" icon="node-js" href="/sdks/node" />
+  <Card title="Go" icon="golang" href="/sdks/go" />
 </CardGroup>
 
 ## How It Works
 
 1. **Define resources and permissions** using the Suga editor:
+
    ```bash
    suga edit
    ```
+
    Or manually in your `suga.yaml`:
+
    ```yaml
    buckets:
      images:
@@ -30,6 +33,7 @@ Suga automatically generates type-safe SDKs from your `suga.yaml` configuration.
    ```
 
 2. **Generate your SDK** with access already configured:
+
    ```bash
    suga generate --python --python-out ./client
    ```
@@ -42,6 +46,3 @@ Suga automatically generates type-safe SDKs from your `suga.yaml` configuration.
    ```
 
 Your SDK automatically handles authentication, permissions, and environment differences. The same code works locally with `suga dev` and when deployed to the cloud.
-
-
-
