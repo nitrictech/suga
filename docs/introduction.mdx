@@ -4,7 +4,21 @@ sidebarTitle: "Introduction"
 description: "Cloud development with visual design, local testing, and multi-cloud deployment"
 ---
 
-Suga makes cloud development simple by combining visual infrastructure design with automatic Terraform generation. Build applications with any framework, test locally with emulated cloud resources, and deploy anywhere with production-ready Terraform.
+Suga makes cloud development simple by combining visual infrastructure design with automatic Terraform generation for your cloud of choice. Build applications with any framework, test locally with emulated cloud resources, and deploy anywhere with production-ready Terraform.
+
+```mermaid
+graph LR
+HardenedInfra["Hardened Building Blocks"] ==> AppDesigner["Infrastructure Designer"]
+AppDesigner ==> Generate["Generate Terraform"]
+AppDesigner ==> Code["Code integration"]
+Code ==> Test["Local Testing"]
+Test ==> Deploy["Deploy"]
+Generate ==> Deploy["Deploy"]
+
+classDef nitricGreen stroke:#25b355,stroke-width:2px
+class HardenedInfra,AppDesigner,Code,Test,Generate,Deploy nitricGreen
+
+```
 
 <Card title="Get Started" icon="rocket" href="/quickstart" horizontal>
   Deploy your first application in minutes with the quickstart guide.

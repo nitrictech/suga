@@ -182,6 +182,76 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
         }
         ```
       </Tab>
+       <Tab title="Diff">
+        ```diff title="main.go" icon="file-plus-minus"
+package main
+
+        import (
++           "example/suga"
+-           "context"
+            "fmt"
+            "log"
+            "net/http"
+            "os"
+-           "strings"
+-           "github.com/aws/aws-sdk-go-v2/aws"
+-           "github.com/aws/aws-sdk-go-v2/config"
+-           "github.com/aws/aws-sdk-go-v2/service/s3"
+        )
+
+        func main() {
+-           // Load AWS configuration
+-          cfg, err := config.LoadDefaultConfig(context.TODO())
+-           if err != nil {
+-               log.Fatalf("Failed to load AWS config: %v", err)
+-           }
+
+-           // Create S3 client
+-           s3Client := s3.NewFromConfig(cfg)
+-           bucketName := os.Getenv("S3_BUCKET_NAME")
+
++           // Initialize Suga client
++           app, err := suga.NewClient()
++           if err != nil {
++               log.Fatalf("Failed to create suga client: %v", err)
++           }
+
+
+            router := http.NewServeMux()
+            router.HandleFunc("GET /hello/{name}", func(w http.ResponseWriter, r *http.Request) {
+                name := r.PathValue("name")
+
+-               // AWS S3 PutObject
+-               _, err := s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
+-                   Bucket: aws.String(bucketName),
+-                   Key:    aws.String("example.txt"),
+-                   Body:   strings.NewReader("Hello, " + name + "!"),
+-               })
+-               if err != nil {
+-                   log.Printf("Failed to upload to S3: %v", err)
+-                   http.Error(w, "Error uploading to S3", http.StatusInternalServerError)
+-                   return
+-               }
++               // Simplified file write using Suga
++               if err := app.Files.Write("example.txt", []byte("Hello, "+name+"!")); err != nil {
++                   log.Printf("Failed to write file: %v", err)
++                   http.Error(w, "Error writing file", http.StatusInternalServerError)
++                   return
++               }
+
+                fmt.Fprintf(w, "Hello, %s!", name)
+            })
+
+            port := os.Getenv("PORT")
+            if port == "" {
+                port = "8080"
+            }
+
+            log.Printf("Server starting on port %s\n", port)
+            log.Fatal(http.ListenAndServe(":"+port, router))
+        }
+```
+      </Tab>
       <Tab title="After: Suga SDK">
         ```go title="main.go" icon="rocket"
         package main
@@ -266,7 +336,7 @@ Suga helps you migrate existing applications to a cloud-agnostic architecture. W
 
     Select your cloud provider and region when prompted. You'll see:
 
-    ```
+    ```bash
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-app-aws-12345
 

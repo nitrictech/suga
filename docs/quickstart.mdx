@@ -20,8 +20,10 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
 
     Select a template that matches your use case:
-
-    ```
+    <Tip>
+      You can make your own templates too.
+    </Tip>
+    ```bash
     Welcome to Suga, this command will help you create a project from a template.
     If you already have a project, run suga init instead.
 
@@ -80,7 +82,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
 
     You'll see a confirmation:
-    ```
+    ```bash
     ⚡ Suga Logging in...
 
     ✓ Logged in as User
@@ -93,7 +95,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
 
     The editor launches in your browser:
-    ```
+    ```bash
     ⚡ Suga Editor
     Opening visual editor at http://localhost:3001
     Press Ctrl+C to stop the editor
@@ -107,7 +109,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
       The editor automatically updates your `suga.yaml` file as you make changes.
     </Tip>
 
-    Let's review what the template `suga.yaml` has:
+    Let's review what the `go-standard` template has defined in the `suga.yaml`:
 
     ```yaml title="suga.yaml" icon="file-code"
     targets:
@@ -154,7 +156,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
     Your application starts with hot reload:
 
-    ```
+    ```bash
     ⚡ Suga v1.0.0
        - App: my-first-app
        - Addr: http://localhost:50051
@@ -207,8 +209,8 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     suga build
     ```
 
-    You'll see the build output:
-    ```
+    You'll see the build output as a terraform stack with everything needed to deploy your application to the cloud:
+    ```bash
     ✓ Terraform generated successfully
       output written to ./.suga/stacks/my-first-app-aws-12345
 
@@ -253,7 +255,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
 
     Confirm when prompted:
-    ```
+    ```bash
     Do you want to perform these actions?
       Terraform will perform the actions described above.
       Only 'yes' will be accepted to approve.
@@ -275,10 +277,16 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
 **What you've accomplished:**
 
-- ✅ Created and configured a Suga application from a template
-- ✅ Developed and tested your application locally with hot reload
-- ✅ Generated production-ready Terraform infrastructure code
-- ✅ Deployed your application to your chosen cloud provider
+```mermaid
+graph TB
+One["Created and configured a Suga application from a template"] ==> Two["Developed and tested your application locally with hot reload"]
+Two ==> Three["Generated production-ready Terraform infrastructure code"]
+Three ==> Four["Deployed your application to your chosen cloud provider"]
+
+classDef nitricGreen stroke:#25b355,stroke-width:2px
+class One,Two,Three,Four nitricGreen
+
+```
 
 <Note>
   **Need help?** Contact [support@addsuga.com](mailto:support@addsuga.com) or

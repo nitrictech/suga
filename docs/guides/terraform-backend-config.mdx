@@ -55,8 +55,8 @@ After running `suga build`, add a backend configuration file to the synthesized 
 
   <Step title="Add Backend Configuration">
     Choose your backend provider and add the appropriate configuration:
-
-    <Expandable title="AWS S3 Backend" defaultOpen={false}>
+    <Tabs>
+    <Tab title="AWS S3">
       ```hcl title="backend.tf - AWS S3" icon="aws"
       terraform {
         backend "s3" {
@@ -72,9 +72,9 @@ After running `suga build`, add a backend configuration file to the synthesized 
       <Warning>
         Ensure your S3 bucket has versioning enabled and consider enabling MFA delete for production environments.
       </Warning>
-    </Expandable>
+    </Tab>
 
-    <Expandable title="Google Cloud Storage Backend" defaultOpen={false}>
+    <Tab title="Google Cloud Storage">
       ```hcl title="backend.tf - Google Cloud" icon="cloud"
       terraform {
         backend "gcs" {
@@ -87,9 +87,9 @@ After running `suga build`, add a backend configuration file to the synthesized 
       <Tip>
         Enable object versioning on your GCS bucket to maintain state history.
       </Tip>
-    </Expandable>
+    </Tab>
 
-    <Expandable title="Azure Storage Backend" defaultOpen={false}>
+    <Tab title="Azure Storage">
       ```hcl title="backend.tf - Azure Storage" icon="cloud"
       terraform {
         backend "azurerm" {
@@ -100,9 +100,9 @@ After running `suga build`, add a backend configuration file to the synthesized 
         }
       }
       ```
-    </Expandable>
+    </Tab>
 
-    <Expandable title="Terraform Cloud Backend" defaultOpen={false}>
+    <Tab title="Terraform Cloud">
       ```hcl title="backend.tf - Terraform Cloud" icon="cloud"
       terraform {
         backend "remote" {
@@ -113,7 +113,8 @@ After running `suga build`, add a backend configuration file to the synthesized 
         }
       }
       ```
-    </Expandable>
+    </Tab>
+    </Tabs>
   </Step>
 
   <Step title="Initialize and Deploy">
