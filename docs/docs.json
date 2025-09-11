@@ -7,11 +7,6 @@
     "light": "#2BC65F",
     "dark": "#25B355"
   },
-  "seo": {
-    "metatags": {
-      "robots": "noindex"
-    }
-  },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
