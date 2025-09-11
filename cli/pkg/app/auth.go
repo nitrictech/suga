@@ -30,7 +30,13 @@ func (c *AuthApp) Login() {
 		return
 	}
 
-	fmt.Printf("\n%s Logged in as %s\n", style.Green(icons.Check), style.Teal(user.FirstName))
+	// The user's name can be blank, so we use the email as a fallback
+	name := user.FirstName
+	if name == "" {
+		name = user.Email
+	}
+
+	fmt.Printf("\n%s Logged in as %s\n", style.Green(icons.Check), style.Teal(name))
 }
 
 // Logout handles the logout command logic
