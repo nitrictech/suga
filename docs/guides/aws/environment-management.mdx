@@ -47,6 +47,9 @@ graph TB
     ProdRole -->|Deploys to| Prod
     
     Admin --> S3
+
+    classDef nitricGreen stroke:#25b355,stroke-width:2px
+    class Admin,DevRole,StagingRole,ProdRole,Dev,Staging,Prod nitricGreen
 ```
 
 Each target account has a `TerraformRole` that trusts the administrative account, allowing Terraform to assume the role and deploy resources to the appropriate environment.
