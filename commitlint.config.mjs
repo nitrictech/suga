@@ -48,5 +48,9 @@ export default {
       ],
     ],
     "scope-empty-for-type": [2, "always", ["docs", "ci", "chore"]],
+    // Disable line length restrictions
+    "body-max-line-length": [0],
+    "footer-max-line-length": [0],
+    "header-max-length": [0],
   },
 };
