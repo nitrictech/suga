@@ -1,0 +1,54 @@
+---
+title: Lambda
+description: Run event-driven functions that execute on demand
+---
+
+## Configuration
+
+<ParamField path="architecture" type="string" default="x86_64">
+  Instruction set architecture for the Lambda function (x86_64 or arm64)
+  
+  **Example:** `x86_64`
+</ParamField>
+
+<ParamField path="environment" type="map(string)">
+  Environment variables for the Lambda function
+  
+  **Example:** `{"NODE_ENV": "production", "LOG_LEVEL": "info"}`
+</ParamField>
+
+<ParamField path="ephemeral_storage" type="number" default="1024">
+  Size of ephemeral storage in MB (512-10240)
+  
+  **Example:** `1024`
+</ParamField>
+
+<ParamField path="function_url_auth_type" type="string" default="AWS_IAM">
+  Authorization type for function URL (AWS_IAM or NONE)
+  
+  **Example:** `AWS_IAM`
+</ParamField>
+
+<ParamField path="memory" type="number" default="1024">
+  Amount of memory in MB (128-10240)
+  
+  **Example:** `1024`
+</ParamField>
+
+<ParamField path="security_group_ids" type="list(string)">
+  List of security group IDs for VPC configuration
+  
+  **Example:** `["sg-0123456789abcdef0"]`
+</ParamField>
+
+<ParamField path="subnet_ids" type="list(string)">
+  List of subnet IDs for VPC configuration
+  
+  **Example:** `["subnet-12345678", "subnet-87654321"]`
+</ParamField>
+
+<ParamField path="timeout" type="number" default="300">
+  Maximum execution time in seconds (1-900)
+  
+  **Example:** `300`
+</ParamField>

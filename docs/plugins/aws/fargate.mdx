@@ -1,0 +1,60 @@
+---
+title: Fargate
+description: Run long-running containerized services with automatic scaling
+---
+
+## Configuration
+
+<ParamField path="alb_arn" type="string" required>
+  ARN of the Application Load Balancer
+  
+  **Example:** `arn:aws:elasticloadbalancing:us-west-2:123456789012:loadbalancer/app/my-alb/50dc6c495c0c9188`
+</ParamField>
+
+<ParamField path="alb_security_group" type="string">
+  Security group ID of the Application Load Balancer
+  
+  **Example:** `sg-0123456789abcdef0`
+</ParamField>
+
+<ParamField path="container_port" type="number" required>
+  Port number the container exposes
+  
+  **Example:** `8080`
+</ParamField>
+
+<ParamField path="cpu" type="number" default="256">
+  CPU units for the Fargate task (256, 512, 1024, etc.)
+  
+  **Example:** `256`
+</ParamField>
+
+<ParamField path="environment" type="map(string)">
+  Environment variables for the container
+  
+  **Example:** `{"NODE_ENV": "production", "LOG_LEVEL": "info"}`
+</ParamField>
+
+<ParamField path="memory" type="number" default="512">
+  Memory in MB for the Fargate task
+  
+  **Example:** `512`
+</ParamField>
+
+<ParamField path="security_groups" type="list(string)">
+  List of security group IDs for the Fargate service
+  
+  **Example:** `["sg-0123456789abcdef0"]`
+</ParamField>
+
+<ParamField path="subnets" type="list(string)">
+  List of subnet IDs for the Fargate service
+  
+  **Example:** `["subnet-12345678", "subnet-87654321"]`
+</ParamField>
+
+<ParamField path="vpc_id" type="string">
+  VPC ID where the Fargate service will run
+  
+  **Example:** `vpc-12345678`
+</ParamField>

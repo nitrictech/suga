@@ -1,0 +1,68 @@
+---
+title: Cloud Run
+description: Run stateless containers with automatic scaling from zero
+---
+
+## Configuration
+
+<ParamField path="container_concurrency" type="number" default="80">
+  Maximum number of concurrent requests each instance can handle
+  
+  **Example:** `80`
+</ParamField>
+
+<ParamField path="container_port" type="number" default="9001">
+  Port number the container exposes
+  
+  **Example:** `9001`
+</ParamField>
+
+<ParamField path="cpus" type="number" default="1">
+  Number of CPUs to allocate to the Cloud Run service
+  
+  **Example:** `1`
+</ParamField>
+
+<ParamField path="environment" type="map(string)">
+  Environment variables for the Cloud Run service
+  
+  **Example:** `{"NODE_ENV": "production", "LOG_LEVEL": "info"}`
+</ParamField>
+
+<ParamField path="gpus" type="number" default="0">
+  Number of GPUs to allocate to the Cloud Run service
+</ParamField>
+
+<ParamField path="max_instances" type="number" default="10">
+  Maximum number of instances that can be created
+  
+  **Example:** `10`
+</ParamField>
+
+<ParamField path="memory_mb" type="number" default="512">
+  Amount of memory to allocate to the Cloud Run service in MB
+  
+  **Example:** `512`
+</ParamField>
+
+<ParamField path="min_instances" type="number" default="0">
+  Minimum number of instances to keep running
+</ParamField>
+
+<ParamField path="project_id" type="string">
+  Google Cloud Project ID
+  
+  **Example:** `my-project-123`
+</ParamField>
+
+<ParamField path="region" type="string">
+  Google Cloud region to deploy the service
+  
+  **Example:** `us-central1`
+</ParamField>
+
+<ParamField path="timeout_seconds" type="number" default="10">
+  Maximum request timeout in seconds
+  
+  **Example:** `10`
+</ParamField>
