@@ -22,12 +22,17 @@ func NewRootCmd(injector do.Injector) *cobra.Command {
 				return err
 			}
 
+			if debugFlag, _ := cmd.Flags().GetBool("debug"); debugFlag {
+				conf.SetDebug(true)
+			}
+
 			do.ProvideValue(injector, conf)
 			return nil
 		},
 	}
 
-	// Add commands that use the CLI struct methods
+	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug mode with verbose API request/response logging")
+
 	rootCmd.AddCommand(NewLoginCmd(injector))
 	rootCmd.AddCommand(NewLogoutCmd(injector))
 	rootCmd.AddCommand(NewAccessTokenCmd(injector))

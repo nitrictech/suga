@@ -52,7 +52,7 @@ func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
 			opts = append(opts, http.WithPort(pn))
 		}
 	}
-	httpClient := http.NewHttpClient("", opts...)
+	httpClient := http.NewHttpClient("", config, opts...)
 
 	tokenStore := do.MustInvokeAs[TokenStore](inj)
 

@@ -14,8 +14,9 @@ import (
 )
 
 type Config struct {
-	v   *viper.Viper `mapstructure:"-"`
-	Url string       `mapstructure:"url" desc:"The base URL of the Suga server (e.g., https://app.addsuga.com)"`
+	v     *viper.Viper `mapstructure:"-"`
+	Url   string       `mapstructure:"url" desc:"The base URL of the Suga server (e.g., https://app.addsuga.com)"`
+	Debug bool         `mapstructure:"debug" desc:"Enable debug mode with verbose logging"`
 }
 
 func (c *Config) FileUsed() string {
@@ -91,6 +92,10 @@ func (c *Config) SetSugaServerUrl(newUrl string) error {
 
 	c.Url = sugaUrl.String()
 	return nil
+}
+
+func (c *Config) SetDebug(debug bool) {
+	c.Debug = debug
 }
 
 func (c *Config) Save(global bool) error {
