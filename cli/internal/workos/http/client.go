@@ -11,9 +11,12 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 	"path"
 
+	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/utils"
 )
 
@@ -96,35 +99,61 @@ type GetAuthorizationUrlOptions struct {
 
 // HttpClient represents the WorkOS HTTP client
 type HttpClient struct {
-	baseURL  string
-	clientID string
-	client   *http.Client
+	baseURL      string
+	clientID     string
+	client       *http.Client
+	debugEnabled bool
 }
 
 // NewHttpClient creates a new WorkOS HTTP client
-func NewHttpClient(clientID string, options ...ClientOption) *HttpClient {
-	config := &clientConfig{
+func NewHttpClient(clientID string, cfg *config.Config, options ...ClientOption) *HttpClient {
+	clientConfig := &clientConfig{
 		hostname: DEFAULT_HOSTNAME,
 		scheme:   "https",
 	}
 
 	for _, option := range options {
-		option(config)
+		option(clientConfig)
 	}
 
 	baseURL := &url.URL{
-		Scheme: config.scheme,
-		Host:   config.hostname,
+		Scheme: clientConfig.scheme,
+		Host:   clientConfig.hostname,
 	}
 
-	if config.port != 0 {
-		baseURL.Host = fmt.Sprintf("%s:%d", config.hostname, config.port)
+	if clientConfig.port != 0 {
+		baseURL.Host = fmt.Sprintf("%s:%d", clientConfig.hostname, clientConfig.port)
 	}
 
 	return &HttpClient{
-		baseURL:  baseURL.String(),
-		clientID: clientID,
-		client:   &http.Client{},
+		baseURL:      baseURL.String(),
+		clientID:     clientID,
+		client:       &http.Client{},
+		debugEnabled: cfg.Debug,
+	}
+}
+
+// logRequest logs the HTTP request details if debug mode is enabled
+func (h *HttpClient) logRequest(req *http.Request) {
+	if !h.debugEnabled {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "[DEBUG] WorkOS Request:\n")
+	if dump, err := httputil.DumpRequest(req, true); err == nil {
+		fmt.Fprintf(os.Stderr, "%s\n\n", dump)
+	}
+}
+
+// logResponse logs the HTTP response details if debug mode is enabled
+func (h *HttpClient) logResponse(resp *http.Response) {
+	if !h.debugEnabled {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "[DEBUG] WorkOS Response:\n")
+	if dump, err := httputil.DumpResponse(resp, true); err == nil {
+		fmt.Fprintf(os.Stderr, "%s\n\n", dump)
 	}
 }
 
@@ -274,7 +303,17 @@ func (h *HttpClient) post(path string, body map[string]interface{}) (*http.Respo
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
-	return h.client.Do(req)
+	// Log the request
+	h.logRequest(req)
+
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the response
+	h.logResponse(resp)
+	return resp, nil
 }
 
 func (h *HttpClient) get(path string) (*http.Response, error) {
@@ -292,7 +331,17 @@ func (h *HttpClient) get(path string) (*http.Response, error) {
 
 	req.Header.Set("Accept", "application/json, text/plain, */*")
 
-	return h.client.Do(req)
+	// Log the request
+	h.logRequest(req)
+
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Log the response
+	h.logResponse(resp)
+	return resp, nil
 }
 
 type AuthenticatedWithRefreshTokenOptions struct {
@@ -478,11 +527,17 @@ func (c *HttpClient) PollDeviceTokenWithContext(ctx context.Context, deviceCode 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-amz-content-sha256", utils.CalculateSHA256(jsonBody))
 
+	// Log the request
+	c.logRequest(req)
+
 	response, err := c.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make device token request: %w", err)
 	}
 	defer response.Body.Close()
+
+	// Log the response
+	c.logResponse(response)
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
