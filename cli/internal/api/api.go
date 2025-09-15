@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/utils"
@@ -21,6 +23,7 @@ type TokenProvider interface {
 type SugaApiClient struct {
 	tokenProvider TokenProvider
 	apiUrl        *url.URL
+	debugEnabled  bool
 }
 
 func NewSugaApiClient(injector do.Injector) (*SugaApiClient, error) {
@@ -39,7 +42,32 @@ func NewSugaApiClient(injector do.Injector) (*SugaApiClient, error) {
 	return &SugaApiClient{
 		apiUrl:        apiUrl,
 		tokenProvider: tokenProvider,
+		debugEnabled:  config.Debug,
 	}, nil
+}
+
+// logRequest logs the HTTP request details if debug mode is enabled
+func (c *SugaApiClient) logRequest(req *http.Request) {
+	if !c.debugEnabled {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "[DEBUG] API Request:\n")
+	if dump, err := httputil.DumpRequest(req, true); err == nil {
+		fmt.Fprintf(os.Stderr, "%s\n\n", dump)
+	}
+}
+
+// logResponse logs the HTTP response details if debug mode is enabled
+func (c *SugaApiClient) logResponse(resp *http.Response) {
+	if !c.debugEnabled {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "[DEBUG] API Response:\n")
+	if dump, err := httputil.DumpResponse(resp, true); err == nil {
+		fmt.Fprintf(os.Stderr, "%s\n\n", dump)
+	}
 }
 
 // doRequestWithRetry executes an HTTP request and retries once with a refreshed token on 401/403.
@@ -58,11 +86,17 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
+	// Log the request
+	c.logRequest(req)
+
 	// Execute the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
+	// Log the response
+	c.logResponse(resp)
 
 	// If we got a 401 or 403 and auth is required, try refreshing the token
 	if requiresAuth && (resp.StatusCode == 401 || resp.StatusCode == 403) {
@@ -100,12 +134,22 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 
 		// Copy headers
 		retryReq.Header = req.Header.Clone()
-		
+
 		// Update authorization header with new token
 		retryReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
+		// Log the retry request
+		c.logRequest(retryReq)
+
 		// Retry the request
-		return http.DefaultClient.Do(retryReq)
+		retryResp, err := http.DefaultClient.Do(retryReq)
+		if err != nil {
+			return nil, err
+		}
+
+		// Log the retry response
+		c.logResponse(retryResp)
+		return retryResp, nil
 	}
 
 	return resp, nil
