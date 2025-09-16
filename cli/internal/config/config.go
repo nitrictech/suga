@@ -14,8 +14,9 @@ import (
 )
 
 type Config struct {
-	v   *viper.Viper `mapstructure:"-"`
-	Url string       `mapstructure:"url" desc:"The base URL of the Suga server (e.g., https://app.addsuga.com)"`
+	v                     *viper.Viper `mapstructure:"-"`
+	Url                   string       `mapstructure:"url" desc:"The base URL of the Suga server (e.g., https://app.addsuga.com)"`
+	PublicTemplatesTeams  []string     `mapstructure:"public_templates_teams" desc:"Team slugs for public templates (default: [suga])"`
 }
 
 func (c *Config) FileUsed() string {
@@ -81,6 +82,10 @@ func (c *Config) GetSugaServerUrl() *url.URL {
 	}
 
 	return sugaUrl
+}
+
+func (c *Config) GetPublicTemplatesTeams() []string {
+	return c.PublicTemplatesTeams
 }
 
 func (c *Config) SetSugaServerUrl(newUrl string) error {
@@ -162,7 +167,8 @@ func Load(cmd *cobra.Command) (*Config, error) {
 	c := Config{
 		v: v,
 		// Set any default values here
-		Url: version.ProductURL,
+		Url:                  version.ProductURL,
+		PublicTemplatesTeams: version.DefaultPublicTemplatesTeams,
 	}
 
 	err = v.ReadInConfig()

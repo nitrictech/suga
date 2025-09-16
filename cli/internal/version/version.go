@@ -24,6 +24,9 @@ var (
 	// The docs URL for the product
 	DocsURL = "https://docs.addsuga.com"
 
+	// Default team slugs for public templates
+	DefaultPublicTemplatesTeams = []string{"suga"}
+
 	// Raw is the string representation of the version. This will be replaced
 	// with the calculated version at build time.
 	// set in the Makefile.

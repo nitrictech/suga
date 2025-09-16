@@ -2,10 +2,13 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/utils"
@@ -19,8 +22,10 @@ type TokenProvider interface {
 }
 
 type SugaApiClient struct {
-	tokenProvider TokenProvider
-	apiUrl        *url.URL
+	tokenProvider        TokenProvider
+	apiUrl               *url.URL
+	httpClient           *http.Client
+	publicTemplatesTeams []string
 }
 
 func NewSugaApiClient(injector do.Injector) (*SugaApiClient, error) {
@@ -30,15 +35,29 @@ func NewSugaApiClient(injector do.Injector) (*SugaApiClient, error) {
 	}
 
 	apiUrl := config.GetSugaServerUrl()
+	publicTemplatesTeams := config.GetPublicTemplatesTeams()
 
 	tokenProvider, err := do.InvokeAs[TokenProvider](injector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token provider: %w", err)
 	}
 
+	// Create HTTP client with reasonable timeouts (preserve defaults & proxies)
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSHandshakeTimeout = 10 * time.Second
+	transport.ResponseHeaderTimeout = 10 * time.Second
+	transport.IdleConnTimeout = 90 * time.Second
+	transport.ExpectContinueTimeout = 1 * time.Second
+	httpClient := &http.Client{
+		Timeout:   20 * time.Second,
+		Transport: transport,
+	}
+
 	return &SugaApiClient{
-		apiUrl:        apiUrl,
-		tokenProvider: tokenProvider,
+		apiUrl:               apiUrl,
+		tokenProvider:        tokenProvider,
+		httpClient:           httpClient,
+		publicTemplatesTeams: publicTemplatesTeams,
 	}, nil
 }
 
@@ -59,13 +78,15 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 	}
 
 	// Execute the request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
 	// If we got a 401 or 403 and auth is required, try refreshing the token
-	if requiresAuth && (resp.StatusCode == 401 || resp.StatusCode == 403) {
+	// Only retry for safe HTTP methods to avoid repeating side-effecting operations
+	isSafeMethod := req.Method == "GET" || req.Method == "HEAD" || req.Method == "OPTIONS"
+	if requiresAuth && (resp.StatusCode == 401 || resp.StatusCode == 403) && isSafeMethod {
 		resp.Body.Close() // Close the first response body
 
 		// Force token refresh
@@ -105,19 +126,36 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 		retryReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 		// Retry the request
-		return http.DefaultClient.Do(retryReq)
+		return c.httpClient.Do(retryReq)
 	}
 
 	return resp, nil
 }
 
 func (c *SugaApiClient) get(path string, requiresAuth bool) (*http.Response, error) {
-	apiUrl, err := url.JoinPath(c.apiUrl.String(), path)
-	if err != nil {
-		return nil, err
+	ctx := context.Background()
+	var apiUrl string
+
+	// If path contains query parameters, we need to handle it differently
+	if strings.Contains(path, "?") {
+		// Parse base URL and add path with query params
+		baseURL := strings.TrimSuffix(c.apiUrl.String(), "/")
+		if strings.HasPrefix(path, "/") {
+			apiUrl = baseURL + path
+		} else {
+			apiUrl = baseURL + "/" + path
+		}
+	} else {
+		// Use JoinPath for paths without query parameters
+		var err error
+		apiUrl, err = url.JoinPath(c.apiUrl.String(), path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	req, err := http.NewRequest("GET", apiUrl, nil)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", apiUrl, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +166,13 @@ func (c *SugaApiClient) get(path string, requiresAuth bool) (*http.Response, err
 }
 
 func (c *SugaApiClient) post(path string, requiresAuth bool, body []byte) (*http.Response, error) {
+	ctx := context.Background()
 	apiUrl, err := url.JoinPath(c.apiUrl.String(), path)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", apiUrl, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
