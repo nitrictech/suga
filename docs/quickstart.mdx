@@ -20,9 +20,6 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
     ```
 
     Select a template that matches your use case:
-    <Tip>
-      You can make your own templates too.
-    </Tip>
     ```bash
     Welcome to Suga, this command will help you create a project from a template.
     If you already have a project, run suga init instead.
@@ -38,40 +35,6 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
     ✓ Project created!
     ```
-
-    Navigate to your project and install dependencies:
-
-    ```bash title="Navigate to Project" icon="folder"
-    cd my-first-app
-    ```
-
-    <Tabs>
-      <Tab title="Node.js">
-        ```bash title="Install Dependencies" icon="package"
-        npm install
-        ```
-      </Tab>
-      <Tab title="Python">
-        ```bash title="Install Dependencies (uv)" icon="package"
-        uv sync
-        ```
-
-        Or with pip:
-        ```bash title="Install Dependencies (pip)" icon="package"
-        pip install -r requirements.txt
-        ```
-      </Tab>
-      <Tab title="Go">
-        ```bash title="Install Dependencies" icon="package"
-        go mod tidy
-        ```
-      </Tab>
-    </Tabs>
-
-    <Info>
-      Your project structure will include `suga.yaml` for configuration, service code, and language-specific dependencies.
-    </Info>
-
   </Step>
 
   <Step title="Design Your Architecture" icon="pen-to-square">
@@ -148,6 +111,44 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
   </Step>
 
   <Step title="Develop Locally" icon="code">
+
+  Navigate to your project and install dependencies:
+
+    ```bash title="Navigate to Project" icon="folder"
+    cd my-first-app
+    ```
+
+    <Tabs>
+      <Tab title="Node.js">
+        ```bash title="Install Dependencies (node)" icon="cube"
+        suga generate --ts --ts-out ./suga
+        npm install
+        ```
+      </Tab>
+      <Tab title="Python">
+        ```bash title="Install Dependencies (uv)" icon="cube"
+        suga generate --python --python-out ./suga_gen
+        uv sync
+        ```
+
+        Or with pip:
+        ```bash title="Install Dependencies (pip)" icon="cube"
+        suga generate --python --python-out ./suga_gen
+        pip install -r requirements.txt
+        ```
+      </Tab>
+      <Tab title="Go">
+        ```bash title="Install Dependencies (go)" icon="cube"
+        suga generate --go --go-out ./suga --go-package-name suga
+        go mod tidy
+        ```
+      </Tab>
+    </Tabs>
+
+    <Info>
+      Your project structure will include `suga.yaml` for configuration, service code, and language-specific dependencies.
+    </Info>
+
     Start the development server:
 
     ```bash title="Start Development Server" icon="play"
