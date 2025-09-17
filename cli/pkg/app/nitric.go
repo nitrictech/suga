@@ -48,6 +48,9 @@ func NewSugaApp(injector do.Injector) (*SugaApp, error) {
 		fs = afero.NewOsFs()
 	}
 
+	// Configure builder to log panics to .suga/build/logs/
+	builder.WithPanicLogging(filepath.Join(".suga", "build", "logs"))
+
 	appStyles := tui.NewAppStyles()
 
 	return &SugaApp{config: config, apiClient: apiClient, fs: fs, builder: builder, styles: appStyles}, nil

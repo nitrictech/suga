@@ -6,10 +6,35 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"runtime/debug"
 
 	app_spec_schema "github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines"
 )
+
+// PanicError represents an error that occurred due to a panic during terraform operations
+type PanicError struct {
+	OriginalPanic interface{}
+	StackTrace    []byte
+}
+
+func (e *PanicError) Error() string {
+	return fmt.Sprintf("build panic occurred: %v", e.OriginalPanic)
+}
+
+func (e *PanicError) Is(target error) bool {
+	_, ok := target.(*PanicError)
+	return ok
+}
+
+// NewPanicError creates a new PanicError with the given panic details
+func NewPanicError(panicValue interface{}, stackTrace []byte) *PanicError {
+	return &PanicError{
+		OriginalPanic: panicValue,
+		StackTrace:    stackTrace,
+	}
+}
+
 
 type TerraformEngine struct {
 	platform   *PlatformSpec
@@ -66,8 +91,9 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 	// rather than returning errors
 	defer func() {
 		if r := recover(); r != nil {
-			// Convert panic to error
-			err = fmt.Errorf("%v", r)
+			// Convert panic to custom error type
+			stack := debug.Stack()
+			err = NewPanicError(r, stack)
 			result = ""
 		}
 	}()
