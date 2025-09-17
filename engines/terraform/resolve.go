@@ -88,7 +88,11 @@ func (td *TerraformDeployment) resolveTokensForModule(intentName string, resourc
 	for property, value := range resource.Properties {
 		resolvedValue, err := td.resolveValue(intentName, value)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to resolve property '%s' for intent '%s': %w", property, intentName, err)
+		}
+		// Skip nil values and empty strings
+		if resolvedValue == nil || (resolvedValue == "") {
+			continue
 		}
 		module.Set(jsii.String(property), resolvedValue)
 	}
