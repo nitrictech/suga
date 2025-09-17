@@ -54,6 +54,9 @@ func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema
 		if err != nil {
 			return nil, fmt.Errorf("could not find platform type for %s.%s: %w", serviceIntent.GetType(), serviceIntent.GetSubType(), err)
 		}
+		if spec == nil {
+			return nil, fmt.Errorf("platform returned nil blueprint for service %s with type %s.%s", intentName, serviceIntent.GetType(), serviceIntent.GetSubType())
+		}
 		plug, err := td.engine.resolvePlugin(spec.ResourceBlueprint)
 		if err != nil {
 			return nil, err

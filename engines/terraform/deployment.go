@@ -125,6 +125,10 @@ func (td *TerraformDeployment) resolveEntrypointSugaVar(name string, appSpec *ap
 }
 
 func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema.ServiceIntent, resourceSpec *ServiceBlueprint, plug *ResourcePluginManifest) (*SugaServiceVariables, error) {
+	if resourceSpec == nil {
+		return nil, fmt.Errorf("resourceSpec is nil for service %s - this indicates a platform configuration issue", name)
+	}
+	
 	var imageVars *map[string]interface{} = nil
 
 	pluginManifest, err := td.engine.resolvePluginsForService(plug)
@@ -181,7 +185,10 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	})
 
 	identityModuleOutputs := map[string]interface{}{}
-	for _, id := range resourceSpec.Identities {
+	
+	// Check if IdentitiesBlueprint is nil before accessing Identities
+	if resourceSpec.IdentitiesBlueprint != nil {
+		for _, id := range resourceSpec.Identities {
 		identityPlugin, err := td.engine.resolveIdentityPlugin(&id)
 		if err != nil {
 			return nil, err
@@ -198,12 +205,17 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 		})
 
 		identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
+		}
 	}
 
 	for _, requiredIdentity := range plug.RequiredIdentities {
 		providedIdentities := slices.Collect(maps.Keys(identityModuleOutputs))
 		if ok := slices.Contains(providedIdentities, requiredIdentity); !ok {
-			return nil, fmt.Errorf("service %s is missing identity %s, required by plugin %s, provided identities were %s", name, requiredIdentity, plug.Name, providedIdentities)
+			if len(providedIdentities) == 0 {
+				return nil, fmt.Errorf("platform blueprint for service %s is missing identity definitions - plugin %s requires identity %s but the platform provides no identities (this is a platform configuration issue)", name, plug.Name, requiredIdentity)
+			} else {
+				return nil, fmt.Errorf("service %s is missing identity %s, required by plugin %s, provided identities were %s", name, requiredIdentity, plug.Name, providedIdentities)
+			}
 		}
 	}
 
