@@ -540,6 +540,60 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 	return nil
 }
 
+// GenerateFromConfig handles the generate command logic using configuration from suga.yaml
+func (c *SugaApp) GenerateFromConfig() error {
+	appSpec, err := schema.LoadFromFile(c.fs, version.ConfigFileName, true)
+	if err != nil {
+		return err
+	}
+
+	// Check if generate configuration is provided
+	if len(appSpec.Generate) == 0 {
+		return fmt.Errorf("no generate configuration found in %s and no language flags provided. Please add a 'generate' section to your %s file or use language flags (--go, --python, --ts, --js)", version.ConfigFileName, version.ConfigFileName)
+	}
+
+	if !client.SpecHasClientResources(*appSpec) {
+		fmt.Println("No client compatible resources found in application, skipping client generation")
+		return nil
+	}
+
+	// Process each generate configuration
+	for _, config := range appSpec.Generate {
+		switch config.Language {
+		case "go":
+			fmt.Println("Generating Go client...")
+			err = client.GenerateGo(c.fs, *appSpec, config.OutputPath, config.PackageName)
+			if err != nil {
+				return fmt.Errorf("failed to generate Go client: %w", err)
+			}
+		case "python":
+			fmt.Println("Generating Python client...")
+			err = client.GeneratePython(c.fs, *appSpec, config.OutputPath)
+			if err != nil {
+				return fmt.Errorf("failed to generate Python client: %w", err)
+			}
+		case "ts":
+			fmt.Println("Generating TypeScript client...")
+			err = client.GenerateTypeScript(c.fs, *appSpec, config.OutputPath)
+			if err != nil {
+				return fmt.Errorf("failed to generate TypeScript client: %w", err)
+			}
+		case "js":
+			fmt.Println("Generating JavaScript client...")
+			// Note: GenerateTypeScript handles both TS and JS
+			err = client.GenerateTypeScript(c.fs, *appSpec, config.OutputPath)
+			if err != nil {
+				return fmt.Errorf("failed to generate JavaScript client: %w", err)
+			}
+		default:
+			return fmt.Errorf("unsupported language in generate configuration: %s", config.Language)
+		}
+	}
+
+	fmt.Println("Clients generated successfully.")
+	return nil
+}
+
 // Edit handles the edit command logic
 func (c *SugaApp) Edit() error {
 	fileName := version.ConfigFileName

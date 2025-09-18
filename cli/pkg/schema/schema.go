@@ -10,6 +10,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type GenerateConfig struct {
+	Language    string `json:"language" yaml:"language" jsonschema:"required,enum=go,enum=python,enum=ts,enum=js"`
+	OutputPath  string `json:"output_path" yaml:"output_path" jsonschema:"required"`
+	PackageName string `json:"package_name,omitempty" yaml:"package_name,omitempty"`
+}
+
 type Application struct {
 	// Targets sets platforms this application should be expected to work on
 	// This gives us room to move away from LCD expectations around how platforms are built
@@ -17,6 +23,7 @@ type Application struct {
 	Name        string   `json:"name" yaml:"name" jsonschema:"required"`
 	Description string   `json:"description" yaml:"description"`
 
+	Generate          []GenerateConfig             `json:"generate,omitempty" yaml:"generate,omitempty"`
 	ServiceIntents    map[string]*ServiceIntent    `json:"services,omitempty" yaml:"services,omitempty"`
 	BucketIntents     map[string]*BucketIntent     `json:"buckets,omitempty" yaml:"buckets,omitempty"`
 	EntrypointIntents map[string]*EntrypointIntent `json:"entrypoints,omitempty" yaml:"entrypoints,omitempty"`

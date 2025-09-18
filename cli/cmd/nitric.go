@@ -97,7 +97,17 @@ func NewGenerateCmd(injector do.Injector) *cobra.Command {
 			if err != nil {
 				cobra.CheckErr(err)
 			}
-			cobra.CheckErr(app.Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir))
+
+			// Check if any language flags were provided
+			anyFlagProvided := goFlag || pythonFlag || javascriptFlag || typescriptFlag
+
+			if anyFlagProvided {
+				// Use command line flags
+				cobra.CheckErr(app.Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir))
+			} else {
+				// Use configuration from suga.yaml
+				cobra.CheckErr(app.GenerateFromConfig())
+			}
 		},
 	}
 
