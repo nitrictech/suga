@@ -1,13 +1,35 @@
 package schema
 
+// Supported languages for client generation
+const (
+	LanguageGo     = "go"
+	LanguagePython = "python"
+	LanguageTS     = "ts"
+	LanguageJS     = "js"
+)
+
+// GetSupportedLanguages returns a slice of all supported languages
+func GetSupportedLanguages() []string {
+	return []string{LanguageGo, LanguagePython, LanguageTS, LanguageJS}
+}
+
+// SupportedLanguagesJSONSchema contains the enum definition for JSON schema
+const SupportedLanguagesJSONSchema = "enum=go,enum=python,enum=ts,enum=js"
+
 type ServiceIntent struct {
 	Resource  `json:",inline" yaml:",inline"`
+	Path      string            `json:"path" yaml:"path" jsonschema:"required"`
 	Env       map[string]string `json:"env,omitempty" yaml:"env,omitempty"`
 	Container Container         `json:"container" yaml:"container" jsonschema:"oneof_required=container"`
 
 	Dev *Dev `json:"dev,omitempty" yaml:"dev,omitempty"`
 
 	Triggers map[string]*ServiceTrigger `json:"triggers,omitempty" yaml:"triggers,omitempty"`
+
+	// Client library generation configuration
+	Language            string `json:"language,omitempty" yaml:"language,omitempty" jsonschema:"enum=go,enum=python,enum=ts,enum=js"`
+	ClientLibraryOutput string `json:"client_library_output,omitempty" yaml:"client_library_output,omitempty"`
+	PackageName         string `json:"package_name,omitempty" yaml:"package_name,omitempty"`
 }
 
 func (s *ServiceIntent) GetType() string {

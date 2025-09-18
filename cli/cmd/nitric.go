@@ -151,6 +151,10 @@ func NewDevCmd(injector do.Injector) *cobra.Command {
 		Short: fmt.Sprintf("Run the %s application in development mode", version.ProductName),
 		Long:  fmt.Sprintf("Run the %s application in development mode, allowing local testing of resources.", version.ProductName),
 		Run: func(cmd *cobra.Command, args []string) {
+			app, err := do.Invoke[*app.SugaApp](injector)
+			if err != nil {
+				cobra.CheckErr(err)
+			}
 			cobra.CheckErr(app.Dev())
 		},
 	}

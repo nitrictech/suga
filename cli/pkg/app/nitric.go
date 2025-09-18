@@ -512,7 +512,7 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 
 	// check if the go language flag is provided
 	if goFlag {
-		fmt.Println("Generating Go client...")
+		fmt.Printf("Generating %s client...\n", schema.LanguageGo)
 		// TODO: add flags for output directory and package name
 		err = client.GenerateGo(c.fs, *appSpec, goOutputDir, goPackageName)
 		if err != nil {
@@ -521,7 +521,7 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 	}
 
 	if pythonFlag {
-		fmt.Println("Generating Python client...")
+		fmt.Printf("Generating %s client...\n", schema.LanguagePython)
 		err = client.GeneratePython(c.fs, *appSpec, pythonOutputDir)
 		if err != nil {
 			return err
@@ -529,7 +529,7 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 	}
 
 	if typescriptFlag {
-		fmt.Println("Generating NodeJS client...")
+		fmt.Printf("Generating %s client...\n", schema.LanguageTS)
 		err = client.GenerateTypeScript(c.fs, *appSpec, typescriptOutputDir)
 		if err != nil {
 			return err
@@ -547,9 +547,19 @@ func (c *SugaApp) GenerateFromConfig() error {
 		return err
 	}
 
-	// Check if generate configuration is provided
-	if len(appSpec.Generate) == 0 {
-		return fmt.Errorf("no generate configuration found in %s and no language flags provided. Please add a 'generate' section to your %s file or use language flags (--go, --python, --ts, --js)", version.ConfigFileName, version.ConfigFileName)
+	// Check for per-service generation configuration
+	serviceConfigs := c.getServicesWithGeneration(appSpec)
+
+	if len(serviceConfigs) == 0 {
+		supportedLanguages := schema.GetSupportedLanguages()
+		languageFlags := ""
+		for i, lang := range supportedLanguages {
+			if i > 0 {
+				languageFlags += ", "
+			}
+			languageFlags += "--" + lang
+		}
+		return fmt.Errorf("no generate configuration found in %s and no language flags provided. Please add per-service 'language' and 'client_library_output' fields to your services in your %s file, or use language flags (%s)", version.ConfigFileName, version.ConfigFileName, languageFlags)
 	}
 
 	if !client.SpecHasClientResources(*appSpec) {
@@ -557,41 +567,49 @@ func (c *SugaApp) GenerateFromConfig() error {
 		return nil
 	}
 
-	// Process each generate configuration
-	for _, config := range appSpec.Generate {
-		switch config.Language {
-		case "go":
-			fmt.Println("Generating Go client...")
-			err = client.GenerateGo(c.fs, *appSpec, config.OutputPath, config.PackageName)
-			if err != nil {
-				return fmt.Errorf("failed to generate Go client: %w", err)
-			}
-		case "python":
-			fmt.Println("Generating Python client...")
-			err = client.GeneratePython(c.fs, *appSpec, config.OutputPath)
-			if err != nil {
-				return fmt.Errorf("failed to generate Python client: %w", err)
-			}
-		case "ts":
-			fmt.Println("Generating TypeScript client...")
-			err = client.GenerateTypeScript(c.fs, *appSpec, config.OutputPath)
-			if err != nil {
-				return fmt.Errorf("failed to generate TypeScript client: %w", err)
-			}
-		case "js":
-			fmt.Println("Generating JavaScript client...")
-			// Note: GenerateTypeScript handles both TS and JS
-			err = client.GenerateTypeScript(c.fs, *appSpec, config.OutputPath)
-			if err != nil {
-				return fmt.Errorf("failed to generate JavaScript client: %w", err)
-			}
-		default:
-			return fmt.Errorf("unsupported language in generate configuration: %s", config.Language)
+	// Process per-service generate configurations
+	for serviceName, service := range serviceConfigs {
+		fmt.Printf("Generating %s client for service %s...\n", service.Language, serviceName)
+		err = c.generateClientForService(appSpec, serviceName, service)
+		if err != nil {
+			return fmt.Errorf("failed to generate %s client for service %s: %w", service.Language, serviceName, err)
 		}
 	}
 
 	fmt.Println("Clients generated successfully.")
 	return nil
+}
+
+// getServicesWithGeneration extracts services that have generation configuration
+func (c *SugaApp) getServicesWithGeneration(appSpec *schema.Application) map[string]*schema.ServiceIntent {
+	services := make(map[string]*schema.ServiceIntent)
+
+	for serviceName, service := range appSpec.ServiceIntents {
+		if service.Language != "" && service.ClientLibraryOutput != "" {
+			services[serviceName] = service
+		}
+	}
+
+	return services
+}
+
+// generateClientForService generates a client for a specific service
+func (c *SugaApp) generateClientForService(appSpec *schema.Application, serviceName string, service *schema.ServiceIntent) error {
+	// Compute output path relative to service path
+	outputPath := filepath.Join(service.Path, service.ClientLibraryOutput)
+
+	switch service.Language {
+	case schema.LanguageGo:
+		return client.GenerateGo(c.fs, *appSpec, outputPath, service.PackageName)
+	case schema.LanguagePython:
+		return client.GeneratePython(c.fs, *appSpec, outputPath)
+	case schema.LanguageTS:
+		return client.GenerateTypeScript(c.fs, *appSpec, outputPath)
+	case schema.LanguageJS:
+		return client.GenerateTypeScript(c.fs, *appSpec, outputPath)
+	default:
+		return fmt.Errorf("unsupported language: %s", service.Language)
+	}
 }
 
 // Edit handles the edit command logic
@@ -672,22 +690,54 @@ func (c *SugaApp) Edit() error {
 }
 
 // Dev handles the dev command logic
-func Dev() error {
+func (c *SugaApp) Dev() error {
 	// 1. Load the App Spec
-	// Read the suga.yaml file
-	fs := afero.NewOsFs()
-
-	appSpec, err := schema.LoadFromFile(fs, version.ConfigFileName, true)
+	appSpec, err := schema.LoadFromFile(c.fs, version.ConfigFileName, true)
 	if err != nil {
 		return err
 	}
 
-	simserver := simulation.NewSimulationServer(fs, appSpec)
+	// 2. Auto-generate client libraries if per-service generation configuration exists
+	serviceConfigs := c.getServicesWithGeneration(appSpec)
+
+	if len(serviceConfigs) > 0 {
+		fmt.Println(c.styles.Success.Render(" " + icons.Check + " Found generate configuration, running client generation..."))
+
+		// Check if there are client compatible resources before attempting generation
+		if client.SpecHasClientResources(*appSpec) {
+			err = c.runAutoGenerate(appSpec)
+			if err != nil {
+				return fmt.Errorf("failed to auto-generate client libraries: %w", err)
+			}
+		} else {
+			fmt.Println(c.styles.Faint.Render("   No client compatible resources found, skipping auto-generation"))
+		}
+	}
+
+	// 3. Start the simulation server
+	simserver := simulation.NewSimulationServer(c.fs, appSpec)
 	err = simserver.Start(os.Stdout)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+// runAutoGenerate runs client generation based on per-service configuration in suga.yaml
+func (c *SugaApp) runAutoGenerate(appSpec *schema.Application) error {
+	// Process per-service generate configurations
+	serviceConfigs := c.getServicesWithGeneration(appSpec)
+
+	for serviceName, service := range serviceConfigs {
+		fmt.Printf("  %s Generating %s client for service %s...\n", c.styles.Faint.Render("→"), service.Language, serviceName)
+		err := c.generateClientForService(appSpec, serviceName, service)
+		if err != nil {
+			return fmt.Errorf("failed to generate %s client for service %s: %w", service.Language, serviceName, err)
+		}
+	}
+
+	fmt.Println(c.styles.Success.Render("   Client libraries generated successfully"))
 	return nil
 }
 

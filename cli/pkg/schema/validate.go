@@ -17,7 +17,7 @@ func (a *Application) IsValid() []gojsonschema.ResultError {
 	violations = append(violations, a.checkSnakeCaseNames()...)
 	violations = append(violations, a.checkNoEnvVarCollisions()...)
 	violations = append(violations, a.checkAccessPermissions()...)
-	violations = append(violations, a.checkGenerateConfigurations()...)
+	violations = append(violations, a.checkServiceGenerateConfigurations()...)
 
 	return violations
 }
@@ -162,53 +162,6 @@ func (a *Application) checkSnakeCaseNames() []gojsonschema.ResultError {
 	return violations
 }
 
-func (a *Application) checkGenerateConfigurations() []gojsonschema.ResultError {
-	violations := []gojsonschema.ResultError{}
-	validLanguages := []string{"go", "python", "ts", "js"}
-	languagesSeen := make(map[string]int)
-
-	for i, config := range a.Generate {
-		// Check if language is valid
-		if !slices.Contains(validLanguages, config.Language) {
-			violations = append(violations, newValidationError(
-				fmt.Sprintf("generate[%d].language", i),
-				fmt.Sprintf("Invalid language '%s'. Valid languages are: %s", config.Language, strings.Join(validLanguages, ", ")),
-			))
-		}
-
-		// Check for duplicate languages
-		if prevIndex, exists := languagesSeen[config.Language]; exists {
-			violations = append(violations, newValidationError(
-				fmt.Sprintf("generate[%d].language", i),
-				fmt.Sprintf("Language '%s' is already configured at index %d", config.Language, prevIndex),
-			))
-		} else {
-			languagesSeen[config.Language] = i
-		}
-
-		// Check if output_path is provided
-		if config.OutputPath == "" {
-			violations = append(violations, newValidationError(
-				fmt.Sprintf("generate[%d].output_path", i),
-				"Output path is required",
-			))
-		}
-
-		// For Go, validate package name if provided
-		if config.Language == "go" && config.PackageName != "" {
-			// Go package names should be lowercase and not contain dashes or spaces
-			if !regexp.MustCompile(`^[a-z][a-z0-9]*$`).MatchString(config.PackageName) {
-				violations = append(violations, newValidationError(
-					fmt.Sprintf("generate[%d].package_name", i),
-					"Go package name must be lowercase and contain only letters and numbers, starting with a letter",
-				))
-			}
-		}
-	}
-
-	return violations
-}
-
 func (a *Application) checkNoEnvVarCollisions() []gojsonschema.ResultError {
 	violations := []gojsonschema.ResultError{}
 	envVarMap := map[string]string{}
@@ -219,6 +172,63 @@ func (a *Application) checkNoEnvVarCollisions() []gojsonschema.ResultError {
 			continue
 		}
 		envVarMap[intent.EnvVarKey] = name
+	}
+
+	return violations
+}
+
+func (a *Application) checkServiceGenerateConfigurations() []gojsonschema.ResultError {
+	violations := []gojsonschema.ResultError{}
+	validLanguages := GetSupportedLanguages()
+	serviceLanguages := make(map[string]string) // language -> service name
+
+	for name, service := range a.ServiceIntents {
+		// If language is specified, client_library_output must also be specified
+		if service.Language != "" {
+			if service.ClientLibraryOutput == "" {
+				violations = append(violations, newValidationError(
+					fmt.Sprintf("services.%s.client_library_output", name),
+					"client_library_output is required when language is specified",
+				))
+			}
+
+			// Check if language is valid
+			if !slices.Contains(validLanguages, service.Language) {
+				violations = append(violations, newValidationError(
+					fmt.Sprintf("services.%s.language", name),
+					fmt.Sprintf("Invalid language '%s'. Valid languages are: %s", service.Language, strings.Join(validLanguages, ", ")),
+				))
+			}
+
+			// For Go, validate package name if provided
+			if service.Language == LanguageGo && service.PackageName != "" {
+				// Go package names should be lowercase and not contain dashes or spaces
+				if !regexp.MustCompile(`^[a-z][a-z0-9]*$`).MatchString(service.PackageName) {
+					violations = append(violations, newValidationError(
+						fmt.Sprintf("services.%s.package_name", name),
+						"Go package name must be lowercase and contain only letters and numbers, starting with a letter",
+					))
+				}
+			}
+
+			// Check for duplicate languages across services
+			if existingService, exists := serviceLanguages[service.Language]; exists {
+				violations = append(violations, newValidationError(
+					fmt.Sprintf("services.%s.language", name),
+					fmt.Sprintf("Language '%s' is already configured for service '%s'", service.Language, existingService),
+				))
+			} else {
+				serviceLanguages[service.Language] = name
+			}
+		}
+
+		// If client_library_output is specified without language, that's also an error
+		if service.ClientLibraryOutput != "" && service.Language == "" {
+			violations = append(violations, newValidationError(
+				fmt.Sprintf("services.%s.language", name),
+				"language is required when client_library_output is specified",
+			))
+		}
 	}
 
 	return violations
