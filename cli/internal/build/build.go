@@ -1,8 +1,13 @@
 package build
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"slices"
+	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/cli/internal/platforms"
@@ -16,6 +21,14 @@ import (
 type BuilderService struct {
 	fs        afero.Fs
 	apiClient *api.SugaApiClient
+	logDir    string // Optional directory for panic logs
+}
+
+// sanitizeForFilename removes or replaces characters that aren't safe for filenames
+func sanitizeForFilename(input string) string {
+	re := regexp.MustCompile(`[^a-zA-Z0-9_.-]`)
+
+	return re.ReplaceAllString(input, "_")
 }
 
 func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, target string) (string, error) {
@@ -38,14 +51,16 @@ func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, targ
 	engine := terraform.New(platform, terraform.WithRepository(repo))
 
 	stackPath, err := engine.Apply(appSpec)
-
-	return stackPath, err
+	if err != nil {
+		return "", b.processBuildError(err, target)
+	}
+	return stackPath, nil
 }
 
 func (b *BuilderService) BuildProjectFromFileForTarget(projectFile, target string) (string, error) {
 	appSpec, err := schema.LoadFromFile(b.fs, projectFile, true)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to load project file: %w", err)
 	}
 
 	return b.BuildProjectForTarget(appSpec, target)
@@ -58,5 +73,57 @@ func NewBuilderService(injector do.Injector) (*BuilderService, error) {
 	return &BuilderService{
 		fs:        fs,
 		apiClient: apiClient,
+		logDir:    "", // No logging by default
 	}, nil
+}
+
+// WithPanicLogging configures the builder to log panics to the specified directory
+func (b *BuilderService) WithPanicLogging(logDir string) *BuilderService {
+	b.logDir = logDir
+	return b
+}
+
+// processBuildError handles error formatting and optional logging
+func (b *BuilderService) processBuildError(err error, target string) error {
+	var panicErr *terraform.PanicError
+	if errors.As(err, &panicErr) {
+		if b.logDir != "" {
+			if logFilePath, logErr := b.logPanicToFile(panicErr, target); logErr == nil {
+				return fmt.Errorf("a panic occurred building with %s. panic details logged to: %s", target, logFilePath)
+			}
+		}
+		return fmt.Errorf("a panic occurred building with %s. panic: %v", target, panicErr.OriginalPanic)
+	}
+
+	return fmt.Errorf("an error occurred building with %s. error: %v", target, err)
+}
+
+// logPanicToFile logs panic details to the configured log directory
+func (b *BuilderService) logPanicToFile(panicErr *terraform.PanicError, target string) (string, error) {
+	err := os.MkdirAll(b.logDir, 0755)
+	if err != nil {
+		return "", fmt.Errorf("failed to create log directory: %v", err)
+	}
+
+	// Create unique filename with timestamp and sanitized target name
+	timestamp := time.Now().Format("20060102-150405")
+	sanitizedTarget := sanitizeForFilename(target)
+	logFileName := fmt.Sprintf("panic-%s-%s.log", sanitizedTarget, timestamp)
+	logFilePath := filepath.Join(b.logDir, logFileName)
+
+	// Create detailed log content
+	logContent := "Suga Build Panic Report\n"
+	logContent += "========================\n"
+	logContent += fmt.Sprintf("Timestamp: %s\n", time.Now().Format(time.RFC3339))
+	logContent += fmt.Sprintf("Target: %s\n", target)
+	logContent += fmt.Sprintf("Panic: %v\n\n", panicErr.OriginalPanic)
+	logContent += fmt.Sprintf("Stack Trace:\n%s\n", panicErr.StackTrace)
+
+	// Write to log file
+	err = os.WriteFile(logFilePath, []byte(logContent), 0644)
+	if err != nil {
+		return "", fmt.Errorf("failed to write log file: %v", err)
+	}
+
+	return logFilePath, nil
 }

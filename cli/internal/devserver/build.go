@@ -31,6 +31,7 @@ func (n *SugaProjectBuild) OnConnect(send SendFunc) {
 	// No-op
 }
 
+
 func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 	var buildMessage Message[ProjectBuild]
 	err := json.Unmarshal(message, &buildMessage)
@@ -46,6 +47,8 @@ func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 
 	stackPath, err := n.builder.BuildProjectFromFileForTarget(version.ConfigFileName, buildMessage.Payload.Target)
 	if err != nil {
+		fmt.Println(err.Error())
+
 		n.broadcast(Message[any]{
 			Type: "buildError",
 			Payload: ProjectBuildError{
