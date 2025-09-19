@@ -19,7 +19,6 @@ import (
 	"github.com/nitrictech/suga/cli/internal/simulation/service"
 	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
-	"github.com/nitrictech/suga/cli/internal/version"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/cli/pkg/tui"
 	pubsubpb "github.com/nitrictech/suga/proto/pubsub/v2"
@@ -83,7 +82,7 @@ func (s *SimulationServer) startSugaApis() error {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
-	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr, "Dashboard", fmt.Sprintf("%s/dev", version.ProductURL)))
+	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr))
 
 	go func() {
 		err := srv.Serve(lis)
