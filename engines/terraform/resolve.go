@@ -2,11 +2,34 @@ package terraform
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
 )
+
+// isUnset checks if a value should be considered unset/empty
+func isUnset(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Interface:
+		if rv.IsNil() {
+			return true
+		}
+		// Treat *string("") as empty
+		if rv.Kind() == reflect.Ptr && rv.Elem().IsValid() && rv.Elem().Kind() == reflect.String && rv.Elem().Len() == 0 {
+			return true
+		}
+	case reflect.String:
+		return rv.Len() == 0
+	}
+	return false
+}
 
 func SpecReferenceFromToken(token string) (*SpecReference, error) {
 	contents, ok := extractTokenContents(token)
@@ -88,7 +111,11 @@ func (td *TerraformDeployment) resolveTokensForModule(intentName string, resourc
 	for property, value := range resource.Properties {
 		resolvedValue, err := td.resolveValue(intentName, value)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to resolve property '%s' for intent '%s': %w", property, intentName, err)
+		}
+		// Skip nil values and empty strings
+		if isUnset(resolvedValue) {
+			continue
 		}
 		module.Set(jsii.String(property), resolvedValue)
 	}
