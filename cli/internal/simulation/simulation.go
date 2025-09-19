@@ -83,7 +83,7 @@ func (s *SimulationServer) startSugaApis() error {
 		return fmt.Errorf("failed to listen: %v", err)
 	}
 
-	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr, "Dashboard", fmt.Sprintf("%s/dev", version.ProductURL)))
+	fmt.Println(tui.SugaIntro("App", s.appSpec.Name, "Addr", addr, "Dashboard", fmt.Sprintf("%s", version.ProductURL)))
 
 	go func() {
 		err := srv.Serve(lis)
