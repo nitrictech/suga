@@ -47,7 +47,7 @@ brews:
   - name: suga
     repository:
       owner: nitrictech
-      name: suga-homebrew-tap
+      name: homebrew-tap
     commit_author:
       name: nitric-bot
       email: maintainers@nitric.io
