@@ -1,0 +1,230 @@
+---
+title: "Platforms Overview"
+description: "Understanding Suga's platforms and ecosystem"
+---
+
+Platforms in Suga solve a critical challenge: delivering the seamless developer experience of modern deployment platforms while maintaining enterprise control and flexibility. They're blueprints that transform application specifications ([Projects](/projects)) into deployable infrastructure by generating Terraform HCL and providing runtime adapters that translate abstract resource operations into cloud-specific API calls.
+
+Platform teams can create, customize, and govern these distributed packages to provide developers with instant deployments, automatic scaling, and zero-configuration infrastructure, while maintaining full control over security, compliance, and infrastructure standards.
+
+<Card title="Browse Platforms" horizontal icon="globe" href="https://app.addsuga.com/browse/platforms">
+  Explore official and community platforms in the platform browser
+</Card>
+
+## What is a Platform?
+
+A platform is a configuration that maps Suga's abstract resource types (services, buckets, databases, entrypoints, etc.) to specific implementations.
+
+For example, the official Suga AWS platform maps:
+
+- **Services** → AWS Lambda or ECS Fargate
+- **Buckets** → S3 buckets  
+- **Entrypoints** → Amazon CloudFront CDN
+
+It also includes IAM, policies and routing between the resources. Establishing routes between CloudFront and AWS Lambda/Fargate, as well as providing least-privilege access from the application containers to resources like S3 buckets.
+
+This abstraction delivers concrete value: local development with emulated cloud services (no cloud bills or complex setup), application architectures that aren't locked to specific infrastructure choices, and the ability for platform teams to evolve deployment strategies without breaking developer workflows.
+
+Unlike opaque abstractions that hide complexity, Suga's platform system is transparent - you can inspect the generated Terraform, customize platform behavior, and maintain full control over your infrastructure while keeping application logic cleanly separated from deployment concerns.
+
+## Platform Ecosystem
+
+### Official Platforms
+
+The Suga team maintains official platforms for major cloud providers. These are general purpose, production-ready implementations:
+
+- **[AWS Platform](https://app.addsuga.com/platforms/suga/aws)** - Lambda/Fargate services, S3 storage, CloudFront CDN, IAM security
+- **[GCP Platform](https://app.addsuga.com/platforms/suga/gcp)** - Cloud Run services, Cloud Storage, Cloud CDN, Service Account security
+- **Azure Platform** _(coming soon)_ - Container Apps services, Blob Storage, etc.
+
+```yaml title="Example: Using official platforms"
+targets:
+  - suga/aws@1    # Deploy to AWS
+  - suga/gcp@1    # Deploy to GCP
+
+services:
+  api:
+    # Will be deployed as Lambda (AWS) or Cloud Run (GCP)
+    dev:
+      script: npm run dev
+```
+
+### Community Platforms
+
+The platform ecosystem extends far beyond official implementations. Community members and organizations are able to publish platforms for:
+
+- **Alternative cloud providers** - Azure, DigitalOcean, Linode, Vultr
+- **Specialized deployments** - Kubernetes, Docker Swarm, on-premises infrastructure  
+- **Development environments** - Local testing, CI/CD pipelines, staging environments
+- **Custom configurations** - Organization-specific security policies, compliance requirements
+
+<Info>
+Platform names follow the format `team/platform@version` (e.g. `acme-corp/azure@2`).
+
+You can discover available platforms through the [Suga platform registry](https://app.addsuga.com/browse/platforms) or by browsing community repositories.
+</Info>
+
+## Platform Components
+
+Platforms operate through two key mechanisms: **Infrastructure Generation** and **Runtime Adaptation**.
+
+### Infrastructure Generation
+
+When you run `suga build`, Suga uses your target platform to transform your [Project](/projects) specification into cloud-specific Terraform HCL (called stacks). This process:
+
+1. **Maps abstract resources** - Takes your high-level resource definitions (services, buckets, databases) and selects appropriate cloud implementations
+2. **Generates Terraform modules** - Creates infrastructure-as-code that provisions actual cloud resources with proper networking, security, and permissions
+3. **Applies platform policies** - Ensures generated infrastructure follows organizational security, compliance, and architectural standards
+
+### Runtime Adaptation  
+
+If you choose to use Suga's client code generation in your applications, Platforms provide runtime adapters that translate those abstract operations into cloud-specific API calls:
+
+```typescript
+import { SugaClient } from "@/suga/client";
+
+const suga = new SugaClient();
+
+// Developer writes platform-agnostic code
+await suga.files.write('file.txt', data)
+
+// Platform runtime adapter translates to:
+// AWS: s3.putObject() call
+// GCP: storage.bucket().file().save() call
+// Local dev: filesystem write
+```
+
+This dual approach unlocks portable code while platform teams control both deployment infrastructure and runtime behavior.
+
+### Resource Blueprints
+
+Ultimately, Suga Platforms map Suga Resources to specific plugins and configuration, called Resource Blueprints. Blueprints specify:
+
+- **Plugin**: The resource plugin to use, which contains Terraform code and optional Runtime Adapter
+- **Properties**: Configuration for the plugin, typically Terraform Module variables
+- **Variables**: Custom values to export as Terraform stack variables
+- **Dependencies**: Other infrastructure that should be deployed before the current resource
+
+### Plugins
+
+Platforms use a modular plugin system where each plugin handles a specific cloud service:
+
+- `suga/aws-lambda` - AWS Lambda functions
+- `suga/aws-s3-bucket` - S3 storage buckets
+- `suga/gcp-cloudrun` - Google Cloud Run containers
+- `suga/neon-db` - Neon PostgreSQL databases
+
+#### Properties
+
+Properties are key-value pairs that get passed directly as input variables to the underlying Terraform modules. They configure how the cloud resources should be deployed and behave. The visual editor provides an intuitive interface for editing blueprint properties:
+
+![Blueprint Property Editor](/images/blueprint-property-editor.png)
+
+```yaml title="Platform blueprint with properties"
+entrypoints:
+  default:
+    plugin: "suga/aws-cloudfront"
+    properties:
+      custom_domain: "api.example.com"
+      waf_enabled: true
+      cache_behavior: "optimized"
+```
+
+Properties support several value types:
+
+- **Static values** - Strings, numbers, booleans, objects, and arrays
+- **Variable references** - `${var.domain}` references platform variables
+- **Self references** - `${self.enable_waf}` references blueprint-specific variables  
+- **Infrastructure references** - `${infra.vpc.id}` references other infrastructure outputs
+
+When Suga generates Terraform code, properties get resolved and passed to the module:
+
+```hcl title="Generated Terraform module call"
+module "cloudfront_main" {
+  source = "./modules/aws-cloudfront"
+  
+  custom_domain    = "api.example.com"
+  waf_enabled      = true
+  cache_behavior   = "optimized"
+}
+```
+
+This allows platforms to expose the full configuration surface of underlying cloud services while maintaining clean, declarative definitions.
+
+### Variables
+
+Variables provide a way to defer configuration values until deployment time, making platforms flexible and reusable. Suga supports two types of variables that become Terraform stack variables:
+
+#### Platform Variables
+
+Platform variables are defined at the top level and can be referenced by any blueprint in the platform:
+
+![Platform Variables](/images/platform-vars.png)
+
+#### Blueprint Variables
+
+Blueprint variables are specific to individual resource blueprints, allowing fine-grained customization. The visual editor shows how blueprint variables can be used as property values:
+
+![Blueprint Variables as Properties](/images/blueprint-vars-as-properties.png)
+
+#### Variable Resolution
+
+When you run `suga build`, variables become Terraform stack variables that can be provided at deployment time:
+
+```hcl title="Conceptual Example of Stack Variables"
+variable "domain" {
+  type        = string
+  description = "Custom domain for the application"
+  default     = null
+}
+
+variable "entrypoints_default_enable_waf" {
+  type        = bool
+  description = "Enable AWS WAF protection"
+  default     = false
+}
+```
+
+Variables can be provided during Terraform deployment:
+
+```bash title="Providing variables at deploy time"
+# Via command line
+terraform apply -var="domain=api.example.com" -var="entrypoints_default_enable_waf=true"
+
+# Via terraform.tfvars file
+echo 'domain = "api.example.com"' > terraform.tfvars
+echo 'entrypoints_default_enable_waf = true' >> terraform.tfvars
+terraform apply
+```
+
+#### Multi-Environment Deployments
+
+Variables work seamlessly with [Terraform workspaces](https://developer.hashicorp.com/terraform/language/state/workspaces) to support deployment to multiple environments using different configurations:
+
+```bash title="Environment-specific deployments"
+# Development environment
+terraform workspace select dev
+terraform apply -var-file="environments/dev.tfvars"
+
+# Production environment  
+terraform workspace select prod
+terraform apply -var-file="environments/prod.tfvars"
+```
+
+```hcl title="environments/dev.tfvars"
+domain = "dev-api.example.com"
+services_default_memory = 512
+services_default_storage = 1024
+entrypoints_default_enable_waf = false
+```
+
+```hcl title="environments/prod.tfvars"
+domain = "api.example.com"
+services_default_memory = 2048
+services_default_storage = 4096
+entrypoints_default_enable_waf = true
+```
+
+This pattern allows the same platform to scale resources appropriately across environments - smaller, cost-effective configurations for development and staging, while providing production-grade resources with enhanced security features for live deployments.
+
+Platform authors can expose environment-specific variables like memory allocation, storage capacity, security settings, and performance configurations, ensuring each environment gets the right balance of cost and capability.

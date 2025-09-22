@@ -1,0 +1,251 @@
+---
+title: "Projects Overview"
+description: "Understanding Suga projects - the application specifications that define your cloud architecture"
+---
+
+Projects in Suga are application specifications that define your cloud architecture using abstract resource types. They're declarative YAML configurations that describe what your application needs - services, storage, databases, and networking - without being tied to specific cloud implementations.
+
+## What is a Project?
+
+A Suga project is defined by a `suga.yaml` file that describes your application's infrastructure requirements using cloud-agnostic resource types. When combined with a [Platform](/platforms), this specification gets transformed into deployable cloud infrastructure.
+
+<Tabs>
+  <Tab title="Suga Project Editor" icon="monitor-cog">
+
+    <div className="relative h-96 overflow-hidden">
+      <video
+        className="w-full h-full object-cover object-top"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        poster="/images/project-editor-poster.jpg"
+        aria-label="Demo of the Suga visual project editor showing drag-and-drop infrastructure design"
+      >
+        <source src="/images/project-editor.webm" type="video/webm" />
+        Your browser does not support the video tag.
+      </video>
+      <div className="absolute bottom-0 left-0 right-0 h-15 bg-gradient-to-t from-white to-transparent dark:from-gray-900 pointer-events-none"></div>
+    </div>
+
+  </Tab>
+  <Tab title="suga.yaml" icon="file-code-2">
+
+```yaml title="Example suga.yaml"
+targets:
+  - suga/aws@1
+
+name: my-app
+description: An example web application with storage
+
+services:
+  app:
+    dev:
+      script: npm run dev
+    path: ./app
+  frontend:
+    dev:
+      script: npm run dev
+    path: ./frontend
+
+buckets:
+  bucket:
+    access:
+      app:
+        - read
+        - write
+
+entrypoints:
+  api:
+    routes:
+      /:
+        name: frontend
+      /api/:
+        name: app
+```
+
+</Tab>
+</Tabs>
+
+## Project Structure
+
+### Basic Configuration
+
+Every project starts with basic metadata and target platforms:
+
+```yaml title="Basic project configuration"
+name: project-name
+description: Brief description of your application
+
+targets:
+  - suga/aws@1 # Deploy to AWS
+  - suga/gcp@1 # Also deploy to GCP
+```
+
+- **name**: Project identifier (used in Terraform stack and resource naming)
+- **description**: Human-readable project description
+- **targets**: List of platforms this project can use for deployments
+
+### Resource Types
+
+Projects currently offer four main resource types:
+
+- **[Services](#services)** - Application containers that handle business logic
+- **[Buckets](#buckets)** - Cloud storage for files, images, and other assets
+- **[Entrypoints](#entrypoints)** - HTTP routing and CDN configuration to expose your application
+- **[Databases](#databases)** - Persistent data storage with access controls (currently PostgreSQL only)
+
+#### Services
+
+Services are your application containers that handle business logic:
+
+```yaml title="Service definitions"
+services:
+  app:
+    env:
+      EXT_URL: https://somewhere.example.com
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    dev:
+      script: npm run dev
+
+  worker:
+    container:
+      image:
+        id: "my-registry/worker:latest"
+```
+
+Services support:
+
+- **Environment variables** for configuration
+- **Container definitions** (Dockerfile or pre-built images)
+- **Development scripts** for local testing with the `suga dev` CLI command
+
+#### Buckets
+
+Buckets provide cloud storage for files, images, and other assets:
+
+```yaml title="Bucket definitions"
+buckets:
+  uploads:
+    access:
+      app:
+        - read
+        - write
+        - delete
+
+  public-assets:
+    content_path: ./build-static
+    access:
+      app:
+        - read
+```
+
+Bucket access permissions define which services can read, write or delete files in the bucket.
+
+Buckets can optionally include a `content_path` which, if provided, is used to seed the bucket with files during deployments. This is useful when you want to deploy static website assets, then route to them via an entrypoint.
+
+#### Entrypoints
+
+Entrypoints expose your application to the internet, typically through CDNs and/or load balancers:
+
+```yaml title="Entrypoint definitions"
+entrypoints:
+  web:
+    routes:
+      /:
+        name: public-assets
+      /api/:
+        name: app
+```
+
+Routes map URL patterns to services or storage buckets.
+
+#### Databases
+
+Databases provide persistent SQL data storage (currently PostgreSQL only):
+
+```yaml title="Database definitions"
+databases:
+  main:
+    access:
+      api:
+        - query
+```
+
+Database access controls which services can access and query the database.
+
+## Project Benefits
+
+### Deployment-Agnostic Architecture
+
+Projects describe _what_ your application needs, not _how_ it's implemented:
+
+- **Portable designs** that work across different cloud providers
+- **Platform independence** - switch from one AWS service to another, or to another cloud like GCP without changing your project
+- **Future-proof architecture** that adapts as platforms evolve
+
+### Developer Experience
+
+Projects enable smooth local development and deployment workflows:
+
+- **Local emulation** - Test with emulated cloud services on your machine using `suga dev`
+- **Hot reloading** - Services restart automatically when code changes
+- **Environment parity** - Same resource relationships locally and in production
+
+### Platform Team Control
+
+Projects maintain separation between application architecture and infrastructure implementation:
+
+- **Governance enforcement** - Platform teams control how resources get deployed
+- **Security policies** - Access patterns and configurations managed at the platform level
+- **Operational consistency** - Standardized deployment and monitoring across teams
+
+## Project Lifecycle
+
+### 1. Design Phase
+
+Define your application architecture using the visual editor or by editing `suga.yaml` directly:
+
+- Drag and drop resources onto the canvas
+- Connect services to storage and databases
+- Configure access permissions and routing
+- Set environment variables and deployment options
+
+### 2. Development Phase
+
+Test your project locally with emulated cloud services:
+
+```bash
+suga dev
+```
+
+- Services run using your `dev.script` commands
+- Storage operations use local filesystem
+- Database connections point to local instances
+- HTTP requests route through local entrypoints
+
+### 3. Build Phase
+
+Generate cloud-specific infrastructure from your project:
+
+```bash
+suga build
+```
+
+- Suga combines your project with the target platform specifications
+- Terraform stacks are generated for your target platform using pre-built modules
+- Resource dependencies and networking get configured automatically
+
+### 4. Deploy Phase
+
+Deploy the generated infrastructure using Terraform:
+
+```bash
+cd .suga/stacks/my-app-aws-*
+terraform init
+terraform apply
+```

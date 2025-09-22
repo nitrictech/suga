@@ -12,6 +12,11 @@ allowlisting
 cdktf
 Presigned
 presigned
+Fargate
+Linode
+Vultr
+booleans
+CDNs
 
 # Defaults from mintlify
 Mintlify
