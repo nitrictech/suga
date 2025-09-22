@@ -82,6 +82,57 @@ services:
 	assert.Contains(t, errString, "Must be in the format: `<team>/<platform>@<revision>` or `file:<path>`")
 }
 
+func TestApplicationFromYaml_ValidHyphenatedTargets(t *testing.T) {
+	yaml := `
+name: test-app
+description: A test application with hyphenated targets
+targets:
+  - suga/aws-fargate@1
+  - my-team/custom-platform@2
+  - nitric/gcp-service-account@1
+services:
+  api:
+    container:
+      docker:
+        dockerfile: Dockerfile
+`
+
+	app, result, err := ApplicationFromYaml(yaml)
+	assert.NoError(t, err)
+	assert.True(t, result.Valid(), "Expected valid result, got validation errors: %v", result.Errors())
+	assert.Equal(t, "test-app", app.Name)
+	assert.Len(t, app.Targets, 3)
+	assert.Contains(t, app.Targets, "suga/aws-fargate@1")
+	assert.Contains(t, app.Targets, "my-team/custom-platform@2")
+	assert.Contains(t, app.Targets, "nitric/gcp-service-account@1")
+}
+
+func TestApplicationFromYaml_InvalidHyphenatedTargets(t *testing.T) {
+	yaml := `
+name: test-app
+description: A test application with invalid hyphenated targets
+targets:
+  - -team/platform@1
+  - team/-platform@1
+  - 1team/platform@1
+services:
+  api:
+    container:
+      docker:
+        dockerfile: Dockerfile
+`
+
+	_, result, err := ApplicationFromYaml(yaml)
+	assert.NoError(t, err)
+	assert.False(t, result.Valid(), "Expected invalid result due to invalid hyphenated target formats")
+
+	validationErrs := GetSchemaValidationErrors(result.Errors())
+	assert.Len(t, validationErrs, 3)
+
+	errString := FormatValidationErrors(validationErrs)
+	assert.Contains(t, errString, "Must be in the format: `<team>/<platform>@<revision>` or `file:<path>`")
+}
+
 func TestApplicationFromYaml_ServiceWithImage(t *testing.T) {
 	yaml := `
 name: test-app

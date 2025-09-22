@@ -19,11 +19,11 @@ var _ terraform.PlatformRepository = (*PlatformRepository)(nil)
 
 func (r *PlatformRepository) GetPlatform(name string) (*terraform.PlatformSpec, error) {
 	// Split the name into team, lib, and revision using a regex <team>/<lib>@<revision>
-	re := regexp.MustCompile(`^(?P<team>[^/]+)/(?P<platform>[^@]+)@(?P<revision>\d+)$`)
+	re := regexp.MustCompile(`^(?P<team>[a-z][a-z0-9-]*)/(?P<platform>[a-z][a-z0-9-]*)@(?P<revision>\d+)$`)
 	matches := re.FindStringSubmatch(name)
 
 	if matches == nil {
-		return nil, fmt.Errorf("invalid platform name format: %s. Expected format: <team>/<lib>@<revision> e.g. %s/aws@1", version.CommandName, name)
+		return nil, fmt.Errorf("invalid platform name format: %s. Expected format: <team>/<platform>@<revision> e.g. %s/aws@1", name, version.CommandName)
 	}
 
 	// Extract named groups
