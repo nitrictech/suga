@@ -135,7 +135,7 @@ func (ef *errorFormatter) ShouldSkipError(errType string) bool {
 
 func PrettyPrintPattern(pattern *regexp.Regexp) string {
 	patterns := map[string]string{
-		`^(([a-z]+)/([a-z]+)@(\d+)|file:([^\s]+))$`: "Must be in the format: `<team>/<platform>@<revision>` or `file:<path>`",
+		`^(([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)@(\d+)|file:([^\s]+))$`: "Must be in the format: `<team>/<platform>@<revision>` or `file:<path>`",
 	}
 
 	plainTextPattern, ok := patterns[pattern.String()]

@@ -59,7 +59,7 @@ func (p PlatformSpec) GetLibrary(name string) (*Library, error) {
 
 	matches := re.FindStringSubmatch(library)
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("invalid library format: %s, expected format: <team>/<library>@<version>", library)
+		return nil, fmt.Errorf("invalid library format: %s, expected format: `<team>/<platform>@<version>`", library)
 	}
 
 	team := matches[re.SubexpIndex("team")]
