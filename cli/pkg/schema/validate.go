@@ -17,6 +17,7 @@ func (a *Application) IsValid() []gojsonschema.ResultError {
 	violations = append(violations, a.checkSnakeCaseNames()...)
 	violations = append(violations, a.checkNoEnvVarCollisions()...)
 	violations = append(violations, a.checkAccessPermissions()...)
+	violations = append(violations, a.checkNoRedundantEntrypointRoutes()...)
 
 	return violations
 }
@@ -171,6 +172,29 @@ func (a *Application) checkNoEnvVarCollisions() []gojsonschema.ResultError {
 			continue
 		}
 		envVarMap[intent.EnvVarKey] = name
+	}
+
+	return violations
+}
+
+func (a *Application) checkNoRedundantEntrypointRoutes() []gojsonschema.ResultError {
+	violations := []gojsonschema.ResultError{}
+
+	for entrypointName, intent := range a.EntrypointIntents {
+		// Check if there's a default route (/) and specific routes to the same target
+		if defaultRoute, exists := intent.Routes["/"]; exists {
+			for routePath, route := range intent.Routes {
+				if routePath == "/" {
+					// don't match the default route against itself
+					continue
+				}
+				if route.TargetName == defaultRoute.TargetName {
+					key := fmt.Sprintf("entrypoints.%s.routes.%s", entrypointName, routePath)
+					err := fmt.Sprintf("Route %s to %s is redundant with default route (/) to the same target", routePath, route.TargetName)
+					violations = append(violations, newValidationError(key, err))
+				}
+			}
+		}
 	}
 
 	return violations
