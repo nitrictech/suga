@@ -134,7 +134,7 @@ Properties support several value types:
 
 - **Static values** - Strings, numbers, booleans, objects, and arrays
 - **Variable references** - `${var.domain}` references platform variables
-- **Self references** - `${self.enable_waf}` references blueprint-specific variables  
+- **Self references** - `${self.waf_enabled}` references blueprint-specific variables  
 - **Infrastructure references** - `${infra.vpc.id}` references other infrastructure outputs
 
 When Suga generates Terraform code, properties get resolved and passed to the module:
