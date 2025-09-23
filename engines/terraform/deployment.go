@@ -70,6 +70,8 @@ func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.Ter
 			return nil, err
 		}
 
+		td.createVariablesForIntent(infraName, resource)
+
 		td.terraformInfraResources[infraName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(infraName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(pluginRef.Deployment.Terraform),
 		})
@@ -128,7 +130,7 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	if resourceSpec == nil {
 		return nil, fmt.Errorf("resourceSpec is nil for service %s - this indicates a platform configuration issue", name)
 	}
-	
+
 	var imageVars *map[string]interface{} = nil
 
 	pluginManifest, err := td.engine.resolvePluginsForService(plug)
@@ -185,26 +187,26 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	})
 
 	identityModuleOutputs := map[string]interface{}{}
-	
+
 	// Check if IdentitiesBlueprint is nil before accessing Identities
 	if resourceSpec.IdentitiesBlueprint != nil {
 		for _, id := range resourceSpec.Identities {
-		identityPlugin, err := td.engine.resolveIdentityPlugin(&id)
-		if err != nil {
-			return nil, err
-		}
+			identityPlugin, err := td.engine.resolveIdentityPlugin(&id)
+			if err != nil {
+				return nil, err
+			}
 
-		idModule := cdktf.NewTerraformHclModule(td.stack, jsii.Sprintf("%s_%s_role", name, identityPlugin.Name), &cdktf.TerraformHclModuleConfig{
-			Source:    jsii.String(identityPlugin.Deployment.Terraform),
-			Variables: &id.Properties,
-		})
+			idModule := cdktf.NewTerraformHclModule(td.stack, jsii.Sprintf("%s_%s_role", name, identityPlugin.Name), &cdktf.TerraformHclModuleConfig{
+				Source:    jsii.String(identityPlugin.Deployment.Terraform),
+				Variables: &id.Properties,
+			})
 
-		idModule.Set(jsii.String("suga"), map[string]interface{}{
-			"name":     jsii.String(name),
-			"stack_id": td.stackId.Result(),
-		})
+			idModule.Set(jsii.String("suga"), map[string]interface{}{
+				"name":     jsii.String(name),
+				"stack_id": td.stackId.Result(),
+			})
 
-		identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
+			identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
 		}
 	}
 
