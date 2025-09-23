@@ -587,6 +587,7 @@ func (c *SugaApp) Edit() error {
 	devUrl := c.config.GetSugaServerUrl().JoinPath(currentTeam.Slug, "dev")
 	q := devUrl.Query()
 	q.Add("port", port)
+	q.Add("org_id", currentTeam.WorkOsID)
 	devUrl.RawQuery = q.Encode()
 
 	fmt.Println(tui.SugaIntro("Sync Port", port, "Dashboard", devUrl.String()))
