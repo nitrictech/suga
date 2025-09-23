@@ -70,6 +70,8 @@ func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.Ter
 			return nil, err
 		}
 
+		td.createVariablesForIntent(infraName, resource)
+
 		td.terraformInfraResources[infraName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(infraName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(pluginRef.Deployment.Terraform),
 		})
