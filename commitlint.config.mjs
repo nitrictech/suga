@@ -3,14 +3,21 @@ export default {
   plugins: [
     {
       rules: {
-        "scope-empty-for-type": (parsed, when = "always", allowed = ["docs", "ci", "chore"]) => {
+        "scope-empty-for-type": (
+          parsed,
+          when = "always",
+          allowed = ["docs", "ci", "chore"]
+        ) => {
           const { type, scope } = parsed ?? {};
           const isEmpty = !scope;
           const allowEmptyForType = allowed.includes(type);
           // When = "always": require scope for non-allowed types. "never" would disable requirement.
           const requireScope = when !== "never" && !allowEmptyForType;
           const pass = requireScope ? !isEmpty : true;
-          return [pass, pass ? undefined : `scope is required for type '${type}'`];
+          return [
+            pass,
+            pass ? undefined : `scope is required for type '${type}'`,
+          ];
         },
       },
     },
@@ -34,18 +41,7 @@ export default {
     "scope-enum": [
       2,
       "always",
-      [
-        "cli",
-        "client",
-        "server",
-        "runtime",
-        "engines",
-        "proto",
-        "docs",
-        "deps",
-        "ci",
-        "release",
-      ],
+      ["cli", "client", "server", "runtime", "engines", "proto", "deps"],
     ],
     "scope-empty-for-type": [2, "always", ["docs", "ci", "chore"]],
     // Disable line length restrictions

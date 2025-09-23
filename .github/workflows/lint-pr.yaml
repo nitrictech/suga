@@ -1,0 +1,27 @@
+name: "Lint Pull Request"
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+jobs:
+  main:
+    name: Lint Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      # Install commitlint and conventional config due to action requirements
+      - name: Install Dependencies
+        run: npm install @commitlint/config-conventional
+
+      - uses: JulienKode/pull-request-name-linter-action@v19.0.0
+        with:
+          configuration-path: ./commitlint.config.mjs
