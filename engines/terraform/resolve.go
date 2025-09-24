@@ -39,19 +39,19 @@ func (td *TerraformDeployment) resolveValue(intentName string, value interface{}
 
 			infraResource, err := td.resolveInfraResource(refName)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
 			}
 			return infraResource.Get(jsii.String(propertyName)), nil
 		} else if specRef.Source == "self" {
 			tfVariable, ok := td.instancedTerraformVariables[intentName][specRef.Path[0]]
 			if !ok {
-				return nil, fmt.Errorf("Variable %s does not exist for provided blueprint", specRef.Path[0])
+				return nil, fmt.Errorf("variable %s does not exist for provided blueprint", specRef.Path[0])
 			}
 			return tfVariable.Value(), nil
 		} else if specRef.Source == "var" {
 			tfVariable, ok := td.getPlatformVariable(specRef.Path[0])
 			if !ok {
-				return nil, fmt.Errorf("Variable %s does not exist for this platform", specRef.Path[0])
+				return nil, fmt.Errorf("variable %s does not exist for this platform", specRef.Path[0])
 			}
 			return tfVariable.Value(), nil
 		}
@@ -88,7 +88,7 @@ func (td *TerraformDeployment) resolveTokensForModule(intentName string, resourc
 	for property, value := range resource.Properties {
 		resolvedValue, err := td.resolveValue(intentName, value)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to resolve property %s for %s: %w", property, intentName, err)
 		}
 		module.Set(jsii.String(property), resolvedValue)
 	}
@@ -115,7 +115,7 @@ func (td *TerraformDeployment) resolveDependencies(resource *ResourceBlueprint, 
 		// Ensure the infra resource is created if it doesn't exist
 		infraResource, err := td.resolveInfraResource(specRef.Path[0])
 		if err != nil {
-			return fmt.Errorf("failed to resolve infra resource %s: %w", specRef.Path[0], err)
+			return fmt.Errorf("failed to resolve infrastructure dependency %s: %w", specRef.Path[0], err)
 		}
 
 		moduleId := fmt.Sprintf("module.%s", *infraResource.Node().Id())
