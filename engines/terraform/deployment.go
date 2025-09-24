@@ -105,13 +105,34 @@ func (td *TerraformDeployment) resolveEntrypointSugaVar(name string, appSpec *ap
 		idSugaVar := hclTarget.Get(jsii.String("suga.id"))
 		resourcesSugaVar := hclTarget.Get(jsii.String("suga.exports.resources"))
 
-		origins[route.TargetName] = map[string]interface{}{
-			"path":        jsii.String(path),
-			"base_path":   jsii.String(route.BasePath),
-			"type":        jsii.String(intentTargetType),
-			"id":          idSugaVar,
-			"domain_name": domainNameSugaVar,
-			"resources":   resourcesSugaVar,
+		if origin, exists := origins[route.TargetName]; exists {
+			origin, ok := origin.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("failed to get origin for target %s, value is not a map", route.TargetName)
+			}
+
+			existingRoutes := origin["routes"].([]map[string]interface{})
+
+			newRoute := map[string]interface{}{
+				"path":      jsii.String(path),
+				"base_path": jsii.String(route.BasePath),
+			}
+			newRoutes := append(existingRoutes, newRoute)
+
+			origin["routes"] = newRoutes
+		} else {
+			origins[route.TargetName] = map[string]interface{}{
+				"routes": []map[string]interface{}{
+					{
+						"path":      jsii.String(path),
+						"base_path": jsii.String(route.BasePath),
+					},
+				},
+				"type":        jsii.String(intentTargetType),
+				"id":          idSugaVar,
+				"domain_name": domainNameSugaVar,
+				"resources":   resourcesSugaVar,
+			}
 		}
 	}
 
@@ -128,7 +149,7 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	if resourceSpec == nil {
 		return nil, fmt.Errorf("resourceSpec is nil for service %s - this indicates a platform configuration issue", name)
 	}
-	
+
 	var imageVars *map[string]interface{} = nil
 
 	pluginManifest, err := td.engine.resolvePluginsForService(plug)
@@ -185,26 +206,26 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	})
 
 	identityModuleOutputs := map[string]interface{}{}
-	
+
 	// Check if IdentitiesBlueprint is nil before accessing Identities
 	if resourceSpec.IdentitiesBlueprint != nil {
 		for _, id := range resourceSpec.Identities {
-		identityPlugin, err := td.engine.resolveIdentityPlugin(&id)
-		if err != nil {
-			return nil, err
-		}
+			identityPlugin, err := td.engine.resolveIdentityPlugin(&id)
+			if err != nil {
+				return nil, err
+			}
 
-		idModule := cdktf.NewTerraformHclModule(td.stack, jsii.Sprintf("%s_%s_role", name, identityPlugin.Name), &cdktf.TerraformHclModuleConfig{
-			Source:    jsii.String(identityPlugin.Deployment.Terraform),
-			Variables: &id.Properties,
-		})
+			idModule := cdktf.NewTerraformHclModule(td.stack, jsii.Sprintf("%s_%s_role", name, identityPlugin.Name), &cdktf.TerraformHclModuleConfig{
+				Source:    jsii.String(identityPlugin.Deployment.Terraform),
+				Variables: &id.Properties,
+			})
 
-		idModule.Set(jsii.String("suga"), map[string]interface{}{
-			"name":     jsii.String(name),
-			"stack_id": td.stackId.Result(),
-		})
+			idModule.Set(jsii.String("suga"), map[string]interface{}{
+				"name":     jsii.String(name),
+				"stack_id": td.stackId.Result(),
+			})
 
-		identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
+			identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
 		}
 	}
 
