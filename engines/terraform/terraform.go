@@ -151,33 +151,8 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 		}
 	}
 
-	// Resolve resource tokens for all created resources
+	// Resolve dependencies first to ensure all infra resources are created
 	resourceIntents := appSpec.GetResourceIntents()
-	for resourceName, resourceIntent := range resourceIntents {
-		resourceSpec, err := e.platform.GetResourceBlueprint(resourceIntent.GetType(), resourceIntent.GetSubType())
-		if err != nil {
-			return "", err
-		}
-
-		err = tfDeployment.resolveTokensForModule(resourceName, resourceSpec, tfDeployment.terraformResources[resourceName])
-		if err != nil {
-			return "", err
-		}
-	}
-
-	// Resolve infra tokens
-	for infraName, infra := range tfDeployment.terraformInfraResources {
-		infraSpec, ok := e.platform.InfraSpecs[infraName]
-		if !ok {
-			return "", fmt.Errorf("infra resource %s not found", infraName)
-		}
-		err := tfDeployment.resolveTokensForModule(infraName, infraSpec, infra)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	// Resolve dependencies for all created modules
 	for resourceName, resource := range resourceIntents {
 		resourceSpec, err := e.platform.GetResourceBlueprint(resource.GetType(), resource.GetSubType())
 		if err != nil {
@@ -198,6 +173,31 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 		}
 
 		err := tfDeployment.resolveDependencies(infraSpec, infra)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Now resolve tokens for all resources (after all infra resources have been created)
+	for resourceName, resourceIntent := range resourceIntents {
+		resourceSpec, err := e.platform.GetResourceBlueprint(resourceIntent.GetType(), resourceIntent.GetSubType())
+		if err != nil {
+			return "", err
+		}
+
+		err = tfDeployment.resolveTokensForModule(resourceName, resourceSpec, tfDeployment.terraformResources[resourceName])
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Resolve infra tokens
+	for infraName, infra := range tfDeployment.terraformInfraResources {
+		infraSpec, ok := e.platform.InfraSpecs[infraName]
+		if !ok {
+			return "", fmt.Errorf("infra resource %s not found", infraName)
+		}
+		err := tfDeployment.resolveTokensForModule(infraName, infraSpec, infra)
 		if err != nil {
 			return "", err
 		}

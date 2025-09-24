@@ -112,11 +112,13 @@ func (td *TerraformDeployment) resolveDependencies(resource *ResourceBlueprint, 
 			return fmt.Errorf("depends_on can only reference infra resources")
 		}
 
-		if _, ok := td.terraformInfraResources[specRef.Path[0]]; !ok {
-			continue
+		// Ensure the infra resource is created if it doesn't exist
+		infraResource, err := td.resolveInfraResource(specRef.Path[0])
+		if err != nil {
+			return fmt.Errorf("failed to resolve infra resource %s: %w", specRef.Path[0], err)
 		}
 
-		moduleId := fmt.Sprintf("module.%s", *td.terraformInfraResources[specRef.Path[0]].Node().Id())
+		moduleId := fmt.Sprintf("module.%s", *infraResource.Node().Id())
 		dependsOnResources = append(dependsOnResources, jsii.String(moduleId))
 	}
 	module.SetDependsOn(&dependsOnResources)
