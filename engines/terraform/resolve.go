@@ -28,34 +28,7 @@ func SpecReferenceFromToken(token string) (*SpecReference, error) {
 func (td *TerraformDeployment) resolveValue(intentName string, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
-		specRef, err := SpecReferenceFromToken(v)
-		if err != nil {
-			return v, nil
-		}
-
-		if specRef.Source == "infra" {
-			refName := specRef.Path[0]
-			propertyName := specRef.Path[1]
-
-			infraResource, err := td.resolveInfraResource(refName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
-			}
-			return infraResource.Get(jsii.String(propertyName)), nil
-		} else if specRef.Source == "self" {
-			tfVariable, ok := td.instancedTerraformVariables[intentName][specRef.Path[0]]
-			if !ok {
-				return nil, fmt.Errorf("variable %s does not exist for provided blueprint", specRef.Path[0])
-			}
-			return tfVariable.Value(), nil
-		} else if specRef.Source == "var" {
-			tfVariable, ok := td.getPlatformVariable(specRef.Path[0])
-			if !ok {
-				return nil, fmt.Errorf("variable %s does not exist for this platform", specRef.Path[0])
-			}
-			return tfVariable.Value(), nil
-		}
-		return v, nil
+		return td.resolveTokenString(intentName, v)
 
 	case map[string]interface{}:
 		result := make(map[string]interface{})
@@ -82,6 +55,115 @@ func (td *TerraformDeployment) resolveValue(intentName string, value interface{}
 	default:
 		return v, nil
 	}
+}
+
+func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecReference, returnAsReference bool) (interface{}, error) {
+	switch specRef.Source {
+	case "infra":
+		if len(specRef.Path) < 2 {
+			return nil, fmt.Errorf("infra token requires at least 2 path components")
+		}
+
+		refName := specRef.Path[0]
+		propertyName := specRef.Path[1]
+
+		if returnAsReference {
+			return fmt.Sprintf("${module.%s.%s}", refName, propertyName), nil
+		}
+
+		infraResource, err := td.resolveInfraResource(refName)
+		if err != nil {
+			return nil, err
+		}
+
+		return infraResource.Get(jsii.String(propertyName)), nil
+
+	case "self":
+		if len(specRef.Path) < 1 {
+			return nil, fmt.Errorf("self token requires at least 1 path component")
+		}
+
+		varName := specRef.Path[0]
+
+		if returnAsReference {
+			_, ok := td.instancedTerraformVariables[intentName][varName]
+			if !ok {
+				return nil, fmt.Errorf("Variable %s does not exist for provided blueprint", varName)
+			}
+			return fmt.Sprintf("${var.%s}", varName), nil
+		}
+
+		tfVariable, ok := td.instancedTerraformVariables[intentName][varName]
+		if !ok {
+			return nil, fmt.Errorf("Variable %s does not exist for provided blueprint", varName)
+		}
+		return tfVariable.Value(), nil
+
+	case "var":
+		if len(specRef.Path) < 1 {
+			return nil, fmt.Errorf("var token requires at least 1 path component")
+		}
+
+		varName := specRef.Path[0]
+
+		if returnAsReference {
+			_, ok := td.getPlatformVariable(varName)
+			if !ok {
+				return nil, fmt.Errorf("Variable %s does not exist for this platform", varName)
+			}
+			return fmt.Sprintf("${var.%s}", varName), nil
+		}
+
+		tfVariable, ok := td.getPlatformVariable(varName)
+		if !ok {
+			return nil, fmt.Errorf("Variable %s does not exist for this platform", varName)
+		}
+		return tfVariable.Value(), nil
+
+	default:
+		return nil, fmt.Errorf("unknown token source: %s", specRef.Source)
+	}
+}
+
+func (td *TerraformDeployment) resolveTokenString(intentName string, input string) (interface{}, error) {
+	tokens := findAllTokens(input)
+
+	if len(tokens) == 0 {
+		return input, nil
+	}
+
+	if len(tokens) == 1 && isOnlyToken(input) {
+		specRef, err := SpecReferenceFromToken(tokens[0].Token)
+		if err != nil {
+			return input, nil
+		}
+
+		return td.resolveToken(intentName, specRef, false)
+	}
+
+	result := input
+	for i := len(tokens) - 1; i >= 0; i-- {
+		token := tokens[i]
+
+		specRef, err := SpecReferenceFromToken(token.Token)
+		if err != nil {
+			continue
+		}
+
+		replacementInterface, err := td.resolveToken(intentName, specRef, true)
+		if err != nil {
+			return nil, err
+		}
+
+		replacement, ok := replacementInterface.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected string replacement for token %s", token.Token)
+		}
+
+		result = result[:token.Start] + replacement + result[token.End:]
+	}
+
+	return result, nil
 }
 
 func (td *TerraformDeployment) resolveTokensForModule(intentName string, resource *ResourceBlueprint, module cdktf.TerraformHclModule) error {
