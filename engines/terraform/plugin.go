@@ -1,13 +1,14 @@
 package terraform
 
 type PluginManifest struct {
-	Name       string                  `json:"name" yaml:"name"`
-	Icon       string                  `json:"icon" yaml:"icon"`
-	Deployment DeploymentModule        `json:"deployment" yaml:"deployment"`
-	Type       string                  `json:"type" yaml:"type"`
-	Runtime    *RuntimeModule          `json:"runtime,omitempty" yaml:"runtime,omitempty"`
-	Inputs     map[string]PluginInput  `json:"inputs" yaml:"inputs"`
-	Outputs    map[string]PluginOutput `json:"outputs" yaml:"outputs"`
+	Name        string                  `json:"name" yaml:"name"`
+	Description string                  `json:"description" yaml:"description"`
+	Icon        string                  `json:"icon" yaml:"icon"`
+	Deployment  DeploymentModule        `json:"deployment" yaml:"deployment"`
+	Type        string                  `json:"type" yaml:"type"`
+	Runtime     *RuntimeModule          `json:"runtime,omitempty" yaml:"runtime,omitempty"`
+	Inputs      map[string]PluginInput  `json:"inputs" yaml:"inputs"`
+	Outputs     map[string]PluginOutput `json:"outputs" yaml:"outputs"`
 }
 
 type ResourcePluginManifest struct {
