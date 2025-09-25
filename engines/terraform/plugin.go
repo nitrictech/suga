@@ -2,7 +2,7 @@ package terraform
 
 type PluginManifest struct {
 	Name        string                  `json:"name" yaml:"name"`
-	Description string                  `json:"description" yaml:"description"`
+	Description string                  `json:"description,omitempty" yaml:"description,omitempty"`
 	Icon        string                  `json:"icon" yaml:"icon"`
 	Deployment  DeploymentModule        `json:"deployment" yaml:"deployment"`
 	Type        string                  `json:"type" yaml:"type"`
