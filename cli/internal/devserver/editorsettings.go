@@ -27,20 +27,16 @@ func NewEditorSettingsSync(fileSync *SugaFileSync) *EditorSettingsSync {
 }
 
 func (ess *EditorSettingsSync) OnConnect(send SendFunc) {
-	// Load existing editor settings, use empty settings if load fails
 	settings, err := loadEditorSettings()
 	if err != nil {
 		fmt.Println("Could not load editor settings:", err)
 		settings = EditorSettings{}
 	}
 
-	// Validate the selected target against current application targets
-	if err == nil && settings.SelectedTarget != "" && ess.fileSync != nil {
-		application, _, appErr := ess.fileSync.getApplicationFileContents()
-		if appErr == nil && application != nil && !isValidTarget(settings.SelectedTarget, application.Targets) {
-			fmt.Printf("Invalid target '%s' found in editor settings, clearing\n", settings.SelectedTarget)
-			settings.SelectedTarget = ""
-			// Store the corrected settings
+	if err == nil {
+		validatedTarget, wasModified := ess.validateAndClearInvalidTarget(settings.SelectedTarget)
+		if wasModified {
+			settings.SelectedTarget = validatedTarget
 			if err := storeEditorSettings(settings); err != nil {
 				fmt.Println("Error storing corrected editor settings:", err)
 			}
@@ -62,11 +58,19 @@ func (ess *EditorSettingsSync) OnMessage(message json.RawMessage) {
 		return
 	}
 
+	// Must check type since ALL messages go to ALL subscribers
 	if editorSettingsUpdate.Type != "editorSettingsMessage" {
 		return
 	}
 
-	err = storeEditorSettings(editorSettingsUpdate.Payload)
+	payload := editorSettingsUpdate.Payload
+
+	validatedTarget, _ := ess.validateAndClearInvalidTarget(payload.SelectedTarget)
+	if validatedTarget != payload.SelectedTarget {
+		return
+	}
+
+	err = storeEditorSettings(payload)
 	if err != nil {
 		fmt.Println("Error storing editor settings:", err)
 	}
@@ -129,4 +133,22 @@ func isValidTarget(target string, validTargets []string) bool {
 		}
 	}
 	return false
+}
+
+func (ess *EditorSettingsSync) validateAndClearInvalidTarget(target string) (string, bool) {
+	if target == "" || ess.fileSync == nil {
+		return target, false
+	}
+
+	application, _, err := ess.fileSync.getApplicationFileContents()
+	if err != nil || application == nil {
+		return target, false
+	}
+
+	if !isValidTarget(target, application.Targets) {
+		fmt.Printf("Invalid target '%s' found, clearing\n", target)
+		return "", true
+	}
+
+	return target, false
 }
