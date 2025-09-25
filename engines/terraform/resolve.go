@@ -73,7 +73,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 		infraResource, err := td.resolveInfraResource(refName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
 		}
 
 		return infraResource.Get(jsii.String(propertyName)), nil
@@ -85,17 +85,13 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 		varName := specRef.Path[0]
 
-		if returnAsReference {
-			_, ok := td.instancedTerraformVariables[intentName][varName]
-			if !ok {
-				return nil, fmt.Errorf("Variable %s does not exist for provided blueprint", varName)
-			}
-			return fmt.Sprintf("${var.%s}", varName), nil
-		}
-
 		tfVariable, ok := td.instancedTerraformVariables[intentName][varName]
 		if !ok {
-			return nil, fmt.Errorf("Variable %s does not exist for provided blueprint", varName)
+			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
+		}
+
+		if returnAsReference {
+			return fmt.Sprintf("${var.%s}", varName), nil
 		}
 		return tfVariable.Value(), nil
 
@@ -106,17 +102,13 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 		varName := specRef.Path[0]
 
-		if returnAsReference {
-			_, ok := td.getPlatformVariable(varName)
-			if !ok {
-				return nil, fmt.Errorf("Variable %s does not exist for this platform", varName)
-			}
-			return fmt.Sprintf("${var.%s}", varName), nil
-		}
-
 		tfVariable, ok := td.getPlatformVariable(varName)
 		if !ok {
-			return nil, fmt.Errorf("Variable %s does not exist for this platform", varName)
+			return nil, fmt.Errorf("variable %s does not exist for this platform", varName)
+		}
+
+		if returnAsReference {
+			return fmt.Sprintf("${var.%s}", varName), nil
 		}
 		return tfVariable.Value(), nil
 
