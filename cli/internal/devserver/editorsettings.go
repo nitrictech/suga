@@ -27,18 +27,17 @@ func NewEditorSettingsSync(fileSync *SugaFileSync) *EditorSettingsSync {
 }
 
 func (ess *EditorSettingsSync) OnConnect(send SendFunc) {
-	// Load and send existing editor settings on connect
+	// Load existing editor settings, use empty settings if load fails
 	settings, err := loadEditorSettings()
 	if err != nil {
-		// If we can't load settings, just continue without them
 		fmt.Println("Could not load editor settings:", err)
-		return
+		settings = EditorSettings{}
 	}
 
 	// Validate the selected target against current application targets
-	if settings.SelectedTarget != "" && ess.fileSync != nil {
-		application, _, err := ess.fileSync.getApplicationFileContents()
-		if err == nil && !isValidTarget(settings.SelectedTarget, application.Targets) {
+	if err == nil && settings.SelectedTarget != "" && ess.fileSync != nil {
+		application, _, appErr := ess.fileSync.getApplicationFileContents()
+		if appErr == nil && application != nil && !isValidTarget(settings.SelectedTarget, application.Targets) {
 			fmt.Printf("Invalid target '%s' found in editor settings, clearing\n", settings.SelectedTarget)
 			settings.SelectedTarget = ""
 			// Store the corrected settings
