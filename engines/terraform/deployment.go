@@ -85,7 +85,7 @@ func (td *TerraformDeployment) resolveEntrypointSugaVar(name string, appSpec *ap
 	for path, route := range spec.Routes {
 		intentTarget, ok := appSpec.GetResourceIntent(route.TargetName)
 		if !ok {
-			return nil, fmt.Errorf("target %s not found", route.TargetName)
+			return nil, fmt.Errorf("entrypoint '%s' has route target with name '%s', but no resources found with that name", name, route.TargetName)
 		}
 
 		var intentTargetType string
@@ -95,7 +95,7 @@ func (td *TerraformDeployment) resolveEntrypointSugaVar(name string, appSpec *ap
 		case *app_spec_schema.BucketIntent:
 			intentTargetType = "bucket"
 		default:
-			return nil, fmt.Errorf("target %s is not a service or bucket", route.TargetName)
+			return nil, fmt.Errorf("entrypoint '%s' has target '%s', which is not a service or bucket", name, route.TargetName)
 		}
 
 		hclTarget, ok := td.terraformResources[route.TargetName]
