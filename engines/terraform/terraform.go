@@ -35,7 +35,6 @@ func NewPanicError(panicValue interface{}, stackTrace []byte) *PanicError {
 	}
 }
 
-
 type TerraformEngine struct {
 	platform   *PlatformSpec
 	repository PluginRepository
@@ -57,6 +56,10 @@ func (e *TerraformEngine) resolveIdentityPlugin(blueprint *ResourceBlueprint) (*
 }
 
 func (e *TerraformEngine) resolvePlugin(blueprint *ResourceBlueprint) (*ResourcePluginManifest, error) {
+	if blueprint == nil {
+		return nil, fmt.Errorf("resource blueprint is nil, this indicates a malformed platform spec")
+	}
+
 	pluginRef, err := blueprint.ResolvePlugin(e.platform)
 	if err != nil {
 		return nil, err
@@ -75,7 +78,7 @@ func (e *TerraformEngine) GetPluginManifestsForType(typ string) (map[string]*Res
 	for blueprintIntent, blueprint := range blueprints {
 		plug, err := e.resolvePlugin(blueprint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not resolve plugin for %s %s: %w", typ, blueprintIntent, err)
 		}
 		manifests[blueprintIntent] = plug
 	}

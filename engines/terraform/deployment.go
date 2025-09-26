@@ -67,7 +67,7 @@ func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.Ter
 	if _, ok := td.terraformInfraResources[infraName]; !ok {
 		pluginRef, err := td.engine.resolvePlugin(resource)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not resolve plugin for infra resource %s: %w", infraName, err)
 		}
 
 		td.createVariablesForIntent(infraName, resource)

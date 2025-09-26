@@ -5,7 +5,6 @@ import (
 	"io"
 	"maps"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -15,10 +14,34 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type libraryID string
+
+func NewLibraryID(team string, library string) libraryID {
+	return libraryID(fmt.Sprintf("%s/%s", team, library))
+}
+
+func (id libraryID) Team() string {
+	parts := strings.Split(string(id), "/")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[0]
+}
+
+func (id libraryID) Name() string {
+	parts := strings.Split(string(id), "/")
+	if len(parts) != 2 {
+		return ""
+	}
+	return parts[1]
+}
+
+type libraryVersion string
+
 type PlatformSpec struct {
 	Name string `json:"name" yaml:"name"`
 
-	Libraries map[string]string `json:"libraries" yaml:"libraries"`
+	Libraries map[libraryID]libraryVersion `json:"libraries" yaml:"libraries"`
 
 	Variables map[string]Variable `json:"variables" yaml:"variables,omitempty"`
 
@@ -48,31 +71,31 @@ type Plugin struct {
 	Name    string  `json:"name" yaml:"name"`
 }
 
-func (p PlatformSpec) GetLibrary(name string) (*Library, error) {
-	library, ok := p.Libraries[name]
+func (p PlatformSpec) GetLibrary(id libraryID) (*Library, error) {
+	libVersion, ok := p.Libraries[id]
 	if !ok {
-		return nil, fmt.Errorf("library %s not found in platform spec, configured libraries in platform are: %v", name, slices.Collect(maps.Keys(p.Libraries)))
+		return nil, fmt.Errorf("library %s not found in platform spec, configured libraries in platform are: %v", id, slices.Collect(maps.Keys(p.Libraries)))
 	}
 
-	pattern := `^(?P<team>[^/]+)/(?P<library>[^@]+)@(?P<version>.+)$`
-	re := regexp.MustCompile(pattern)
+	// pattern := `^(?P<team>[^/]+)/(?P<library>[^@]+)@(?P<version>.+)$`
+	// re := regexp.MustCompile(pattern)
 
-	matches := re.FindStringSubmatch(library)
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("invalid library format: %s, expected format: `<team>/<platform>@<version>`", library)
-	}
+	// matches := re.FindStringSubmatch(string(libVersion))
+	// if len(matches) == 0 {
+	// 	return nil, fmt.Errorf("invalid library format: %s, expected format: `<team>/<platform>@<version>`", libVersion)
+	// }
 
-	team := matches[re.SubexpIndex("team")]
-	libName := matches[re.SubexpIndex("library")]
-	version := matches[re.SubexpIndex("version")]
+	// team := matches[re.SubexpIndex("team")]
+	// libName := matches[re.SubexpIndex("library")]
+	// version := matches[re.SubexpIndex("version")]
 
-	return &Library{Team: team, Name: libName, Version: version}, nil
+	return &Library{Team: id.Team(), Name: id.Name(), Version: string(libVersion)}, nil
 }
 
-func (p PlatformSpec) GetLibraries() map[string]*Library {
-	libraries := map[string]*Library{}
-	for name, library := range p.Libraries {
-		libraries[name], _ = p.GetLibrary(library)
+func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
+	libraries := map[libraryID]*Library{}
+	for id := range p.Libraries {
+		libraries[id], _ = p.GetLibrary(id)
 	}
 	return libraries
 }
@@ -85,7 +108,7 @@ func (p PlatformSpec) GetServiceBlueprint(intentSubType string) (*ServiceBluepri
 	}
 
 	concreteSpec, ok := spec[intentSubType]
-	if !ok {
+	if !ok || concreteSpec == nil {
 		return nil, fmt.Errorf("platform %s does not define a %s type for services, available types: %v", p.Name, intentSubType, slices.Collect(maps.Keys(spec)))
 	}
 
@@ -198,30 +221,40 @@ func PlatformFromId(fs afero.Fs, platformId string, repositories ...PlatformRepo
 	return nil, fmt.Errorf("platform %s not found in any repository", platformId)
 }
 
+type pluginSource struct {
+	Library libraryID `json:"library" yaml:"library"`
+	Plugin  string    `json:"plugin" yaml:"plugin"`
+}
+
+func NewPluginSource(library libraryID, plugin string) pluginSource {
+	return pluginSource{Library: library, Plugin: plugin}
+}
+
 type ResourceBlueprint struct {
-	PluginId   string                 `json:"plugin" yaml:"plugin"`
+	Source     pluginSource           `json:"source" yaml:"source"`
 	Properties map[string]interface{} `json:"properties" yaml:"properties"`
 	DependsOn  []string               `json:"depends_on" yaml:"depends_on,omitempty"`
 	Variables  map[string]Variable    `json:"variables" yaml:"variables,omitempty"`
 }
 
 func (r *ResourceBlueprint) ResolvePlugin(platform *PlatformSpec) (*Plugin, error) {
-	pluginId := r.PluginId
-
-	pluginParts := strings.Split(pluginId, "/")
-	if len(pluginParts) != 2 {
-		return nil, fmt.Errorf("invalid plugin id %s, expected format: <library>/<plugin>", pluginId)
+	if r == nil {
+		return nil, fmt.Errorf("resource blueprint is nil, this indicates a malformed platform spec")
+	}
+	if r.Source.Library == "" {
+		return nil, fmt.Errorf("no source library specified for resource blueprint, this indicates a malformed platform spec")
 	}
 
-	libraryName := pluginParts[0]
-	pluginName := pluginParts[1]
+	if r.Source.Plugin == "" {
+		return nil, fmt.Errorf("no source plugin specified for resource blueprint, this indicates a malformed platform spec")
+	}
 
-	lib, err := platform.GetLibrary(libraryName)
+	lib, err := platform.GetLibrary(r.Source.Library)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve library for plugin %s, %w", pluginId, err)
+		return nil, fmt.Errorf("failed to resolve library for plugin %s, %w", r.Source.Plugin, err)
 	}
 
-	return &Plugin{Library: *lib, Name: pluginName}, nil
+	return &Plugin{Library: *lib, Name: r.Source.Plugin}, nil
 }
 
 type IdentitiesBlueprint struct {

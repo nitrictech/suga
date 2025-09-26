@@ -59,7 +59,7 @@ func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema
 		}
 		plug, err := td.engine.resolvePlugin(spec.ResourceBlueprint)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not resolve plugin for service %s: %w", intentName, err)
 		}
 
 		sugaVar, err := td.resolveService(intentName, serviceIntent, spec, plug)
@@ -81,7 +81,7 @@ func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.
 		}
 		plug, err := td.engine.resolvePlugin(spec)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not resolve plugin for service %s: %w", intentName, err)
 		}
 
 		sugaVar := serviceInputs[intentName]
@@ -119,7 +119,7 @@ func (td *TerraformDeployment) processBucketResources(appSpec *app_spec_schema.A
 		}
 		plug, err := td.engine.resolvePlugin(spec)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not resolve plugin for bucket %s: %w", intentName, err)
 		}
 
 		servicesInput := map[string]any{}
@@ -173,7 +173,7 @@ func (td *TerraformDeployment) processEntrypointResources(appSpec *app_spec_sche
 		}
 		plug, err := td.engine.resolvePlugin(spec)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not resolve plugin for entrypoint %s: %w", intentName, err)
 		}
 
 		sugaVar, err := td.resolveEntrypointSugaVar(intentName, appSpec, entrypointIntent)
@@ -204,7 +204,7 @@ func (td *TerraformDeployment) processDatabaseResources(appSpec *app_spec_schema
 		}
 		plug, err := td.engine.resolvePlugin(spec)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not resolve plugin for database %s: %w", intentName, err)
 		}
 
 		servicesInput := map[string]any{}
