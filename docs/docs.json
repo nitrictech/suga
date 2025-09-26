@@ -130,8 +130,8 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Sign up",
-      "href": "https://www.addsuga.com/#early-access"
+      "label": "Sign in",
+      "href": "https://app.addsuga.com/login"
     }
   },
   "contextual": {
