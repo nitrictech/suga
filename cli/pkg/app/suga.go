@@ -574,10 +574,15 @@ func (c *SugaApp) Edit() error {
 	// create node position sync observer
 	nodePositionSync := devserver.NewNodePositionSync()
 
+	// create editor settings sync observer
+	editorSettingsSync := devserver.NewEditorSettingsSync(fileSync)
+
 	// subscribe the file sync to the websocket server
 	devwsServer.Subscribe(fileSync)
 	// subscribe the node position sync to the websocket server
 	devwsServer.Subscribe(nodePositionSync)
+	// subscribe the editor settings sync to the websocket server
+	devwsServer.Subscribe(editorSettingsSync)
 	// subscribe the build server to the websocket server
 	devwsServer.Subscribe(buildServer)
 
