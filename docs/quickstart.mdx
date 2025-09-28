@@ -12,6 +12,25 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 </Note>
 
 <Steps>
+  <Step title="Sign In to Suga" icon="user">
+    Sign in to the Suga platform:
+
+    ```bash title="Sign In to Suga" icon="user"
+    suga login
+    ```
+
+    You'll see a confirmation:
+    ```bash
+    ⚡ Suga Logging in...
+
+    ✓ Logged in as User
+    ```
+
+    <Info>
+      Authentication is required to access templates and other Suga platform features.
+    </Info>
+  </Step>
+
   <Step title="Create Your Project" icon="rocket">
     Create a new project from a template:
 
@@ -38,19 +57,6 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
   </Step>
 
   <Step title="Design Your Architecture" icon="pencil-line">
-    Log in and open the visual editor:
-
-    ```bash title="Login to Suga" icon="user"
-    suga login
-    ```
-
-    You'll see a confirmation:
-    ```bash
-    ⚡ Suga Logging in...
-
-    ✓ Logged in as User
-    ```
-
     Open the visual editor:
 
     ```bash title="Open Visual Editor" icon="edit"
@@ -279,12 +285,13 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
 ```mermaid
 graph TB
-One["Created and configured a Suga application from a template"] ==> Two["Developed and tested your application locally with hot reload"]
-Two ==> Three["Generated production-ready Terraform infrastructure code"]
-Three ==> Four["Deployed your application to your chosen cloud provider"]
+One["Signed in to the Suga platform"] ==> Two["Created and configured a Suga application from a template"]
+Two ==> Three["Developed and tested your application locally with hot reload"]
+Three ==> Four["Generated production-ready Terraform infrastructure code"]
+Four ==> Five["Deployed your application to your chosen cloud provider"]
 
 classDef nitricGreen stroke:#25b355,stroke-width:2px
-class One,Two,Three,Four nitricGreen
+class One,Two,Three,Four,Five nitricGreen
 
 ```
 
