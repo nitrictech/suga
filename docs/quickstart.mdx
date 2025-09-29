@@ -174,20 +174,31 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
     Entrypoints
 
-    ✓ Starting [main] http://localhost:3000
+    ✓ Starting [main] http://localhost:4000
 
     Use Ctrl-C to exit
     ```
 
     Test your application:
 
-    ```bash title="Test Application" icon="check-circle"
-    curl http://localhost:3000/hello
+    ```bash title="Write to Storage" icon="upload"
+    curl -X POST http://localhost:4000/write/test.txt \
+      -H "Content-Type: text/plain" \
+      -d "Hello from Suga!"
     ```
 
     Expected response:
-    ```json
-    {"message": "Hello World"}
+    ```
+    File 'test.txt' written to bucket.
+    ```
+
+    ```bash title="Read from Storage" icon="download"
+    curl http://localhost:4000/read/test.txt
+    ```
+
+    Expected response:
+    ```
+    Hello from Suga!
     ```
 
     <Info>
