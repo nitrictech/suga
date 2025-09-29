@@ -74,7 +74,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 		result := infraResource.Get(jsii.String(attribute))
 		if result == nil {
-			return "", nil
+			return nil, fmt.Errorf("attribute '%s' not found on infrastructure resource '%s' (type: %s)", attribute, refName, *infraResource.Node().Id())
 		}
 		return result, nil
 
