@@ -59,7 +59,7 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
   <Step title="Design Your Architecture" icon="pencil-line">
     Open the visual editor:
 
-    ```bash title="Open Visual Editor" icon="edit"
+    ```bash title="Open Visual Editor" icon="external-link"
     suga edit
     ```
 
@@ -126,25 +126,25 @@ Deploy your first application on the Suga platform in just a few steps. The Suga
 
     <Tabs>
       <Tab title="Node.js">
-        ```bash title="Install Dependencies (node)" icon="cube"
+        ```bash title="Install Dependencies (node)" icon="package"
         suga generate --ts --ts-out ./suga/client
         npm install
         ```
       </Tab>
       <Tab title="Python">
-        ```bash title="Install Dependencies (uv)" icon="cube"
+        ```bash title="Install Dependencies (uv)" icon="package"
         suga generate --python --python-out ./suga_gen
         uv sync
         ```
 
         Or with pip:
-        ```bash title="Install Dependencies (pip)" icon="cube"
+        ```bash title="Install Dependencies (pip)" icon="package"
         suga generate --python --python-out ./suga_gen
         pip install -r requirements.txt
         ```
       </Tab>
       <Tab title="Go">
-        ```bash title="Install Dependencies (go)" icon="cube"
+        ```bash title="Install Dependencies (go)" icon="package"
         suga generate --go --go-out ./suga --go-package-name suga
         go mod tidy
         ```
