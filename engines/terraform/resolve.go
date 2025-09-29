@@ -57,7 +57,7 @@ func (td *TerraformDeployment) resolveValue(intentName string, value interface{}
 	}
 }
 
-func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecReference, returnAsReference bool) (interface{}, error) {
+func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecReference) (interface{}, error) {
 	switch specRef.Source {
 	case "infra":
 		if len(specRef.Path) < 2 {
@@ -65,18 +65,18 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 		}
 
 		refName := specRef.Path[0]
-		propertyName := specRef.Path[1]
-
-		if returnAsReference {
-			return fmt.Sprintf("${module.%s.%s}", refName, propertyName), nil
-		}
+		attribute := strings.Join(specRef.Path[1:], ".")
 
 		infraResource, err := td.resolveInfraResource(refName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
 		}
 
-		return infraResource.Get(jsii.String(propertyName)), nil
+		result := infraResource.Get(jsii.String(attribute))
+		if result == nil {
+			return "", nil
+		}
+		return result, nil
 
 	case "self":
 		if len(specRef.Path) < 1 {
@@ -90,9 +90,6 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
 		}
 
-		if returnAsReference {
-			return fmt.Sprintf("${var.%s}", varName), nil
-		}
 		return tfVariable.Value(), nil
 
 	case "var":
@@ -107,9 +104,6 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 			return nil, fmt.Errorf("variable %s does not exist for this platform", varName)
 		}
 
-		if returnAsReference {
-			return fmt.Sprintf("${var.%s}", varName), nil
-		}
 		return tfVariable.Value(), nil
 
 	default:
@@ -130,7 +124,7 @@ func (td *TerraformDeployment) resolveTokenString(intentName string, input strin
 			return input, nil
 		}
 
-		return td.resolveToken(intentName, specRef, false)
+		return td.resolveToken(intentName, specRef)
 	}
 
 	result := input
@@ -142,17 +136,18 @@ func (td *TerraformDeployment) resolveTokenString(intentName string, input strin
 			continue
 		}
 
-		replacementInterface, err := td.resolveToken(intentName, specRef, true)
+		tokenValue, err := td.resolveToken(intentName, specRef)
 		if err != nil {
 			return nil, err
 		}
 
-		replacement, ok := replacementInterface.(string)
-		if !ok {
-			return nil, fmt.Errorf("expected string replacement for token %s", token.Token)
+		// Convert token to string representation for concatenation
+		replacement := cdktf.Token_AsString(tokenValue, nil)
+		if replacement == nil {
+			return nil, fmt.Errorf("failed to convert token %s to string", token.Token)
 		}
 
-		result = result[:token.Start] + replacement + result[token.End:]
+		result = result[:token.Start] + *replacement + result[token.End:]
 	}
 
 	return result, nil
