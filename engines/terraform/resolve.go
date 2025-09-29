@@ -164,7 +164,9 @@ func (td *TerraformDeployment) resolveTokensForModule(intentName string, resourc
 		if err != nil {
 			return fmt.Errorf("failed to resolve property %s for %s: %w", property, intentName, err)
 		}
-		module.Set(jsii.String(property), resolvedValue)
+		if resolvedValue != nil {
+			module.Set(jsii.String(property), resolvedValue)
+		}
 	}
 
 	return nil
