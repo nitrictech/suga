@@ -86,6 +86,7 @@ func (c *SugaApp) getCurrentTeam() *api.Team {
 	return currentTeam
 }
 
+
 // Templates handles the templates command logic
 func (c *SugaApp) Templates() error {
 	team := c.getCurrentTeam()
@@ -440,6 +441,11 @@ func (c *SugaApp) New(projectName string, force bool) error {
 
 // Build handles the build command logic
 func (c *SugaApp) Build() error {
+	team := c.getCurrentTeam()
+	if team == nil {
+		return nil
+	}
+
 	appSpec, err := schema.LoadFromFile(c.fs, version.ConfigFileName, true)
 	if err != nil {
 		return err
@@ -478,7 +484,7 @@ func (c *SugaApp) Build() error {
 		}
 	}
 
-	stackPath, err := c.builder.BuildProjectForTarget(appSpec, targetPlatform)
+	stackPath, err := c.builder.BuildProjectForTarget(appSpec, targetPlatform, team.Slug)
 	if err != nil {
 		return err
 	}
@@ -566,7 +572,12 @@ func (c *SugaApp) Edit() error {
 	}
 	defer fileSync.Close()
 
-	buildServer, err := devserver.NewProjectBuild(c.apiClient, c.builder, devwsServer.Broadcast)
+	team := c.getCurrentTeam()
+	if team == nil {
+		return nil
+	}
+
+	buildServer, err := devserver.NewProjectBuild(c.apiClient, c.builder, devwsServer.Broadcast, team.Slug)
 	if err != nil {
 		return err
 	}

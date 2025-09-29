@@ -10,9 +10,10 @@ import (
 )
 
 type SugaProjectBuild struct {
-	apiClient *api.SugaApiClient
-	broadcast BroadcastFunc
-	builder   *build.BuilderService
+	apiClient   *api.SugaApiClient
+	broadcast   BroadcastFunc
+	builder     *build.BuilderService
+	currentTeam string
 }
 
 type ProjectBuild struct {
@@ -45,7 +46,7 @@ func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 		return
 	}
 
-	stackPath, err := n.builder.BuildProjectFromFileForTarget(version.ConfigFileName, buildMessage.Payload.Target)
+	stackPath, err := n.builder.BuildProjectFromFileForTarget(version.ConfigFileName, buildMessage.Payload.Target, n.currentTeam)
 	if err != nil {
 		fmt.Println(err.Error())
 
@@ -66,11 +67,12 @@ func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 	})
 }
 
-func NewProjectBuild(apiClient *api.SugaApiClient, builder *build.BuilderService, broadcast BroadcastFunc) (*SugaProjectBuild, error) {
+func NewProjectBuild(apiClient *api.SugaApiClient, builder *build.BuilderService, broadcast BroadcastFunc, currentTeam string) (*SugaProjectBuild, error) {
 	buildServer := &SugaProjectBuild{
-		apiClient: apiClient,
-		broadcast: broadcast,
-		builder:   builder,
+		apiClient:   apiClient,
+		broadcast:   broadcast,
+		builder:     builder,
+		currentTeam: currentTeam,
 	}
 
 	return buildServer, nil

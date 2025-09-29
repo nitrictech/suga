@@ -31,8 +31,9 @@ func sanitizeForFilename(input string) string {
 	return re.ReplaceAllString(input, "_")
 }
 
-func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, target string) (string, error) {
-	platformRepository := platforms.NewPlatformRepository(b.apiClient)
+
+func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, target string, currentTeam string) (string, error) {
+	platformRepository := platforms.NewPlatformRepository(b.apiClient, currentTeam)
 
 	if len(appSpec.Targets) == 0 {
 		return "", fmt.Errorf("no targets specified in project %s", appSpec.Name)
@@ -47,7 +48,7 @@ func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, targ
 		return "", err
 	}
 
-	repo := plugins.NewPluginRepository(b.apiClient)
+	repo := plugins.NewPluginRepository(b.apiClient, currentTeam)
 	engine := terraform.New(platform, terraform.WithRepository(repo))
 
 	stackPath, err := engine.Apply(appSpec)
@@ -57,13 +58,13 @@ func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, targ
 	return stackPath, nil
 }
 
-func (b *BuilderService) BuildProjectFromFileForTarget(projectFile, target string) (string, error) {
+func (b *BuilderService) BuildProjectFromFileForTarget(projectFile, target, currentTeam string) (string, error) {
 	appSpec, err := schema.LoadFromFile(b.fs, projectFile, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to load project file: %w", err)
 	}
 
-	return b.BuildProjectForTarget(appSpec, target)
+	return b.BuildProjectForTarget(appSpec, target, currentTeam)
 }
 
 func NewBuilderService(injector do.Injector) (*BuilderService, error) {
