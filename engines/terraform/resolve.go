@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/aws/jsii-runtime-go"
@@ -90,6 +91,12 @@ func (td *TerraformDeployment) resolveTokensForModule(intentName string, resourc
 		if err != nil {
 			return fmt.Errorf("failed to resolve property %s for %s: %w", property, intentName, err)
 		}
+
+		if resolvedValue == nil {
+			log.Printf("[WARNING] Skipping nil value for property '%s' in resource '%s' (original value: %v). Please check your platform configuration.", property, intentName, value)
+			continue
+		}
+
 		module.Set(jsii.String(property), resolvedValue)
 	}
 
