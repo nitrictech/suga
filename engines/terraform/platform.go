@@ -218,7 +218,7 @@ func PlatformFromId(fs afero.Fs, platformId string, repositories ...PlatformRepo
 	}
 
 	// TODO: check for close matches and list available platforms
-	return nil, fmt.Errorf("platform %s not found in any repository", platformId)
+	return nil, fmt.Errorf("platform %s not found. If the platform exists in a different team, switch teams using `suga team <team-name>`", platformId)
 }
 
 type pluginSource struct {
