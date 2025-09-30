@@ -11,12 +11,12 @@ import (
 func SpecReferenceFromToken(token string) (*SpecReference, error) {
 	contents, ok := extractTokenContents(token)
 	if !ok {
-		return nil, fmt.Errorf("invalid token format")
+		return nil, fmt.Errorf("invalid reference format")
 	}
 
 	parts := strings.Split(contents, ".")
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid token format")
+		return nil, fmt.Errorf("invalid reference format")
 	}
 
 	return &SpecReference{
@@ -79,8 +79,8 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 		return result, nil
 
 	case "self":
-		if len(specRef.Path) < 1 {
-			return nil, fmt.Errorf("self token requires at least 1 path component")
+		if len(specRef.Path) == 0 {
+			return nil, fmt.Errorf("references 'self' without specifying a variable. All references must include a variable name e.g. ${self.my_var}")
 		}
 
 		varName := specRef.Path[0]
@@ -90,6 +90,11 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
 		}
 
+		// Handle multi-path cases like self.a.b.c
+		if len(specRef.Path) > 1 {
+			attribute := strings.Join(specRef.Path[1:], ".")
+			return cdktf.Fn_Lookup(tfVariable.Value(), jsii.String(attribute), nil), nil
+		}
 		return tfVariable.Value(), nil
 
 	case "var":
@@ -107,7 +112,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 		return tfVariable.Value(), nil
 
 	default:
-		return nil, fmt.Errorf("unknown token source: %s", specRef.Source)
+		return nil, fmt.Errorf("unknown reference source '%s'", specRef.Source)
 	}
 }
 
