@@ -84,8 +84,8 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 			}
 
 			// Set the next poll time immediately to ensure consistent intervals
-			// This ensures we poll every 5 seconds regardless of request duration
 			// Add a small buffer to account for network latency and clock skew
+			// This ensures we never poll faster than every 5 seconds
 			const safetyBuffer = 100 * time.Millisecond
 			nextPollTime = time.Now().Add(currentInterval + safetyBuffer)
 
