@@ -72,7 +72,7 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 			select {
 			case <-ctx.Done():
 				return fmt.Errorf("device authorization timed out")
-			case <-time.After(time.Until(time.Now().Add(pollInterval))):
+			case <-time.After(pollInterval):
 				// Continue to poll
 			}
 
