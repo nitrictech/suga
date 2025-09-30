@@ -17,6 +17,7 @@ Linode
 Vultr
 booleans
 CDNs
+Addr
 
 # Defaults from mintlify
 Mintlify
