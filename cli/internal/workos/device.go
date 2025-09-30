@@ -83,9 +83,11 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 				}
 			}
 
-			// Set the next poll time before making the request
-			// This ensures consistent intervals regardless of request duration
-			nextPollTime = time.Now().Add(currentInterval)
+			// Set the next poll time immediately to ensure consistent intervals
+			// This ensures we poll every 5 seconds regardless of request duration
+			// Add a small buffer to account for network latency and clock skew
+			const safetyBuffer = 100 * time.Millisecond
+			nextPollTime = time.Now().Add(currentInterval + safetyBuffer)
 
 			// Create a context with timeout for this specific request
 			reqCtx, reqCancel := context.WithTimeout(ctx, 10*time.Second)
@@ -110,7 +112,7 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 				case containsError(errMsg, "slow_down"):
 					// Server asked us to slow down - add 5 seconds to interval
 					currentInterval = pollInterval + (5 * time.Second)
-					// Adjust next poll time to respect the new interval
+					// Recalculate next poll time to respect the new slower interval (no buffer needed at 10s)
 					nextPollTime = time.Now().Add(currentInterval)
 					continue
 				case containsError(errMsg, "expired_token"):
