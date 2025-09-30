@@ -63,77 +63,58 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 	if pollInterval <= 0 || pollInterval < minInterval {
 		pollInterval = minInterval
 	}
-	currentInterval := pollInterval
-
-	nextPollTime := time.Now()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("device authorization timed out")
 		default:
-			// Wait until it's time for the next poll
-			waitTime := time.Until(nextPollTime)
-			if waitTime > 0 {
-				select {
-				case <-ctx.Done():
-					return fmt.Errorf("device authorization timed out")
-				case <-time.After(waitTime):
-					// Continue to poll
-				}
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("device authorization timed out")
+			case <-time.After(time.Until(time.Now().Add(pollInterval))):
+				// Continue to poll
 			}
-
-			// Set the next poll time immediately to ensure consistent intervals
-			// Add a small buffer to account for network latency and clock skew
-			// This ensures we never poll faster than every 5 seconds
-			const safetyBuffer = 100 * time.Millisecond
-			nextPollTime = time.Now().Add(currentInterval + safetyBuffer)
 
 			// Create a context with timeout for this specific request
 			reqCtx, reqCancel := context.WithTimeout(ctx, 10*time.Second)
 			tokenResp, err := a.httpClient.PollDeviceTokenWithContext(reqCtx, deviceResp.DeviceCode)
 			reqCancel()
 
-			if err != nil {
-				if errors.Is(err, context.DeadlineExceeded) {
-					fmt.Printf("%s Request timed out, retrying...\n", style.Yellow(icons.Warning))
-					continue
+			if err == nil {
+				err := a.tokenStore.SaveTokens(&Tokens{
+					AccessToken:  tokenResp.AccessToken,
+					RefreshToken: tokenResp.RefreshToken,
+					User:         &tokenResp.User,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to save tokens: %w", err)
 				}
-
-				if errors.Is(err, context.Canceled) {
-					return fmt.Errorf("device authorization timed out")
-				}
-
-				errMsg := err.Error()
-				switch {
-				case containsError(errMsg, "authorization_pending"):
-					// Continue polling at normal interval
-					continue
-				case containsError(errMsg, "slow_down"):
-					// Server asked us to slow down - add 5 seconds to interval
-					currentInterval = pollInterval + (5 * time.Second)
-					// Recalculate next poll time to respect the new slower interval (no buffer needed at 10s)
-					nextPollTime = time.Now().Add(currentInterval)
-					continue
-				case containsError(errMsg, "expired_token"):
-					return fmt.Errorf("device code expired, please try again")
-				case containsError(errMsg, "access_denied"):
-					return fmt.Errorf("authentication was denied")
-				default:
-					return fmt.Errorf("failed to poll for token: %w", err)
-				}
+				return nil
 			}
 
-			err = a.tokenStore.SaveTokens(&Tokens{
-				AccessToken:  tokenResp.AccessToken,
-				RefreshToken: tokenResp.RefreshToken,
-				User:         &tokenResp.User,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to save tokens: %w", err)
+			if errors.Is(err, context.DeadlineExceeded) {
+				fmt.Printf("%s Request timed out, retrying...\n", style.Yellow(icons.Warning))
+				continue
 			}
 
-			return nil
+			if errors.Is(err, context.Canceled) {
+				return fmt.Errorf("device authorization timed out")
+			}
+
+			errMsg := err.Error()
+			switch {
+			case containsError(errMsg, "authorization_pending"):
+				// Auth still pending, continue polling at the same interval
+			case containsError(errMsg, "slow_down"):
+				pollInterval += (1 * time.Second)
+			case containsError(errMsg, "expired_token"):
+				return fmt.Errorf("device code expired, please try again")
+			case containsError(errMsg, "access_denied"):
+				return fmt.Errorf("authentication was denied")
+			default:
+				return fmt.Errorf("failed to poll for token: %w", err)
+			}
 		}
 	}
 }
