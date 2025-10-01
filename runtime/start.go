@@ -67,7 +67,16 @@ func Start(cmd string) {
 	}()
 
 	// Start the actual suga service
-	cmdParts := strings.Split(cmd, " ")
+	cmdParts := strings.Fields(cmd)
+	if len(cmdParts) == 0 {
+		log.Fatalf("failed to start service: Dockerfile must specify a CMD and/or ENTRYPOINT")
+	}
+
+	// Expand environment variables in each argument
+	for i := range cmdParts {
+		cmdParts[i] = os.ExpandEnv(cmdParts[i])
+	}
+
 	runCmd := exec.Command(cmdParts[0], cmdParts[1:]...)
 	runCmd.Env = os.Environ()
 	runCmd.Stdout = os.Stdout
