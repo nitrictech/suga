@@ -73,6 +73,27 @@ func TestSpecReferenceFromToken(t *testing.T) {
 			expectError: true,
 			errorMsg:    "invalid reference format",
 		},
+		{
+			name:        "invalid token format - only var source",
+			token:       "${var}",
+			expected:    nil,
+			expectError: true,
+			errorMsg:    "invalid reference format",
+		},
+		{
+			name:        "invalid token format - self with dot but no path",
+			token:       "${self.}",
+			expected:    nil,
+			expectError: true,
+			errorMsg:    "invalid reference format",
+		},
+		{
+			name:        "invalid token format - var with dot but no path",
+			token:       "${var.}",
+			expected:    nil,
+			expectError: true,
+			errorMsg:    "invalid reference format",
+		},
 	}
 
 	for _, tt := range tests {
@@ -143,7 +164,6 @@ func TestResolveToken_SelfReference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a minimal TerraformDeployment for testing
 			app := cdktf.NewApp(nil)
 			stack := cdktf.NewTerraformStack(app, jsii.String("test"))
 
@@ -153,7 +173,6 @@ func TestResolveToken_SelfReference(t *testing.T) {
 				instancedTerraformVariables: make(map[string]map[string]cdktf.TerraformVariable),
 			}
 
-			// Add a test variable if needed for success cases
 			if tt.setupVar {
 				td.instancedTerraformVariables["test_intent"] = make(map[string]cdktf.TerraformVariable)
 				td.instancedTerraformVariables["test_intent"]["my_var"] = cdktf.NewTerraformVariable(stack, jsii.String("test_var"), &cdktf.TerraformVariableConfig{

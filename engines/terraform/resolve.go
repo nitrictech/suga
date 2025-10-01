@@ -19,6 +19,13 @@ func SpecReferenceFromToken(token string) (*SpecReference, error) {
 		return nil, fmt.Errorf("invalid reference format")
 	}
 
+	// Validate that all path components are non-empty
+	for _, part := range parts[1:] {
+		if part == "" {
+			return nil, fmt.Errorf("invalid reference format")
+		}
+	}
+
 	return &SpecReference{
 		Source: parts[0],
 		Path:   parts[1:],
@@ -61,7 +68,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 	switch specRef.Source {
 	case "infra":
 		if len(specRef.Path) < 2 {
-			return nil, fmt.Errorf("infra token requires at least 2 path components")
+			return nil, fmt.Errorf("infra reference requires at least 2 path components")
 		}
 
 		refName := specRef.Path[0]
@@ -98,7 +105,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 	case "var":
 		if len(specRef.Path) < 1 {
-			return nil, fmt.Errorf("var token requires at least 1 path component")
+			return nil, fmt.Errorf("var `%s` doesn't contain a valid variable reference", specRef.Source)
 		}
 
 		varName := specRef.Path[0]
