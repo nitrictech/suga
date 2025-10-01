@@ -1,4 +1,6 @@
 
+.PHONY: test test-verbose test-short test-pretty
+
 test:
 	@echo "Running tests..."
 	@go test ./terraform/...
