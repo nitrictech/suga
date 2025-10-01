@@ -28,7 +28,7 @@ func SpecReferenceFromToken(token string) (*SpecReference, error) {
 func (td *TerraformDeployment) resolveValue(intentName string, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
-		return td.resolveTokenString(intentName, v)
+		return td.resolveTokenValue(intentName, v)
 
 	case map[string]interface{}:
 		result := make(map[string]interface{})
@@ -90,7 +90,6 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
 		}
 
-		// Handle multi-path cases like self.a.b.c
 		if len(specRef.Path) > 1 {
 			attribute := strings.Join(specRef.Path[1:], ".")
 			return cdktf.Fn_Lookup(tfVariable.Value(), jsii.String(attribute), nil), nil
@@ -116,7 +115,7 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 	}
 }
 
-func (td *TerraformDeployment) resolveTokenString(intentName string, input string) (interface{}, error) {
+func (td *TerraformDeployment) resolveTokenValue(intentName string, input string) (interface{}, error) {
 	tokens := findAllTokens(input)
 
 	if len(tokens) == 0 {
@@ -132,6 +131,10 @@ func (td *TerraformDeployment) resolveTokenString(intentName string, input strin
 		return td.resolveToken(intentName, specRef)
 	}
 
+	return td.resolveStringInterpolation(intentName, input, tokens)
+}
+
+func (td *TerraformDeployment) resolveStringInterpolation(intentName string, input string, tokens []TokenMatch) (string, error) {
 	result := input
 	for i := len(tokens) - 1; i >= 0; i-- {
 		token := tokens[i]
@@ -143,13 +146,12 @@ func (td *TerraformDeployment) resolveTokenString(intentName string, input strin
 
 		tokenValue, err := td.resolveToken(intentName, specRef)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		// Convert token to string representation for concatenation
 		replacement := cdktf.Token_AsString(tokenValue, nil)
 		if replacement == nil {
-			return nil, fmt.Errorf("failed to convert token %s to string", token.Token)
+			return "", fmt.Errorf("cannot use reference '%s' in string interpolation: the resolved value is not string-compatible (likely an object, array, or complex type). Use the reference alone without surrounding text to preserve its type", token.Token)
 		}
 
 		result = result[:token.Start] + *replacement + result[token.End:]
@@ -188,7 +190,6 @@ func (td *TerraformDeployment) resolveDependencies(resource *ResourceBlueprint, 
 			return fmt.Errorf("depends_on can only reference infra resources")
 		}
 
-		// Ensure the infra resource is created if it doesn't exist
 		infraResource, err := td.resolveInfraResource(specRef.Path[0])
 		if err != nil {
 			return fmt.Errorf("failed to resolve infrastructure dependency %s: %w", specRef.Path[0], err)
