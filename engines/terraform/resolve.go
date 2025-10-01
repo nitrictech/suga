@@ -115,6 +115,10 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 			return nil, fmt.Errorf("variable %s does not exist for this platform", varName)
 		}
 
+		if len(specRef.Path) > 1 {
+			attribute := strings.Join(specRef.Path[1:], ".")
+			return cdktf.Fn_Lookup(tfVariable.Value(), jsii.String(attribute), nil), nil
+		}
 		return tfVariable.Value(), nil
 
 	default:

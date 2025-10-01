@@ -53,6 +53,15 @@ func TestSpecReferenceFromToken(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:  "valid var reference with nested path",
+			token: "${var.platform_var.nested.value}",
+			expected: &SpecReference{
+				Source: "var",
+				Path:   []string{"platform_var", "nested", "value"},
+			},
+			expectError: false,
+		},
+		{
 			name:        "invalid token format - no closing brace",
 			token:       "${infra.resource",
 			expected:    nil,
@@ -193,6 +202,252 @@ func TestResolveToken_SelfReference(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestResolveToken_VarReference(t *testing.T) {
+	tests := []struct {
+		name        string
+		specRef     *SpecReference
+		setupVar    bool
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name: "var reference without variable name",
+			specRef: &SpecReference{
+				Source: "var",
+				Path:   []string{},
+			},
+			expectError: true,
+			errorMsg:    "doesn't contain a valid variable reference",
+		},
+		{
+			name: "var reference with single path",
+			specRef: &SpecReference{
+				Source: "var",
+				Path:   []string{"platform_var"},
+			},
+			setupVar:    true,
+			expectError: false,
+		},
+		{
+			name: "var reference with nested path",
+			specRef: &SpecReference{
+				Source: "var",
+				Path:   []string{"platform_var", "nested", "value"},
+			},
+			setupVar:    true,
+			expectError: false,
+		},
+		{
+			name: "var reference with non-existent variable",
+			specRef: &SpecReference{
+				Source: "var",
+				Path:   []string{"non_existent"},
+			},
+			expectError: true,
+			errorMsg:    "does not exist for this platform",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := cdktf.NewApp(nil)
+			stack := cdktf.NewTerraformStack(app, jsii.String("test"))
+
+			engine := &TerraformEngine{
+				platform: &PlatformSpec{
+					Variables: make(map[string]Variable),
+				},
+			}
+
+			td := &TerraformDeployment{
+				app:                app,
+				stack:              stack,
+				engine:             engine,
+				terraformVariables: make(map[string]cdktf.TerraformVariable),
+			}
+
+			if tt.setupVar {
+				engine.platform.Variables["platform_var"] = Variable{
+					Type:        "object",
+					Description: "Test platform variable",
+					Default: map[string]interface{}{
+						"nested": map[string]interface{}{
+							"value": "test_value",
+						},
+					},
+				}
+			}
+
+			_, err := td.resolveToken("test_intent", tt.specRef)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestResolveTokenValue(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		setupVar    bool
+		expectToken bool
+		expectError bool
+	}{
+		{
+			name:        "plain string without tokens",
+			input:       "just a regular string",
+			expectToken: false,
+			expectError: false,
+		},
+		{
+			name:        "single token only",
+			input:       "${self.my_var}",
+			setupVar:    true,
+			expectToken: true,
+			expectError: false,
+		},
+		{
+			name:        "string with one token in middle",
+			input:       "prefix-${self.my_var}-suffix",
+			setupVar:    true,
+			expectToken: true,
+			expectError: false,
+		},
+		{
+			name:        "string with multiple tokens",
+			input:       "${self.var1}-${self.var2}",
+			setupVar:    true,
+			expectToken: true,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := cdktf.NewApp(nil)
+			stack := cdktf.NewTerraformStack(app, jsii.String("test"))
+
+			td := &TerraformDeployment{
+				app:                         app,
+				stack:                       stack,
+				instancedTerraformVariables: make(map[string]map[string]cdktf.TerraformVariable),
+			}
+
+			if tt.setupVar {
+				td.instancedTerraformVariables["test_intent"] = make(map[string]cdktf.TerraformVariable)
+				td.instancedTerraformVariables["test_intent"]["my_var"] = cdktf.NewTerraformVariable(stack, jsii.String("test_var"), &cdktf.TerraformVariableConfig{
+					Default: "test_value",
+				})
+				td.instancedTerraformVariables["test_intent"]["var1"] = cdktf.NewTerraformVariable(stack, jsii.String("test_var1"), &cdktf.TerraformVariableConfig{
+					Default: "value1",
+				})
+				td.instancedTerraformVariables["test_intent"]["var2"] = cdktf.NewTerraformVariable(stack, jsii.String("test_var2"), &cdktf.TerraformVariableConfig{
+					Default: "value2",
+				})
+			}
+
+			result, err := td.resolveTokenValue("test_intent", tt.input)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				if !tt.expectToken {
+					assert.Equal(t, tt.input, result)
+				} else {
+					assert.NotNil(t, result)
+				}
+			}
+		})
+	}
+}
+
+func TestResolveStringInterpolation(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		setupVars   map[string]string
+		expected    string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:  "string with two tokens",
+			input: "prefix-${self.var1}-middle-${self.var2}-suffix",
+			setupVars: map[string]string{
+				"var1": "value1",
+				"var2": "value2",
+			},
+			expectError: false,
+		},
+		{
+			name:  "string with adjacent tokens",
+			input: "${self.var1}${self.var2}",
+			setupVars: map[string]string{
+				"var1": "value1",
+				"var2": "value2",
+			},
+			expectError: false,
+		},
+		{
+			name:  "string with token at start",
+			input: "${self.var1}-suffix",
+			setupVars: map[string]string{
+				"var1": "value1",
+			},
+			expectError: false,
+		},
+		{
+			name:  "string with token at end",
+			input: "prefix-${self.var1}",
+			setupVars: map[string]string{
+				"var1": "value1",
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := cdktf.NewApp(nil)
+			stack := cdktf.NewTerraformStack(app, jsii.String("test"))
+
+			td := &TerraformDeployment{
+				app:                         app,
+				stack:                       stack,
+				instancedTerraformVariables: make(map[string]map[string]cdktf.TerraformVariable),
+			}
+
+			td.instancedTerraformVariables["test_intent"] = make(map[string]cdktf.TerraformVariable)
+			for varName, varValue := range tt.setupVars {
+				td.instancedTerraformVariables["test_intent"][varName] = cdktf.NewTerraformVariable(stack, jsii.String("test_"+varName), &cdktf.TerraformVariableConfig{
+					Default: varValue,
+				})
+			}
+
+			tokens := findAllTokens(tt.input)
+			result, err := td.resolveStringInterpolation("test_intent", tt.input, tokens)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorMsg != "" {
+					assert.Contains(t, err.Error(), tt.errorMsg)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, result)
 			}
 		})
 	}
