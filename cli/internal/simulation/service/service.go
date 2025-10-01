@@ -214,7 +214,7 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 		srvCommand.Env = append(srvCommand.Env, fmt.Sprintf("PORT=%d", s.port))
 		srvCommand.Env = append(srvCommand.Env, fmt.Sprintf("SUGA_SERVICE_ADDRESS=localhost:%d", s.apiPort))
 
-		srvCommand.Dir = s.intent.Container.Docker.Context
+		srvCommand.Dir = s.intent.WorkingDir
 		srvCommand.Stdout = stdoutWriter
 		srvCommand.Stderr = stderrWriter
 

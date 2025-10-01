@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"path"
 	"slices"
 
 	"github.com/aws/jsii-runtime-go"
@@ -195,7 +196,7 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 		}
 
 		imageVars = &map[string]interface{}{
-			"build_context": jsii.String(spec.Container.Docker.Context),
+			"build_context": jsii.String(path.Join(spec.WorkingDir, spec.Container.Docker.Context)),
 			"dockerfile":    jsii.String(spec.Container.Docker.Dockerfile),
 			"tag":           jsii.String(name),
 			"args":          args,
