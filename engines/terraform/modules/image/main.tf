@@ -22,7 +22,7 @@ data "external" "inspect_base_image" {
 }
 
 locals {
-  original_command = join(" ", compact(["${data.external.inspect_base_image.result.entrypoint}", "${data.external.inspect_base_image.result.cmd}"]))
+  original_command = join(" ", compact([data.external.inspect_base_image.result.entrypoint, data.external.inspect_base_image.result.cmd]))
   image_id         = var.image_id == null ? docker_image.base_service.name : var.image_id
 }
 
