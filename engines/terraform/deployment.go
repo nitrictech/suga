@@ -73,8 +73,15 @@ func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.Ter
 
 		td.createVariablesForIntent(infraName, resource)
 
+		sugaVar := map[string]any{
+			"stack_id": td.stackId.Result(),
+		}
+
 		td.terraformInfraResources[infraName] = cdktf.NewTerraformHclModule(td.stack, jsii.String(infraName), &cdktf.TerraformHclModuleConfig{
 			Source: jsii.String(pluginRef.Deployment.Terraform),
+			Variables: &map[string]interface{}{
+				"suga": sugaVar,
+			},
 		})
 	}
 
