@@ -11,12 +11,19 @@ import (
 func SpecReferenceFromToken(token string) (*SpecReference, error) {
 	contents, ok := extractTokenContents(token)
 	if !ok {
-		return nil, fmt.Errorf("invalid token format")
+		return nil, fmt.Errorf("invalid reference format")
 	}
 
 	parts := strings.Split(contents, ".")
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid token format")
+		return nil, fmt.Errorf("invalid reference format")
+	}
+
+	// Validate that all path components are non-empty
+	for _, part := range parts[1:] {
+		if part == "" {
+			return nil, fmt.Errorf("invalid reference format")
+		}
 	}
 
 	return &SpecReference{
@@ -28,34 +35,7 @@ func SpecReferenceFromToken(token string) (*SpecReference, error) {
 func (td *TerraformDeployment) resolveValue(intentName string, value interface{}) (interface{}, error) {
 	switch v := value.(type) {
 	case string:
-		specRef, err := SpecReferenceFromToken(v)
-		if err != nil {
-			return v, nil
-		}
-
-		if specRef.Source == "infra" {
-			refName := specRef.Path[0]
-			propertyName := specRef.Path[1]
-
-			infraResource, err := td.resolveInfraResource(refName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
-			}
-			return infraResource.Get(jsii.String(propertyName)), nil
-		} else if specRef.Source == "self" {
-			tfVariable, ok := td.instancedTerraformVariables[intentName][specRef.Path[0]]
-			if !ok {
-				return nil, fmt.Errorf("variable %s does not exist for provided blueprint", specRef.Path[0])
-			}
-			return tfVariable.Value(), nil
-		} else if specRef.Source == "var" {
-			tfVariable, ok := td.getPlatformVariable(specRef.Path[0])
-			if !ok {
-				return nil, fmt.Errorf("variable %s does not exist for this platform", specRef.Path[0])
-			}
-			return tfVariable.Value(), nil
-		}
-		return v, nil
+		return td.resolveTokenValue(intentName, v)
 
 	case map[string]interface{}:
 		result := make(map[string]interface{})
@@ -84,13 +64,122 @@ func (td *TerraformDeployment) resolveValue(intentName string, value interface{}
 	}
 }
 
+func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecReference) (interface{}, error) {
+	switch specRef.Source {
+	case "infra":
+		if len(specRef.Path) < 2 {
+			return nil, fmt.Errorf("infra reference requires at least 2 path components")
+		}
+
+		refName := specRef.Path[0]
+		attribute := strings.Join(specRef.Path[1:], ".")
+
+		infraResource, err := td.resolveInfraResource(refName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve infrastructure resource %s: %w", refName, err)
+		}
+
+		result := infraResource.Get(jsii.String(attribute))
+		if result == nil {
+			return nil, fmt.Errorf("attribute '%s' not found on infrastructure resource '%s' (type: %s)", attribute, refName, *infraResource.Node().Id())
+		}
+		return result, nil
+
+	case "self":
+		if len(specRef.Path) == 0 {
+			return nil, fmt.Errorf("references 'self' without specifying a variable. All references must include a variable name e.g. ${self.my_var}")
+		}
+
+		varName := specRef.Path[0]
+
+		tfVariable, ok := td.instancedTerraformVariables[intentName][varName]
+		if !ok {
+			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
+		}
+
+		if len(specRef.Path) > 1 {
+			attribute := strings.Join(specRef.Path[1:], ".")
+			return cdktf.Fn_Lookup(tfVariable.Value(), jsii.String(attribute), nil), nil
+		}
+		return tfVariable.Value(), nil
+
+	case "var":
+		if len(specRef.Path) < 1 {
+			return nil, fmt.Errorf("var `%s` doesn't contain a valid variable reference", specRef.Source)
+		}
+
+		varName := specRef.Path[0]
+
+		tfVariable, ok := td.getPlatformVariable(varName)
+		if !ok {
+			return nil, fmt.Errorf("variable %s does not exist for this platform", varName)
+		}
+
+		if len(specRef.Path) > 1 {
+			attribute := strings.Join(specRef.Path[1:], ".")
+			return cdktf.Fn_Lookup(tfVariable.Value(), jsii.String(attribute), nil), nil
+		}
+		return tfVariable.Value(), nil
+
+	default:
+		return nil, fmt.Errorf("unknown reference source '%s'", specRef.Source)
+	}
+}
+
+func (td *TerraformDeployment) resolveTokenValue(intentName string, input string) (interface{}, error) {
+	tokens := findAllTokens(input)
+
+	if len(tokens) == 0 {
+		return input, nil
+	}
+
+	if len(tokens) == 1 && isOnlyToken(input) {
+		specRef, err := SpecReferenceFromToken(tokens[0].Token)
+		if err != nil {
+			return input, nil
+		}
+
+		return td.resolveToken(intentName, specRef)
+	}
+
+	return td.resolveStringInterpolation(intentName, input, tokens)
+}
+
+func (td *TerraformDeployment) resolveStringInterpolation(intentName string, input string, tokens []TokenMatch) (string, error) {
+	result := input
+	for i := len(tokens) - 1; i >= 0; i-- {
+		token := tokens[i]
+
+		specRef, err := SpecReferenceFromToken(token.Token)
+		if err != nil {
+			continue
+		}
+
+		tokenValue, err := td.resolveToken(intentName, specRef)
+		if err != nil {
+			return "", err
+		}
+
+		replacement := cdktf.Token_AsString(tokenValue, nil)
+		if replacement == nil {
+			return "", fmt.Errorf("cannot use reference '%s' in string interpolation: the resolved value is not string-compatible (likely an object, array, or complex type). Use the reference alone without surrounding text to preserve its type", token.Token)
+		}
+
+		result = result[:token.Start] + *replacement + result[token.End:]
+	}
+
+	return result, nil
+}
+
 func (td *TerraformDeployment) resolveTokensForModule(intentName string, resource *ResourceBlueprint, module cdktf.TerraformHclModule) error {
 	for property, value := range resource.Properties {
 		resolvedValue, err := td.resolveValue(intentName, value)
 		if err != nil {
 			return fmt.Errorf("failed to resolve property %s for %s: %w", property, intentName, err)
 		}
-		module.Set(jsii.String(property), resolvedValue)
+		if resolvedValue != nil {
+			module.Set(jsii.String(property), resolvedValue)
+		}
 	}
 
 	return nil
@@ -112,7 +201,6 @@ func (td *TerraformDeployment) resolveDependencies(resource *ResourceBlueprint, 
 			return fmt.Errorf("depends_on can only reference infra resources")
 		}
 
-		// Ensure the infra resource is created if it doesn't exist
 		infraResource, err := td.resolveInfraResource(specRef.Path[0])
 		if err != nil {
 			return fmt.Errorf("failed to resolve infrastructure dependency %s: %w", specRef.Path[0], err)
