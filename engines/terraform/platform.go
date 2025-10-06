@@ -101,21 +101,27 @@ func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
 }
 
 type MissingResourceBlueprintError struct {
-	IntentType     string
-	IntentSubType  string
-	AvailableTypes []string
+    IntentType     string
+    IntentSubType  string
+    AvailableTypes []string
 }
 
-func (e MissingResourceBlueprintError) Error() string {
-	return fmt.Sprintf("platform does not define a '%s' type for %ss, available types: %v", e.IntentSubType, e.IntentType, e.AvailableTypes)
+func (e *MissingResourceBlueprintError) Error() string {
+    return fmt.Sprintf(
+        "platform does not define a '%s' type for %ss, available types: %v",
+        e.IntentSubType, e.IntentType, e.AvailableTypes,
+    )
 }
 
-func NewMissingResourceBlueprintError(intentType, intentSubType string, availableTypes []string) error {
-	return MissingResourceBlueprintError{
-		IntentType:     intentType,
-		IntentSubType:  intentSubType,
-		AvailableTypes: availableTypes,
-	}
+func NewMissingResourceBlueprintError(
+    intentType, intentSubType string,
+    availableTypes []string,
+) error {
+    return &MissingResourceBlueprintError{
+        IntentType:     intentType,
+        IntentSubType:  intentSubType,
+        AvailableTypes: availableTypes,
+    }
 }
 
 func (p PlatformSpec) GetServiceBlueprint(intentSubType string) (*ServiceBlueprint, error) {
