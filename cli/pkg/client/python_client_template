@@ -10,7 +10,7 @@ from suga.buckets import Bucket
 class SugaClient:
     def __init__(self):
         address = os.getenv("SUGA_SERVICE_ADDRESS")
-        if address == "":
+        if not address:
             address = "localhost:50051"
         
         self._channel = grpc.insecure_channel(address)
