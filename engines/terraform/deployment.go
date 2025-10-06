@@ -62,11 +62,8 @@ func NewTerraformDeployment(engine *TerraformEngine, stackName string) *Terrafor
 func (td *TerraformDeployment) resolveInfraResource(infraName string) (cdktf.TerraformHclModule, error) {
 	resource, ok := td.engine.platform.InfraSpecs[infraName]
 	if !ok {
-		availableResources := make([]string, 0, len(td.engine.platform.InfraSpecs))
-		for name := range td.engine.platform.InfraSpecs {
-			availableResources = append(availableResources, name)
-		}
-		return nil, fmt.Errorf("infra resource '%s' not found in depends_on. Available resources: %v. Update the depends_on references in your platform definition", infraName, availableResources)
+		availableResources := slices.Collect(maps.Keys(td.engine.platform.InfraSpecs))
+		return nil, fmt.Errorf("referenced infra resource '%s' is not defined in the platform. Available infra resources are: %v", infraName, availableResources)
 	}
 
 	if _, ok := td.terraformInfraResources[infraName]; !ok {
