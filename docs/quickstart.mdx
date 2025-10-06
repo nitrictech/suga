@@ -85,31 +85,30 @@ Use Ctrl-C to exit
     Let's review what the `go-standard` template has defined in the `suga.yaml`:
 
     ```yaml title="suga.yaml" icon="file-code"
-    targets:
-      - suga/aws@1
-    name: go-standard
-    description: A Go web service template using the Suga framework for cloud resource access.
-    services:
+targets:
+  - suga/aws@1
+name: my-first-app
+description: A Go web service template using the Suga framework for cloud resource access.
+services:
+  app:
+    env:
+      TEST: test
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    dev:
+      script: go run main.go
+buckets:
+  image:
+    access:
       app:
-        env:
-          TEST: test
-        container:
-          docker:
-            dockerfile: Dockerfile
-            context: .
-        dev:
-          script: go run main.go
-    buckets:
-      files:
-        access:
-          app:
-            - read
-            - write
-    entrypoints:
-      ingress:
-        routes:
-          /:
-            name: app
+        - all
+entrypoints:
+  ingress:
+    routes:
+      /:
+        name: app
     ```
 
     The template includes:
