@@ -100,6 +100,30 @@ func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
 	return libraries
 }
 
+type MissingResourceBlueprintError struct {
+    IntentType     string
+    IntentSubType  string
+    AvailableTypes []string
+}
+
+func (e *MissingResourceBlueprintError) Error() string {
+    return fmt.Sprintf(
+        "platform does not define a '%s' type for %ss, available types: %v",
+        e.IntentSubType, e.IntentType, e.AvailableTypes,
+    )
+}
+
+func NewMissingResourceBlueprintError(
+    intentType, intentSubType string,
+    availableTypes []string,
+) error {
+    return &MissingResourceBlueprintError{
+        IntentType:     intentType,
+        IntentSubType:  intentSubType,
+        AvailableTypes: availableTypes,
+    }
+}
+
 func (p PlatformSpec) GetServiceBlueprint(intentSubType string) (*ServiceBlueprint, error) {
 	spec := p.ServiceBlueprints
 
@@ -109,7 +133,7 @@ func (p PlatformSpec) GetServiceBlueprint(intentSubType string) (*ServiceBluepri
 
 	concreteSpec, ok := spec[intentSubType]
 	if !ok || concreteSpec == nil {
-		return nil, fmt.Errorf("platform %s does not define a %s type for services, available types: %v", p.Name, intentSubType, slices.Collect(maps.Keys(spec)))
+		return nil, NewMissingResourceBlueprintError("service", intentSubType, slices.Collect(maps.Keys(spec)))
 	}
 
 	return concreteSpec, nil
@@ -143,25 +167,31 @@ func (p PlatformSpec) GetResourceBlueprint(intentType string, intentSubType stri
 	}
 
 	var spec *ResourceBlueprint
+	var availableTypes []string
 	switch intentType {
 	case "service":
+		availableTypes = slices.Collect(maps.Keys(p.ServiceBlueprints))
 		if serviceBlueprint, ok := p.ServiceBlueprints[intentSubType]; ok {
 			spec = serviceBlueprint.ResourceBlueprint
 		}
 	case "entrypoint":
+		availableTypes = slices.Collect(maps.Keys(p.EntrypointBlueprints))
 		spec = p.EntrypointBlueprints[intentSubType]
 	case "bucket":
+		availableTypes = slices.Collect(maps.Keys(p.BucketBlueprints))
 		spec = p.BucketBlueprints[intentSubType]
 	case "topic":
+		availableTypes = slices.Collect(maps.Keys(p.TopicBlueprints))
 		spec = p.TopicBlueprints[intentSubType]
 	case "database":
+		availableTypes = slices.Collect(maps.Keys(p.DatabaseBlueprints))
 		spec = p.DatabaseBlueprints[intentSubType]
 	default:
 		return nil, fmt.Errorf("failed to resolve resource blueprint, no type %s known in platform spec", intentType)
 	}
 
 	if spec == nil {
-		return nil, fmt.Errorf("platform %s does not define a '%s' %s type", p.Name, intentSubType, intentType)
+		return nil, NewMissingResourceBlueprintError(intentType, intentSubType, availableTypes)
 	}
 
 	return spec, nil
