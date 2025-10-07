@@ -11,11 +11,10 @@ import (
 )
 
 type Application struct {
-	// Targets sets platforms this application should be expected to work on
-	// This gives us room to move away from LCD expectations around how platforms are built
-	Targets     []string `json:"targets" yaml:"targets" jsonschema:"required,pattern=^(([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)@(\\d+)|file:([^\\s]+))$"`
-	Name        string   `json:"name" yaml:"name" jsonschema:"required"`
-	Description string   `json:"description" yaml:"description"`
+	// Target sets the platform this application should be deployed to
+	Target      string `json:"target" yaml:"target" jsonschema:"required,pattern=^(([a-z][a-z0-9-]*)/([a-z][a-z0-9-]*)@(\\d+)|file:([^\\s]+))$"`
+	Name        string `json:"name" yaml:"name" jsonschema:"required"`
+	Description string `json:"description" yaml:"description"`
 
 	ServiceIntents    map[string]*ServiceIntent    `json:"services,omitempty" yaml:"services,omitempty"`
 	BucketIntents     map[string]*BucketIntent     `json:"buckets,omitempty" yaml:"buckets,omitempty"`

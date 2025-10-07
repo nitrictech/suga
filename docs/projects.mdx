@@ -33,8 +33,7 @@ A Suga project is defined by a `suga.yaml` file that describes your application'
   <Tab title="suga.yaml" icon="file-code-2">
 
 ```yaml title="Example suga.yaml"
-targets:
-  - suga/aws@1
+target: suga/aws@1
 
 name: my-app
 description: An example web application with storage
@@ -78,14 +77,12 @@ Every project starts with basic metadata and target platforms:
 name: project-name
 description: Brief description of your application
 
-targets:
-  - suga/aws@1 # Deploy to AWS
-  - suga/gcp@1 # Or deploy to GCP
+target: suga/aws@1 # Deploy to AWS (or suga/gcp@1 for GCP)
 ```
 
 - **name**: Project identifier (used in Terraform stack and resource naming)
 - **description**: Human-readable project description
-- **targets**: List of platforms this project can use for deployments
+- **target**: The platform this project will be deployed to
 
 ### Resource Types
 
