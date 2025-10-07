@@ -10,9 +10,7 @@ func TestApplicationFromYaml_ValidBasic(t *testing.T) {
 	yaml := `
 name: test-app
 description: A test application
-targets:
-  - team/platform@1
-  - file:./local.yaml
+target: team/platform@1
 services:
   api:
     container:
@@ -31,7 +29,7 @@ buckets:
 	assert.NoError(t, err)
 	assert.True(t, result.Valid(), "Expected valid result, got validation errors: %v", result.Errors())
 	assert.Equal(t, "test-app", app.Name)
-	assert.Len(t, app.Targets, 2)
+	assert.Equal(t, "team/platform@1", app.Target)
 	assert.Len(t, app.ServiceIntents, 1)
 	assert.Len(t, app.BucketIntents, 1)
 }
@@ -55,15 +53,14 @@ services:
 
 	errString := FormatValidationErrors(validationErrs)
 	assert.Contains(t, errString, "name:    # <-- The name property is required")
-	assert.Contains(t, errString, "targets:    # <-- The targets property is required")
+	assert.Contains(t, errString, "target:    # <-- The target property is required")
 }
 
 func TestApplicationFromYaml_InvalidTargetFormat(t *testing.T) {
 	yaml := `
 name: test-app
 description: A test application
-targets:
-  - invalid-target-format
+target: invalid-target-format
 services:
   api:
     container:
@@ -85,11 +82,8 @@ services:
 func TestApplicationFromYaml_ValidHyphenatedTargets(t *testing.T) {
 	yaml := `
 name: test-app
-description: A test application with hyphenated targets
-targets:
-  - suga/aws-fargate@1
-  - my-team/custom-platform@2
-  - nitric/gcp-service-account@1
+description: A test application with hyphenated target
+target: suga/aws-fargate@1
 services:
   api:
     container:
@@ -101,20 +95,14 @@ services:
 	assert.NoError(t, err)
 	assert.True(t, result.Valid(), "Expected valid result, got validation errors: %v", result.Errors())
 	assert.Equal(t, "test-app", app.Name)
-	assert.Len(t, app.Targets, 3)
-	assert.Contains(t, app.Targets, "suga/aws-fargate@1")
-	assert.Contains(t, app.Targets, "my-team/custom-platform@2")
-	assert.Contains(t, app.Targets, "nitric/gcp-service-account@1")
+	assert.Equal(t, "suga/aws-fargate@1", app.Target)
 }
 
 func TestApplicationFromYaml_InvalidHyphenatedTargets(t *testing.T) {
 	yaml := `
 name: test-app
-description: A test application with invalid hyphenated targets
-targets:
-  - -team/platform@1
-  - team/-platform@1
-  - 1team/platform@1
+description: A test application with invalid hyphenated target
+target: -team/platform@1
 services:
   api:
     container:
@@ -124,10 +112,10 @@ services:
 
 	_, result, err := ApplicationFromYaml(yaml)
 	assert.NoError(t, err)
-	assert.False(t, result.Valid(), "Expected invalid result due to invalid hyphenated target formats")
+	assert.False(t, result.Valid(), "Expected invalid result due to invalid hyphenated target format")
 
 	validationErrs := GetSchemaValidationErrors(result.Errors())
-	assert.Len(t, validationErrs, 3)
+	assert.Len(t, validationErrs, 1)
 
 	errString := FormatValidationErrors(validationErrs)
 	assert.Contains(t, errString, "Must be in the format: `<team>/<platform>@<revision>` or `file:<path>`")
@@ -137,8 +125,7 @@ func TestApplicationFromYaml_ServiceWithImage(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 services:
   api:
     container:
@@ -161,8 +148,7 @@ func TestApplicationFromYaml_ServiceWithTriggers(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 services:
   worker:
     container:
@@ -194,8 +180,7 @@ func TestApplicationFromYaml_ServiceMissingContainerType(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 services:
   api:
     container: {}
@@ -217,8 +202,7 @@ func TestApplicationFromYaml_EntrypointMissingTrailingSlash(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 entrypoints:
   api:
     routes:
@@ -241,8 +225,7 @@ func TestApplicationFromYaml_EntrypointValidTrailingSlash(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 entrypoints:
   api:
     routes:
@@ -267,8 +250,7 @@ func TestApplicationFromYaml_InvalidYaml(t *testing.T) {
 	yaml := `
 name: test-app
 description: test
-targets:
-  - team/platform@1
+target: team/platform@1
 services:
   api:
     container:
@@ -285,8 +267,8 @@ services:
 
 func TestApplication_IsValid_NoNameConflicts(t *testing.T) {
 	app := &Application{
-		Name:    "test-app",
-		Targets: []string{"team/platform@1"},
+		Name:   "test-app",
+		Target: "team/platform@1",
 		ServiceIntents: map[string]*ServiceIntent{
 			"api": {
 				Container: Container{
@@ -305,8 +287,8 @@ func TestApplication_IsValid_NoNameConflicts(t *testing.T) {
 
 func TestApplication_IsValid_NameConflicts(t *testing.T) {
 	app := &Application{
-		Name:    "test-app",
-		Targets: []string{"team/platform@1"},
+		Name:   "test-app",
+		Target: "team/platform@1",
 		ServiceIntents: map[string]*ServiceIntent{
 			"api": {
 				Container: Container{
@@ -336,8 +318,8 @@ func TestApplication_IsValid_NameConflicts(t *testing.T) {
 
 func TestApplication_IsValid_ReservedNames(t *testing.T) {
 	app := &Application{
-		Name:    "test-app",
-		Targets: []string{"team/platform@1"},
+		Name:   "test-app",
+		Target: "team/platform@1",
 		ServiceIntents: map[string]*ServiceIntent{
 			"backend": { // Reserved name
 				Container: Container{
@@ -368,8 +350,8 @@ func TestApplication_IsValid_ReservedNames(t *testing.T) {
 
 func TestApplication_IsValid_ValidSnakeCaseNames(t *testing.T) {
 	app := &Application{
-		Name:    "test-app",
-		Targets: []string{"team/platform@1"},
+		Name:   "test-app",
+		Target: "team/platform@1",
 		ServiceIntents: map[string]*ServiceIntent{
 			"user_api": {
 				Container: Container{
@@ -417,8 +399,8 @@ func TestApplication_IsValid_ValidSnakeCaseNames(t *testing.T) {
 
 func TestApplication_IsValid_InvalidSnakeCaseNames(t *testing.T) {
 	app := &Application{
-		Name:    "test-app",
-		Targets: []string{"team/platform@1"},
+		Name:   "test-app",
+		Target: "team/platform@1",
 		ServiceIntents: map[string]*ServiceIntent{
 			"user-api": { // kebab-case
 				Container: Container{
@@ -489,8 +471,7 @@ func TestApplicationFromYaml_InvalidResourceNames(t *testing.T) {
 	yaml := `
 name: test-app
 description: A test application with invalid resource names
-targets:
-  - team/platform@1
+target: team/platform@1
 services:
   user-api:
     container:

@@ -17,7 +17,7 @@ type SugaProjectBuild struct {
 }
 
 type ProjectBuild struct {
-	Target string `json:"target"`
+	// Empty struct - target is now read from the project file
 }
 
 type ProjectBuildSuccess struct {
@@ -46,7 +46,7 @@ func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 		return
 	}
 
-	stackPath, err := n.builder.BuildProjectFromFileForTarget(version.ConfigFileName, buildMessage.Payload.Target, n.currentTeam)
+	stackPath, err := n.builder.BuildProjectFromFile(version.ConfigFileName, n.currentTeam)
 	if err != nil {
 		fmt.Println(err.Error())
 

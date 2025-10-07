@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
@@ -32,18 +31,14 @@ func sanitizeForFilename(input string) string {
 }
 
 
-func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, target string, currentTeam string) (string, error) {
+func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam string) (string, error) {
 	platformRepository := platforms.NewPlatformRepository(b.apiClient, currentTeam)
 
-	if len(appSpec.Targets) == 0 {
-		return "", fmt.Errorf("no targets specified in project %s", appSpec.Name)
+	if appSpec.Target == "" {
+		return "", fmt.Errorf("no target specified in project %s", appSpec.Name)
 	}
 
-	if !slices.Contains(appSpec.Targets, target) {
-		return "", fmt.Errorf("target %s not found in project %s", target, appSpec.Name)
-	}
-
-	platform, err := terraform.PlatformFromId(b.fs, target, platformRepository)
+	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, platformRepository)
 	if err != nil {
 		return "", err
 	}
@@ -53,18 +48,18 @@ func (b *BuilderService) BuildProjectForTarget(appSpec *schema.Application, targ
 
 	stackPath, err := engine.Apply(appSpec)
 	if err != nil {
-		return "", b.processBuildError(err, target)
+		return "", b.processBuildError(err, appSpec.Target)
 	}
 	return stackPath, nil
 }
 
-func (b *BuilderService) BuildProjectFromFileForTarget(projectFile, target, currentTeam string) (string, error) {
+func (b *BuilderService) BuildProjectFromFile(projectFile, currentTeam string) (string, error) {
 	appSpec, err := schema.LoadFromFile(b.fs, projectFile, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to load project file: %w", err)
 	}
 
-	return b.BuildProjectForTarget(appSpec, target, currentTeam)
+	return b.BuildProject(appSpec, currentTeam)
 }
 
 func NewBuilderService(injector do.Injector) (*BuilderService, error) {

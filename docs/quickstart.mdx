@@ -85,8 +85,7 @@ Use Ctrl-C to exit
     Let's review what the `go-standard` template has defined in the `suga.yaml`:
 
     ```yaml title="suga.yaml" icon="file-code"
-targets:
-  - suga/aws@1
+target: suga/aws@1
 name: my-first-app
 description: A Go web service template using the Suga framework for cloud resource access.
 services:
@@ -112,7 +111,7 @@ entrypoints:
     ```
 
     The template includes:
-    - **targets**: AWS deployment configuration
+    - **target**: AWS deployment configuration
     - **services**: Your `app` service with local dev script and Docker container setup
     - **buckets**: A `files` bucket that your app can read from and write to
     - **entrypoints**: An HTTP endpoint that routes traffic to your app
@@ -211,16 +210,14 @@ Use Ctrl-C to exit
   </Step>
 
   <Step title="Deploy to Cloud" icon="cloud">
-    Configure your deployment targets in the visual editor or add them to `suga.yaml`:
+    Configure your deployment target in the visual editor or set it in `suga.yaml`:
 
     ```yaml title="suga.yaml" icon="file-code"
-    targets:
-      - suga/aws@1
-      - suga/gcp@1
+    target: suga/aws@1
     ```
 
     <Note>
-      The template has been set up to use AWS, you can also use GCP. These targets are officially supported.
+      The template has been set up to use AWS. You can also use `suga/gcp@1` for GCP. These targets are officially supported.
     </Note>
 
     Generate Terraform configuration:
