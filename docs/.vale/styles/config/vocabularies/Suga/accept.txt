@@ -18,6 +18,10 @@ Vultr
 booleans
 CDNs
 Addr
+serverless
+subnets
+runtimes
+rollout
 
 # Defaults from mintlify
 Mintlify
