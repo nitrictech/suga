@@ -260,6 +260,51 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	return sugaVar, nil
 }
 
+func (td *TerraformDeployment) collectResourceSubtypes(appSpec *app_spec_schema.Application) map[string]map[string]string {
+	resourceSubtypes := map[string]map[string]string{}
+
+	// Collect bucket subtypes
+	if len(appSpec.BucketIntents) > 0 {
+		bucketSubtypes := map[string]string{}
+		for intentName, bucketIntent := range appSpec.BucketIntents {
+			subtype := bucketIntent.GetSubType()
+			if subtype == "" {
+				subtype = "default"
+			}
+			bucketSubtypes[intentName] = subtype
+		}
+		resourceSubtypes["bucket"] = bucketSubtypes
+	}
+
+	// Collect database subtypes
+	if len(appSpec.DatabaseIntents) > 0 {
+		databaseSubtypes := map[string]string{}
+		for intentName, databaseIntent := range appSpec.DatabaseIntents {
+			subtype := databaseIntent.GetSubType()
+			if subtype == "" {
+				subtype = "default"
+			}
+			databaseSubtypes[intentName] = subtype
+		}
+		resourceSubtypes["database"] = databaseSubtypes
+	}
+
+	// Collect entrypoint subtypes
+	if len(appSpec.EntrypointIntents) > 0 {
+		entrypointSubtypes := map[string]string{}
+		for intentName, entrypointIntent := range appSpec.EntrypointIntents {
+			subtype := entrypointIntent.GetSubType()
+			if subtype == "" {
+				subtype = "default"
+			}
+			entrypointSubtypes[intentName] = subtype
+		}
+		resourceSubtypes["entrypoint"] = entrypointSubtypes
+	}
+
+	return resourceSubtypes
+}
+
 func (td *TerraformDeployment) Synth() {
 	td.app.Synth()
 }

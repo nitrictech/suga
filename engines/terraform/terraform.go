@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
+	"github.com/hashicorp/terraform-cdk-go/cdktf"
 	app_spec_schema "github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines"
 )
@@ -114,6 +115,9 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 	// Process each resource type and collect environment variables they export to services
 	allServiceEnvs := map[string][]interface{}{}
 
+	// Collect resource subtypes for all non-service resources
+	resourceSubtypes := tfDeployment.collectResourceSubtypes(appSpec)
+
 	// Process bucket resources
 	if len(appSpec.BucketIntents) > 0 {
 		bucketEnvs, err := tfDeployment.processBucketResources(appSpec)
@@ -135,6 +139,15 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 		// Merge database environment variable exports
 		for serviceName, envs := range databaseEnvs {
 			allServiceEnvs[serviceName] = append(allServiceEnvs[serviceName], envs...)
+		}
+	}
+
+	// Add resource subtypes as environment variables for all services
+	if len(resourceSubtypes) > 0 {
+		for serviceName := range serviceInputs {
+			allServiceEnvs[serviceName] = append(allServiceEnvs[serviceName], map[string]interface{}{
+				"SUGA_RESOURCE_TYPES": cdktf.Fn_Jsonencode(resourceSubtypes),
+			})
 		}
 	}
 
