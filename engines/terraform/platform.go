@@ -101,35 +101,31 @@ func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
 }
 
 type MissingResourceBlueprintError struct {
-    IntentType     string
-    IntentSubType  string
-    AvailableTypes []string
+	IntentType     string
+	IntentSubType  string
+	AvailableTypes []string
 }
 
 func (e *MissingResourceBlueprintError) Error() string {
-    return fmt.Sprintf(
-        "platform does not define a '%s' type for %ss, available types: %v",
-        e.IntentSubType, e.IntentType, e.AvailableTypes,
-    )
+	return fmt.Sprintf(
+		"platform does not define a '%s' type for %ss, available types: %v",
+		e.IntentSubType, e.IntentType, e.AvailableTypes,
+	)
 }
 
 func NewMissingResourceBlueprintError(
-    intentType, intentSubType string,
-    availableTypes []string,
+	intentType, intentSubType string,
+	availableTypes []string,
 ) error {
-    return &MissingResourceBlueprintError{
-        IntentType:     intentType,
-        IntentSubType:  intentSubType,
-        AvailableTypes: availableTypes,
-    }
+	return &MissingResourceBlueprintError{
+		IntentType:     intentType,
+		IntentSubType:  intentSubType,
+		AvailableTypes: availableTypes,
+	}
 }
 
 func (p PlatformSpec) GetServiceBlueprint(intentSubType string) (*ServiceBlueprint, error) {
 	spec := p.ServiceBlueprints
-
-	if intentSubType == "" {
-		intentSubType = "default"
-	}
 
 	concreteSpec, ok := spec[intentSubType]
 	if !ok || concreteSpec == nil {
@@ -162,10 +158,6 @@ func (p PlatformSpec) GetResourceBlueprintsForType(typ string) (map[string]*Reso
 }
 
 func (p PlatformSpec) GetResourceBlueprint(intentType string, intentSubType string) (*ResourceBlueprint, error) {
-	if intentSubType == "" {
-		intentSubType = "default"
-	}
-
 	var spec *ResourceBlueprint
 	var availableTypes []string
 	switch intentType {
