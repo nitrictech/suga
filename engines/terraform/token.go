@@ -12,7 +12,7 @@ type TokenMatch struct {
 	End      int
 }
 
-// extractTokenContents extracts the contents between ${} from a token string
+// extractTokenContents extracts the contents from a token string (infra/var/self prefix)
 func extractTokenContents(token string) (string, bool) {
 	if matches := tokenPattern.FindStringSubmatch(token); len(matches) == 2 {
 		return matches[1], true
@@ -45,5 +45,5 @@ func isOnlyToken(input string) bool {
 	return strings.TrimSpace(input) == strings.TrimSpace(allTokensPattern.FindString(input))
 }
 
-var tokenPattern = regexp.MustCompile(`^\${([^\s}]+)}$`)
-var allTokensPattern = regexp.MustCompile(`\$\{([^\s}]+)\}`)
+var tokenPattern = regexp.MustCompile(`((?:infra|var|self)\.[\w.\-]+)`)
+var allTokensPattern = regexp.MustCompile(`((?:infra|var|self)\.[\w.\-]+)`)
