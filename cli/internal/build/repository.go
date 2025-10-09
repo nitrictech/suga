@@ -20,7 +20,7 @@ type Repository struct {
 	platformRef string
 	// Cached platform spec and plugin manifests
 	platformSpec    *terraform.PlatformSpec
-	pluginManifests map[string]map[string]interface{}
+	pluginManifests map[string]map[string]any
 }
 
 var _ terraform.PlatformRepository = (*Repository)(nil)
@@ -73,7 +73,7 @@ func (r *Repository) fetchPlatformAndPlugins(name string) error {
 
 	// Smart ordering: try public first if the platform team doesn't match current user's team
 	var platformSpec *terraform.PlatformSpec
-	var plugins map[string]map[string]interface{}
+	var plugins map[string]map[string]any
 
 	if team != r.currentTeam {
 		// Try public access first
@@ -169,7 +169,7 @@ func (r *Repository) GetIdentityPlugin(team, libname, version, name string) (*te
 }
 
 // getPluginManifest retrieves a plugin manifest from the cache
-func (r *Repository) getPluginManifest(team, libname, version, name string) (interface{}, error) {
+func (r *Repository) getPluginManifest(team, libname, version, name string) (any, error) {
 	if r.pluginManifests == nil {
 		return nil, fmt.Errorf("no plugin manifests cached. GetPlatform must be called first")
 	}
@@ -201,9 +201,9 @@ func (r *Repository) getPluginManifest(team, libname, version, name string) (int
 	return &resourceManifest, nil
 }
 
-// remapToStruct is a helper to convert map[string]interface{} to a struct
+// remapToStruct is a helper to convert map[string]any to a struct
 // This is a simple implementation using JSON marshaling
-func remapToStruct(m map[string]interface{}, target interface{}) error {
+func remapToStruct(m map[string]any, target any) error {
 	bytes, err := json.Marshal(m)
 	if err != nil {
 		return err
