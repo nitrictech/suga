@@ -24,7 +24,6 @@ func main() {
 	injector := do.New()
 
 	do.Provide(injector, createTokenStore)
-
 	do.Provide(injector, api.NewSugaApiClient)
 	do.Provide(injector, workos.NewWorkOSAuth)
 	do.Provide(injector, app.NewSugaApp)
