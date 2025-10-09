@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
-	"github.com/nitrictech/suga/cli/internal/platforms"
-	"github.com/nitrictech/suga/cli/internal/plugins"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines/terraform"
 	"github.com/samber/do/v2"
@@ -30,21 +28,23 @@ func sanitizeForFilename(input string) string {
 	return re.ReplaceAllString(input, "_")
 }
 
-
 func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam string) (string, error) {
-	platformRepository := platforms.NewPlatformRepository(b.apiClient, currentTeam)
-
 	if appSpec.Target == "" {
 		return "", fmt.Errorf("no target specified in project %s", appSpec.Name)
 	}
 
-	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, platformRepository)
+	// Create repository with platform reference - this fetches platform and plugins upfront
+	combinedRepo, err := NewRepository(b.apiClient, currentTeam, appSpec.Target)
 	if err != nil {
 		return "", err
 	}
 
-	repo := plugins.NewPluginRepository(b.apiClient, currentTeam)
-	engine := terraform.New(platform, terraform.WithRepository(repo))
+	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, combinedRepo)
+	if err != nil {
+		return "", err
+	}
+
+	engine := terraform.New(platform, terraform.WithRepository(combinedRepo))
 
 	stackPath, err := engine.Apply(appSpec)
 	if err != nil {
