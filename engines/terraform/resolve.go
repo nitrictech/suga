@@ -2,6 +2,8 @@ package terraform
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/aws/jsii-runtime-go"
@@ -11,18 +13,18 @@ import (
 func SpecReferenceFromToken(token string) (*SpecReference, error) {
 	contents, ok := extractTokenContents(token)
 	if !ok {
-		return nil, fmt.Errorf("invalid reference format")
+		return nil, fmt.Errorf("invalid reference format for token: %s", token)
 	}
 
 	parts := strings.Split(contents, ".")
 	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid reference format")
+		return nil, fmt.Errorf("invalid reference format for token: %s", token)
 	}
 
 	// Validate that all path components are non-empty
 	for _, part := range parts[1:] {
 		if part == "" {
-			return nil, fmt.Errorf("invalid reference format")
+			return nil, fmt.Errorf("invalid reference format for token: %s", token)
 		}
 	}
 
@@ -87,14 +89,15 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 	case "self":
 		if len(specRef.Path) == 0 {
-			return nil, fmt.Errorf("references 'self' without specifying a variable. All references must include a variable name e.g. ${self.my_var}")
+			return nil, fmt.Errorf("references 'self' without specifying a variable. All references must include a variable name e.g. self.my_var")
 		}
 
 		varName := specRef.Path[0]
 
+		availableVars := slices.Collect(maps.Keys(td.instancedTerraformVariables[intentName]))
 		tfVariable, ok := td.instancedTerraformVariables[intentName][varName]
 		if !ok {
-			return nil, fmt.Errorf("variable %s does not exist for provided blueprint", varName)
+			return nil, fmt.Errorf("variable %s does not exist for provided blueprint available variables are: %v", varName, availableVars)
 		}
 
 		if len(specRef.Path) > 1 {

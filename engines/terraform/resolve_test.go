@@ -18,6 +18,15 @@ func TestSpecReferenceFromToken(t *testing.T) {
 	}{
 		{
 			name:  "valid infra reference",
+			token: "infra.resource.property",
+			expected: &SpecReference{
+				Source: "infra",
+				Path:   []string{"resource", "property"},
+			},
+			expectError: false,
+		},
+		{
+			name:  "valid infra reference with ${} wrapping",
 			token: "${infra.resource.property}",
 			expected: &SpecReference{
 				Source: "infra",
@@ -27,6 +36,15 @@ func TestSpecReferenceFromToken(t *testing.T) {
 		},
 		{
 			name:  "valid self reference",
+			token: "self.my_var",
+			expected: &SpecReference{
+				Source: "self",
+				Path:   []string{"my_var"},
+			},
+			expectError: false,
+		},
+		{
+			name:  "valid self reference with ${} wrapping",
 			token: "${self.my_var}",
 			expected: &SpecReference{
 				Source: "self",
@@ -36,7 +54,7 @@ func TestSpecReferenceFromToken(t *testing.T) {
 		},
 		{
 			name:  "valid self reference with nested path",
-			token: "${self.my_var.nested.value}",
+			token: "self.my_var.nested.value",
 			expected: &SpecReference{
 				Source: "self",
 				Path:   []string{"my_var", "nested", "value"},
@@ -45,7 +63,7 @@ func TestSpecReferenceFromToken(t *testing.T) {
 		},
 		{
 			name:  "valid var reference",
-			token: "${var.platform_var}",
+			token: "var.platform_var",
 			expected: &SpecReference{
 				Source: "var",
 				Path:   []string{"platform_var"},
@@ -54,7 +72,7 @@ func TestSpecReferenceFromToken(t *testing.T) {
 		},
 		{
 			name:  "valid var reference with nested path",
-			token: "${var.platform_var.nested.value}",
+			token: "var.platform_var.nested.value",
 			expected: &SpecReference{
 				Source: "var",
 				Path:   []string{"platform_var", "nested", "value"},
@@ -62,43 +80,45 @@ func TestSpecReferenceFromToken(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "invalid token format - no closing brace",
-			token:       "${infra.resource",
-			expected:    nil,
-			expectError: true,
-			errorMsg:    "invalid reference format",
+			name:  "valid token with unclosed brace extracts token",
+			token: "${infra.resource",
+			expected: &SpecReference{
+				Source: "infra",
+				Path:   []string{"resource"},
+			},
+			expectError: false,
 		},
 		{
 			name:        "invalid token format - not enough parts",
-			token:       "${infra}",
+			token:       "infra",
 			expected:    nil,
 			expectError: true,
 			errorMsg:    "invalid reference format",
 		},
 		{
 			name:        "invalid token format - only source",
-			token:       "${self}",
+			token:       "self",
 			expected:    nil,
 			expectError: true,
 			errorMsg:    "invalid reference format",
 		},
 		{
 			name:        "invalid token format - only var source",
-			token:       "${var}",
+			token:       "var",
 			expected:    nil,
 			expectError: true,
 			errorMsg:    "invalid reference format",
 		},
 		{
 			name:        "invalid token format - self with dot but no path",
-			token:       "${self.}",
+			token:       "self.",
 			expected:    nil,
 			expectError: true,
 			errorMsg:    "invalid reference format",
 		},
 		{
 			name:        "invalid token format - var with dot but no path",
-			token:       "${var.}",
+			token:       "var.",
 			expected:    nil,
 			expectError: true,
 			errorMsg:    "invalid reference format",
@@ -313,14 +333,14 @@ func TestResolveTokenValue(t *testing.T) {
 		},
 		{
 			name:        "single token only",
-			input:       "${self.my_var}",
+			input:       "self.my_var",
 			setupVar:    true,
 			expectToken: true,
 			expectError: false,
 		},
 		{
-			name:        "string with one token in middle",
-			input:       "prefix-${self.my_var}-suffix",
+			name:        "single token only with ${} wrapping",
+			input:       "${self.my_var}",
 			setupVar:    true,
 			expectToken: true,
 			expectError: false,
@@ -385,10 +405,10 @@ func TestResolveStringInterpolation(t *testing.T) {
 	}{
 		{
 			name:  "string with two tokens",
-			input: "prefix-${self.var1}-middle-${self.var2}-suffix",
+			input: "prefix-${self.var1-middle}-${self.var2-suffix}",
 			setupVars: map[string]string{
-				"var1": "value1",
-				"var2": "value2",
+				"var1-middle": "value1",
+				"var2-suffix": "value2",
 			},
 			expectError: false,
 		},
@@ -403,17 +423,26 @@ func TestResolveStringInterpolation(t *testing.T) {
 		},
 		{
 			name:  "string with token at start",
-			input: "${self.var1}-suffix",
+			input: "self.var1-suffix",
+			setupVars: map[string]string{
+				"var1-suffix": "value1",
+			},
+			expectError: false,
+		},
+		{
+			name:  "string with token at end",
+			input: "prefix-self.var1",
 			setupVars: map[string]string{
 				"var1": "value1",
 			},
 			expectError: false,
 		},
 		{
-			name:  "string with token at end",
-			input: "prefix-${self.var1}",
+			name:  "string with ${} wrapped tokens",
+			input: "prefix-${self.var1}-middle-${self.var2}-suffix",
 			setupVars: map[string]string{
 				"var1": "value1",
+				"var2": "value2",
 			},
 			expectError: false,
 		},
