@@ -1,7 +1,9 @@
 package workos
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,8 +17,7 @@ type KeyringTokenStore struct {
 	key  string
 }
 
-// NewKeyringTokenStore creates a token store using 99designs/keyring
-// It automatically tries system keyring first, falls back to encrypted file
+// NewKeyringTokenStore tries system keyring first, falls back to encrypted file
 func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, error) {
 	if serviceName == "" {
 		return nil, fmt.Errorf("service name is required")
@@ -26,7 +27,6 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 		return nil, fmt.Errorf("token key is required")
 	}
 
-	// Hash the token key for consistent length
 	hash := sha256.Sum256([]byte(tokenKey))
 	hashedKey := fmt.Sprintf("%x", hash)
 
@@ -37,16 +37,15 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 
 	fileDir := filepath.Join(homeDir, ".suga")
 
-	// Configure keyring with automatic backend selection
-	// Priority: system keyring (Secret Service/Keychain/WinCred) -> encrypted file
+	passphrase, err := getOrCreateFilePassphrase(fileDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file passphrase: %w", err)
+	}
+
 	ring, err := keyring.Open(keyring.Config{
-		ServiceName: serviceName,
-		// File backend config (fallback)
-		FileDir: fileDir,
-		// Use a fixed passphrase derived from service name for transparent encryption
-		// This avoids password prompts while still encrypting the file
-		FilePasswordFunc: keyring.FixedStringPrompt(serviceName),
-		// Allow all backends with system keyring prioritized
+		ServiceName:      serviceName,
+		FileDir:          fileDir,
+		FilePasswordFunc: keyring.FixedStringPrompt(passphrase),
 		AllowedBackends: []keyring.BackendType{
 			keyring.SecretServiceBackend,
 			keyring.KeychainBackend,
@@ -108,4 +107,36 @@ func (s *KeyringTokenStore) Clear() error {
 		return fmt.Errorf("failed to delete token from keyring: %w", err)
 	}
 	return nil
+}
+
+// getOrCreateFilePassphrase uses a per-user random passphrase instead of hardcoded constant
+// to prevent mass decryption and follow security best practices (defense in depth)
+func getOrCreateFilePassphrase(fileDir string) (string, error) {
+	passphrasePath := filepath.Join(fileDir, ".keyring-passphrase")
+
+	data, err := os.ReadFile(passphrasePath)
+	if err == nil {
+		return string(data), nil
+	}
+
+	if !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to read passphrase file: %w", err)
+	}
+
+	if err := os.MkdirAll(fileDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	passphraseBytes := make([]byte, 32)
+	if _, err := rand.Read(passphraseBytes); err != nil {
+		return "", fmt.Errorf("failed to generate random passphrase: %w", err)
+	}
+
+	passphrase := base64.StdEncoding.EncodeToString(passphraseBytes)
+
+	if err := os.WriteFile(passphrasePath, []byte(passphrase), 0600); err != nil {
+		return "", fmt.Errorf("failed to write passphrase file: %w", err)
+	}
+
+	return passphrase, nil
 }
