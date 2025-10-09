@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nitrictech/suga/cli/internal/browser"
 	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
 	"github.com/nitrictech/suga/cli/internal/workos/http"
-	"github.com/pkg/browser"
 )
 
 // DeviceAuthResponse represents the device authorization response from backend
@@ -40,7 +40,7 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 
 	fmt.Printf("\nYour code is: %s\n", style.Bold(style.Yellow(deviceResp.UserCode)))
 
-	err = browser.OpenURL(deviceResp.VerificationURIComplete)
+	err = browser.Open(deviceResp.VerificationURIComplete)
 	if err != nil {
 		fmt.Printf("\nPlease visit: %s\n", style.Cyan(deviceResp.VerificationURI))
 		fmt.Println("and enter the code above to login")
