@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/99designs/keyring"
 )
@@ -28,12 +30,19 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 	hash := sha256.Sum256([]byte(tokenKey))
 	hashedKey := fmt.Sprintf("%x", hash)
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve home directory: %w", err)
+	}
+
+	fileDir := filepath.Join(homeDir, ".suga")
+
 	// Configure keyring with automatic backend selection
 	// Priority: system keyring (Secret Service/Keychain/WinCred) -> encrypted file
 	ring, err := keyring.Open(keyring.Config{
 		ServiceName: serviceName,
 		// File backend config (fallback)
-		FileDir: "~/.suga",
+		FileDir: fileDir,
 		// Use a fixed passphrase derived from service name for transparent encryption
 		// This avoids password prompts while still encrypting the file
 		FilePasswordFunc: keyring.FixedStringPrompt(serviceName),
