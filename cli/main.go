@@ -17,11 +17,7 @@ func createTokenStore(inj do.Injector) (*workos.KeyringTokenStore, error) {
 	config := do.MustInvoke[*config.Config](inj)
 	apiUrl := config.GetSugaServerUrl()
 
-	tokenStore, err := workos.NewKeyringTokenStore("suga.cli", apiUrl.String())
-	if err != nil {
-		return nil, err
-	}
-	return tokenStore, nil
+	return workos.NewKeyringTokenStore("suga.cli", apiUrl.String())
 }
 
 func main() {

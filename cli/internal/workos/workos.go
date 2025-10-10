@@ -54,7 +54,7 @@ func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
 	}
 	httpClient := http.NewHttpClient("", opts...)
 
-	tokenStore := do.MustInvokeAs[TokenStore](inj)
+	tokenStore := do.MustInvoke[*KeyringTokenStore](inj)
 
 	return &WorkOSAuth{tokenStore: tokenStore, httpClient: httpClient}, nil
 }
