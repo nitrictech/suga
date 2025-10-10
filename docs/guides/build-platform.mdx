@@ -3,11 +3,11 @@ title: "Platform Development Guide"
 description: "Learn to build platforms with Suga through a hands-on example."
 ---
 
-Platforms can start simple and evolve as your needs grow. This guide walks through building a single platform that supports multiple deployment strategies using the default [plugin](/platforms#plugins) libraries provided by the Suga team, which include plugins for Lambda, Fargate, CloudFront, S3, VPC, and Neon databases.
+Platforms can start simple and evolve as your needs grow. This guide walks through building a single platform that supports multiple deployment strategies using standard [plugin](/platforms#plugins) libraries provided by the Suga team, which include plugins for Lambda, Fargate, CloudFront, S3, VPC, and Neon databases.
 
 **Phase 1: Serverless Platform** - Build a minimal platform with Lambda functions, databases, storage, and CDN.
 
-**Phase 2: Add Stateful Services** - Extend the same platform to support Fargate containers alongside Lambda by adding VPC infrastructure, load balancers, and security groups.
+**Phase 2: Add Stateful Services** - Extend the same platform to support containers running on Amazon ECS Fargate, alongside Lambda by adding VPC infrastructure, load balancers, and security groups.
 
 <Note>
   **New to Suga platforms?** See the [Platforms Overview](/platforms) to understand how platforms work and why they're useful. Don't want to manage platforms? Use Suga's default platforms and jump to the [Quickstart](/quickstart).
@@ -17,11 +17,11 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
 
 <Steps>
   <Step title="Understanding the Architecture" icon="book">
-    This architecture shows a CloudFront distribution routing requests to a Lambda function, which accesses an S3 bucket and Neon database.
+    This architecture shows a CloudFront distribution routing requests to a Lambda function, which accesses an S3 bucket and a Neon database.
 
     ![Serverless Functions Architecture](/images/build-platform/aws-lambda-arch.png)
 
-    The platform will need the following blueprints to deploy this architecture:
+    The platform will need the following resource blueprints to deploy this architecture:
     - **Entrypoint** - CloudFront CDN for routing requests
     - **Service** - Lambda functions with IAM role for running code and accessing resources
     - **Bucket** - S3 for file storage
@@ -43,8 +43,8 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
 
     The platform editor has two sections:
 
-    - **[Foundations](/platforms#variables)** - Infrastructure shared across all applications (VPCs, load balancers) and variables for platform configuration
-    - **[Resource Blueprints](/platforms#resource-blueprints)** - Templates that define how to provision each application's services, databases, buckets, and entrypoints
+    - **[Foundations](/platforms#variables)** - Common infrastructure shared by other resources (VPCs, load balancers) and common variables for platform configuration
+    - **[Resource Blueprints](/platforms#resource-blueprints)** - Templates that define how to provision application specific resources, such as services, databases, buckets, and entrypoints
 
     ![Edit Platform Dialog](/images/build-platform/edit-platform.png)
 
@@ -52,7 +52,7 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
   </Step>
 
   <Step title="Configure Entrypoint Blueprints" icon="globe">
-    This blueprint maps application entrypoints to a CloudFront CDN that routes HTTP traffic to services. Without this, applications would have no way to receive external HTTP requests.
+    This blueprint maps an application's entrypoints to a CloudFront distribution that routes HTTP traffic to services. Without this, applications would have no way to receive external HTTP requests.
 
     Expand **Entrypoint Blueprints** in Resource Blueprints.
 
@@ -75,7 +75,7 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
   </Step>
 
   <Step title="Configure Service Blueprints" icon="box">
-    This blueprint maps application services to Lambda functions for serverless execution. This is the compute layer where application code runs.
+    This blueprint maps an application's services to Lambda functions for serverless execution. This is the compute layer where application code runs.
 
     Expand **Service Blueprints** in Resource Blueprints.
 
@@ -92,7 +92,7 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
   </Step>
 
   <Step title="Configure Bucket Blueprints" icon="box">
-    This blueprint maps application buckets to S3 for object storage with automatic IAM permissions. Applications use buckets to store and retrieve files like images, documents, or user uploads.
+    This blueprint maps an application's buckets to S3 for object storage with automatic IAM permissions. Applications use buckets to store and retrieve files like images, documents, or user uploads.
 
     Expand **Bucket Blueprints** in Resource Blueprints.
 
@@ -104,7 +104,7 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
   </Step>
 
   <Step title="Configure Database Blueprints" icon="database">
-    This blueprint maps application databases to Neon PostgreSQL with automatic credential injection into services. Applications use databases to persist and query structured data.
+    This blueprint maps an application's databases to Neon PostgreSQL with automatic credential injection into services. Applications use databases to persist and query structured data.
 
     Expand **Database Blueprints** in Resource Blueprints.
 
@@ -136,7 +136,7 @@ Platforms can start simple and evolve as your needs grow. This guide walks throu
     <Info>
       Suga uses three types of references in platform configurations:
       - `${var.name}` - References platform variables from Foundations
-      - `${self.name}` - References blueprint-specific variables defined in the same blueprint
+      - `${self.name}` - References resource-specific variables defined in the same resource blueprint
       - `${infra.name.output}` - References outputs from infrastructure components (you'll see this in Phase 2)
     </Info>
 
