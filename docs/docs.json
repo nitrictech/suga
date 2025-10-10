@@ -30,6 +30,7 @@
             "pages": [
               "guides",
               "guides/add-suga",
+              "guides/build-platform",
               "guides/database-migration",
               "guides/terraform-backend-config",
               "guides/local-database-setup",
