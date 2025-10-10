@@ -195,6 +195,12 @@ type GetPluginManifestResponse struct {
 	Manifest map[string]interface{} `json:"manifest"`
 }
 
+// Build manifest DTOs
+type GetBuildManifestResponse struct {
+	Platform *terraform.PlatformSpec       `json:"platform"`
+	Plugins  map[string]map[string]any `json:"plugins"` // key format: "team/library/version/name"
+}
+
 // Team DTOs from backend
 type CreateTeamRequest struct {
 	Name string `json:"name"`
