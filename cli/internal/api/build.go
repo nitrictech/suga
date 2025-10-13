@@ -11,7 +11,7 @@ import (
 )
 
 // GetBuildManifest fetches the platform and all its plugins in a single call
-func (c *SugaApiClient) GetBuildManifest(team, platform string, revision int) (*terraform.PlatformSpec, map[string]map[string]interface{}, error) {
+func (c *SugaApiClient) GetBuildManifest(team, platform string, revision int) (*terraform.PlatformSpec, map[string]map[string]any, error) {
 	response, err := c.get(fmt.Sprintf("/api/teams/%s/platforms/%s/revisions/%d/build-manifest", url.PathEscape(team), url.PathEscape(platform), revision), true)
 	if err != nil {
 		return nil, nil, err
@@ -45,7 +45,7 @@ func (c *SugaApiClient) GetBuildManifest(team, platform string, revision int) (*
 }
 
 // GetPublicBuildManifest fetches the platform and all its plugins for a public platform
-func (c *SugaApiClient) GetPublicBuildManifest(team, platform string, revision int) (*terraform.PlatformSpec, map[string]map[string]interface{}, error) {
+func (c *SugaApiClient) GetPublicBuildManifest(team, platform string, revision int) (*terraform.PlatformSpec, map[string]map[string]any, error) {
 	response, err := c.get(fmt.Sprintf("/api/public/platforms/%s/%s/revisions/%d/build-manifest", url.PathEscape(team), url.PathEscape(platform), revision), true)
 	if err != nil {
 		return nil, nil, err
