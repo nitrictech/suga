@@ -24,6 +24,8 @@ type TerraformDeployment struct {
 
 	terraformResources          map[string]cdktf.TerraformHclModule
 	terraformInfraResources     map[string]cdktf.TerraformHclModule
+	terraformIdentityResources  map[string]cdktf.TerraformHclModule
+	identityBlueprints          map[string]*ResourceBlueprint
 	terraformVariables          map[string]cdktf.TerraformVariable
 	instancedTerraformVariables map[string]map[string]cdktf.TerraformVariable
 }
@@ -53,6 +55,8 @@ func NewTerraformDeployment(engine *TerraformEngine, stackName string) *Terrafor
 		engine:                      engine,
 		terraformResources:          map[string]cdktf.TerraformHclModule{},
 		terraformInfraResources:     map[string]cdktf.TerraformHclModule{},
+		terraformIdentityResources:  map[string]cdktf.TerraformHclModule{},
+		identityBlueprints:          map[string]*ResourceBlueprint{},
 		terraformVariables:          map[string]cdktf.TerraformVariable{},
 		instancedTerraformVariables: map[string]map[string]cdktf.TerraformVariable{},
 		serviceIdentities:           map[string]map[string]interface{}{},
@@ -219,15 +223,24 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 				return nil, err
 			}
 
-			idModule := cdktf.NewTerraformHclModule(td.stack, jsii.Sprintf("%s_%s_role", name, identityPlugin.Name), &cdktf.TerraformHclModuleConfig{
+			identityModuleName := fmt.Sprintf("%s_%s_role", name, identityPlugin.Name)
+
+			// Create variables for the identity blueprint
+			td.createVariablesForIntent(identityModuleName, &id)
+
+			idModule := cdktf.NewTerraformHclModule(td.stack, jsii.String(identityModuleName), &cdktf.TerraformHclModuleConfig{
 				Source:    jsii.String(identityPlugin.Deployment.Terraform),
-				Variables: &id.Properties,
+				Variables: &map[string]interface{}{},
 			})
 
 			idModule.Set(jsii.String("suga"), map[string]interface{}{
 				"name":     jsii.String(name),
 				"stack_id": td.stackId.Result(),
 			})
+
+			// Store the identity module and blueprint for later token resolution
+			td.terraformIdentityResources[identityModuleName] = idModule
+			td.identityBlueprints[identityModuleName] = &id
 
 			identityModuleOutputs[identityPlugin.IdentityType] = idModule.Get(jsii.String("suga"))
 		}
