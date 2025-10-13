@@ -396,12 +396,13 @@ func TestResolveTokenValue(t *testing.T) {
 
 func TestResolveStringInterpolation(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       string
-		setupVars   map[string]string
-		expected    string
-		expectError bool
-		errorMsg    string
+		name            string
+		input           string
+		setupVars       map[string]string
+		setupGlobalVars map[string]string
+		expectedTokens  []string
+		expectError     bool
+		errorMsg        string
 	}{
 		{
 			name:  "string with two tokens",
@@ -410,7 +411,8 @@ func TestResolveStringInterpolation(t *testing.T) {
 				"var1-middle": "value1",
 				"var2-suffix": "value2",
 			},
-			expectError: false,
+			expectedTokens: []string{"self.var1-middle", "self.var2-suffix"},
+			expectError:    false,
 		},
 		{
 			name:  "string with adjacent tokens",
@@ -419,7 +421,8 @@ func TestResolveStringInterpolation(t *testing.T) {
 				"var1": "value1",
 				"var2": "value2",
 			},
-			expectError: false,
+			expectedTokens: []string{"self.var1", "self.var2"},
+			expectError:    false,
 		},
 		{
 			name:  "string with token at start",
@@ -427,7 +430,8 @@ func TestResolveStringInterpolation(t *testing.T) {
 			setupVars: map[string]string{
 				"var1-suffix": "value1",
 			},
-			expectError: false,
+			expectedTokens: []string{"self.var1-suffix"},
+			expectError:    false,
 		},
 		{
 			name:  "string with token at end",
@@ -435,7 +439,8 @@ func TestResolveStringInterpolation(t *testing.T) {
 			setupVars: map[string]string{
 				"var1": "value1",
 			},
-			expectError: false,
+			expectedTokens: []string{"self.var1"},
+			expectError:    false,
 		},
 		{
 			name:  "string with ${} wrapped tokens",
@@ -444,7 +449,32 @@ func TestResolveStringInterpolation(t *testing.T) {
 				"var1": "value1",
 				"var2": "value2",
 			},
-			expectError: false,
+			expectedTokens: []string{"self.var1", "self.var2"},
+			expectError:    false,
+		},
+		{
+			name:  "string with coalesce function",
+			input: "${coalesce(self.project_id, var.project_id)}",
+			setupVars: map[string]string{
+				"project_id": "test-project-123",
+			},
+			setupGlobalVars: map[string]string{
+				"project_id": "global-project",
+			},
+			expectedTokens: []string{"self.project_id", "var.project_id"},
+			expectError:    false,
+		},
+		{
+			name:  "string with ternary operator",
+			input: "${self.env != null ? self.env : var.env}",
+			setupVars: map[string]string{
+				"env": "production",
+			},
+			setupGlobalVars: map[string]string{
+				"env": "staging",
+			},
+			expectedTokens: []string{"self.env", "self.env", "var.env"},
+			expectError:    false,
 		},
 	}
 
@@ -459,6 +489,15 @@ func TestResolveStringInterpolation(t *testing.T) {
 				instancedTerraformVariables: make(map[string]map[string]cdktf.TerraformVariable),
 			}
 
+			for varName, varValue := range tt.setupGlobalVars {
+				if td.terraformVariables == nil {
+					td.terraformVariables = make(map[string]cdktf.TerraformVariable)
+				}
+				td.terraformVariables[varName] = cdktf.NewTerraformVariable(stack, jsii.String(varName), &cdktf.TerraformVariableConfig{
+					Default: varValue,
+				})
+			}
+
 			td.instancedTerraformVariables["test_intent"] = make(map[string]cdktf.TerraformVariable)
 			for varName, varValue := range tt.setupVars {
 				td.instancedTerraformVariables["test_intent"][varName] = cdktf.NewTerraformVariable(stack, jsii.String("test_"+varName), &cdktf.TerraformVariableConfig{
@@ -467,6 +506,15 @@ func TestResolveStringInterpolation(t *testing.T) {
 			}
 
 			tokens := findAllTokens(tt.input)
+
+			// Extract token strings from TokenMatch for comparison
+			tokenStrings := make([]string, len(tokens))
+			for i, token := range tokens {
+				tokenStrings[i] = token.Token
+			}
+
+			assert.Equal(t, tt.expectedTokens, tokenStrings, "tokens found do not match expected")
+
 			result, err := td.resolveStringInterpolation("test_intent", tt.input, tokens)
 
 			if tt.expectError {
