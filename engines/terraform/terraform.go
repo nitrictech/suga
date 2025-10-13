@@ -219,6 +219,18 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 		}
 	}
 
+	// Resolve identity tokens
+	for identityName, identityModule := range tfDeployment.terraformIdentityResources {
+		identityBlueprint, ok := tfDeployment.identityBlueprints[identityName]
+		if !ok {
+			return "", fmt.Errorf("identity blueprint %s not found", identityName)
+		}
+		err := tfDeployment.resolveTokensForModule(identityName, identityBlueprint, identityModule)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	tfDeployment.Synth()
 
 	return filepath.Join(e.outputDir, "stacks", appSpec.Name), nil
