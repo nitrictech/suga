@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
+	"github.com/nitrictech/suga/cli/internal/plugins"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines/terraform"
 	"github.com/samber/do/v2"
@@ -33,18 +35,24 @@ func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam s
 		return "", fmt.Errorf("no target specified in project %s", appSpec.Name)
 	}
 
-	// Create repository with platform reference - this fetches platform and plugins upfront
-	combinedRepo, err := NewRepository(b.apiClient, currentTeam, appSpec.Target)
+	var pluginRepo terraform.PluginRepository = plugins.NewPluginRepository(b.apiClient, currentTeam)
+	var platformRepo terraform.PlatformRepository = nil
+	if !strings.HasPrefix(appSpec.Target, terraform.PlatformReferencePrefix_File) {
+		repo, err := NewRepository(b.apiClient, currentTeam, appSpec.Target)
+		if err != nil {
+			return "", err
+		}
+		// Use the original repositories
+		pluginRepo = repo
+		platformRepo = repo
+	}
+
+	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, platformRepo)
 	if err != nil {
 		return "", err
 	}
 
-	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, combinedRepo)
-	if err != nil {
-		return "", err
-	}
-
-	engine := terraform.New(platform, terraform.WithRepository(combinedRepo))
+	engine := terraform.New(platform, terraform.WithRepository(pluginRepo))
 
 	stackPath, err := engine.Apply(appSpec)
 	if err != nil {
