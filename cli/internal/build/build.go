@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
-	"github.com/nitrictech/suga/cli/internal/platforms"
 	"github.com/nitrictech/suga/cli/internal/plugins"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines/terraform"
@@ -30,21 +30,29 @@ func sanitizeForFilename(input string) string {
 	return re.ReplaceAllString(input, "_")
 }
 
-
 func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam string) (string, error) {
-	platformRepository := platforms.NewPlatformRepository(b.apiClient, currentTeam)
-
 	if appSpec.Target == "" {
 		return "", fmt.Errorf("no target specified in project %s", appSpec.Name)
 	}
 
-	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, platformRepository)
+	var pluginRepo terraform.PluginRepository = plugins.NewPluginRepository(b.apiClient, currentTeam)
+	var platformRepo terraform.PlatformRepository = nil
+	if !strings.HasPrefix(appSpec.Target, terraform.PlatformReferencePrefix_File) {
+		repo, err := NewRepository(b.apiClient, currentTeam, appSpec.Target)
+		if err != nil {
+			return "", err
+		}
+		// Use the original repositories
+		pluginRepo = repo
+		platformRepo = repo
+	}
+
+	platform, err := terraform.PlatformFromId(b.fs, appSpec.Target, platformRepo)
 	if err != nil {
 		return "", err
 	}
 
-	repo := plugins.NewPluginRepository(b.apiClient, currentTeam)
-	engine := terraform.New(platform, terraform.WithRepository(repo))
+	engine := terraform.New(platform, terraform.WithRepository(pluginRepo))
 
 	stackPath, err := engine.Apply(appSpec)
 	if err != nil {
