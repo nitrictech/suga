@@ -17,9 +17,16 @@ GOLANGCI_LINT ?= GOLANGCI_LINT_CACHE=$(GOLANGCI_LINT_CACHE) go run github.com/go
 SOURCE_GIT_COMMIT ?= $(shell git rev-parse --short --dirty HEAD)
 BUILD_VERSION ?= $(shell git describe --tags --abbrev=7 --dirty)
 VERSION_URI = "github.com/nitrictech/suga/cli/internal/version"
+
+ifeq ($(OS), Windows_NT)
+    BUILD_TIME ?= $(shell powershell -Command "Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz'")
+else
+    BUILD_TIME ?= $(shell date +%Y-%m-%dT%H:%M:%S%z)
+endif
+
 export LDFLAGS="-X $(VERSION_URI).Version=${BUILD_VERSION} \
                 -X $(VERSION_URI).Commit=${SOURCE_GIT_COMMIT} \
-                -X $(VERSION_URI).BuildTime=$(shell date +%Y-%m-%dT%H:%M:%S%z)"
+                -X $(VERSION_URI).BuildTime=${BUILD_TIME}"
 
 build:
 	go build -ldflags $(LDFLAGS) -o bin/suga$(EXECUTABLE_EXT) main.go
