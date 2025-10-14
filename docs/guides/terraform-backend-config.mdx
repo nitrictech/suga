@@ -38,96 +38,95 @@ The synthesized output can be found in the `terraform` directory.
 
 After running `suga build`, add a backend configuration file to the synthesized output:
 
-<Steps>
-  <Step title="Generate the Stack">
-    ```bash title="Generate Terraform Stack" icon="hammer"
-    suga build
-    ```
-  </Step>
+### Generate the Stack
 
-  <Step title="Create Backend Configuration">
-    Create `backend.tf` in the synthesized stack directory:
-    
-    ```bash title="Create Backend File" icon="file-plus"
-    touch terraform/stacks/<stack_name>/backend.tf
-    ```
-  </Step>
+```bash title="Generate Terraform Stack" icon="hammer"
+suga build
+```
 
-  <Step title="Add Backend Configuration">
-    Choose your backend provider and add the appropriate configuration:
-    <Tabs>
-    <Tab title="AWS S3">
-      ```hcl title="backend.tf - AWS S3" icon="aws"
-      terraform {
-        backend "s3" {
-          bucket         = "my-terraform-state-bucket"
-          key            = "suga/terraform.tfstate"
-          region         = "us-east-1"
-          encrypt        = true
-          dynamodb_table = "terraform-locks"
-        }
+### Create Backend Configuration
+
+Create `backend.tf` in the synthesized stack directory:
+
+```bash title="Create Backend File" icon="file-plus"
+touch terraform/stacks/<stack_name>/backend.tf
+```
+
+### Add Backend Configuration
+
+Choose your backend provider and add the appropriate configuration:
+
+<Tabs>
+<Tab title="AWS S3">
+  ```hcl title="backend.tf - AWS S3" icon="aws"
+  terraform {
+    backend "s3" {
+      bucket         = "my-terraform-state-bucket"
+      key            = "suga/terraform.tfstate"
+      region         = "us-east-1"
+      encrypt        = true
+      dynamodb_table = "terraform-locks"
+    }
+  }
+  ```
+
+  <Warning>
+    Ensure your S3 bucket has versioning enabled and consider enabling MFA delete for production environments.
+  </Warning>
+</Tab>
+
+<Tab title="Google Cloud Storage">
+  ```hcl title="backend.tf - Google Cloud" icon="cloud"
+  terraform {
+    backend "gcs" {
+      bucket = "my-terraform-state-bucket"
+      prefix = "suga/terraform/state"
+    }
+  }
+  ```
+
+  <Tip>
+    Enable object versioning on your GCS bucket to maintain state history.
+  </Tip>
+</Tab>
+
+<Tab title="Azure Storage">
+  ```hcl title="backend.tf - Azure Storage" icon="cloud"
+  terraform {
+    backend "azurerm" {
+      resource_group_name  = "terraform-state-rg"
+      storage_account_name = "terraformstatestorage"
+      container_name       = "terraform-state"
+      key                  = "suga.terraform.tfstate"
+    }
+  }
+  ```
+</Tab>
+
+<Tab title="Terraform Cloud">
+  ```hcl title="backend.tf - Terraform Cloud" icon="cloud"
+  terraform {
+    backend "remote" {
+      organization = "my-org"
+      workspaces {
+        name = "suga-production"
       }
-      ```
+    }
+  }
+  ```
+</Tab>
+</Tabs>
 
-      <Warning>
-        Ensure your S3 bucket has versioning enabled and consider enabling MFA delete for production environments.
-      </Warning>
-    </Tab>
+### Initialize and Deploy
 
-    <Tab title="Google Cloud Storage">
-      ```hcl title="backend.tf - Google Cloud" icon="cloud"
-      terraform {
-        backend "gcs" {
-          bucket = "my-terraform-state-bucket"
-          prefix = "suga/terraform/state"
-        }
-      }
-      ```
+```bash title="Initialize Terraform" icon="terminal"
+cd terraform/stacks/<stack_name>
+terraform init
+```
 
-      <Tip>
-        Enable object versioning on your GCS bucket to maintain state history.
-      </Tip>
-    </Tab>
-
-    <Tab title="Azure Storage">
-      ```hcl title="backend.tf - Azure Storage" icon="cloud"
-      terraform {
-        backend "azurerm" {
-          resource_group_name  = "terraform-state-rg"
-          storage_account_name = "terraformstatestorage"
-          container_name       = "terraform-state"
-          key                  = "suga.terraform.tfstate"
-        }
-      }
-      ```
-    </Tab>
-
-    <Tab title="Terraform Cloud">
-      ```hcl title="backend.tf - Terraform Cloud" icon="cloud"
-      terraform {
-        backend "remote" {
-          organization = "my-org"
-          workspaces {
-            name = "suga-production"
-          }
-        }
-      }
-      ```
-    </Tab>
-    </Tabs>
-  </Step>
-
-  <Step title="Initialize and Deploy">
-    ```bash title="Initialize Terraform" icon="terminal"
-    cd terraform/stacks/<stack_name>
-    terraform init
-    ```
-
-    ```bash title="Deploy Infrastructure" icon="rocket"
-    terraform apply
-    ```
-  </Step>
-</Steps>
+```bash title="Deploy Infrastructure" icon="rocket"
+terraform apply
+```
 
 <Info>
   Only the cdktf files are managed by Suga. You can safely add custom `.tf` files to the stack directory to extend the configuration.

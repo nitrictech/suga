@@ -32,67 +32,65 @@ The recommended approach follows a four-phase deployment pattern:
 
 ### Implementation Steps
 
-<Steps>
-  <Step title="Deploy Database Module">
-    First, apply only the database module using Terraform's `-target` flag:
+#### Deploy Database Module
 
-    ```bash
-    # Initialize Terraform
-    terraform init
+First, apply only the database module using Terraform's `-target` flag:
 
-    # Plan database module deployment
-    terraform plan -target=module.database -out=tfplan-database
+```bash
+# Initialize Terraform
+terraform init
 
-    # Apply database module
-    terraform apply tfplan-database
-    ```
-  </Step>
+# Plan database module deployment
+terraform plan -target=module.database -out=tfplan-database
 
-  <Step title="Extract Database Connection String">
-    After the database module is deployed, extract the connection details from Terraform state:
+# Apply database module
+terraform apply tfplan-database
+```
 
-    ```bash
-    # Extract database connection components
-    terraform output -json database_connection_string
+#### Extract Database Connection String
 
-    # Or extract from state directly
-    terraform state show module.database
-    ```
+After the database module is deployed, extract the connection details from Terraform state:
 
-    For Neon databases specifically, you'll typically need:
-    - Role name and password
-    - Endpoint host
-    - Database name
-    - SSL mode (usually `require`)
-  </Step>
+```bash
+# Extract database connection components
+terraform output -json database_connection_string
 
-  <Step title="Run Migrations">
-    With the connection string available, run your migrations:
+# Or extract from state directly
+terraform state show module.database
+```
 
-    ```bash
-    # Example using golang-migrate
-    migrate -database "$DATABASE_URL" -path ./migrations up
+For Neon databases specifically, you'll typically need:
+- Role name and password
+- Endpoint host
+- Database name
+- SSL mode (usually `require`)
 
-    # Example using a custom migration tool
-    ./run-migrations.sh --database-url "$DATABASE_URL"
+#### Run Migrations
 
-    # Example using Node.js migration tool
-    npm run migrate:up
-    ```
-  </Step>
+With the connection string available, run your migrations:
 
-  <Step title="Deploy Application">
-    After migrations succeed, deploy the complete application stack:
+```bash
+# Example using golang-migrate
+migrate -database "$DATABASE_URL" -path ./migrations up
 
-    ```bash
-    # Plan full deployment
-    terraform plan -out=tfplan-app
+# Example using a custom migration tool
+./run-migrations.sh --database-url "$DATABASE_URL"
 
-    # Apply all modules
-    terraform apply tfplan-app
-    ```
-  </Step>
-</Steps>
+# Example using Node.js migration tool
+npm run migrate:up
+```
+
+#### Deploy Application
+
+After migrations succeed, deploy the complete application stack:
+
+```bash
+# Plan full deployment
+terraform plan -out=tfplan-app
+
+# Apply all modules
+terraform apply tfplan-app
+```
 
 ### Best Practices
 

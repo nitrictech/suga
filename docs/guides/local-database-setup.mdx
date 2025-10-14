@@ -9,136 +9,134 @@ Suga doesn't currently auto-provision databases for local development. This guid
   **Prerequisites:** This guide assumes you have an existing Suga project with a service that needs database access. If you need to create a project, see the [Getting Started Guide](/quickstart).
 </Note>
 
-<Steps>
-  <Step title="Setup PostgreSQL with Docker">
-    Create these files in your project root:
+## Setup PostgreSQL with Docker
 
-    ```yaml title="docker-compose.yml" icon="docker"
-    services:
-      postgres:
-        image: postgres:15
-        environment:
-          POSTGRES_USER: ${POSTGRES_USER:-admin}
-          POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
-          POSTGRES_DB: ${POSTGRES_DB:-myapp}
-        ports:
-          - '5433:5432'
-        volumes:
-          - postgres_data:/var/lib/postgresql/data
-        command: postgres -c ssl=off
+Create these files in your project root:
 
+```yaml title="docker-compose.yml" icon="docker"
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-myapp}
+    ports:
+      - '5433:5432'
     volumes:
-      postgres_data:
-    ```
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c ssl=off
 
-    ```bash title=".env" icon="shield-check"
-    POSTGRES_USER=admin
-    POSTGRES_PASSWORD=secure_password
-    POSTGRES_DB=myapp
-    DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
-    ```
+volumes:
+  postgres_data:
+```
 
-    <Warning>
-      Change the default password before using in any shared environment.
-    </Warning>
+```bash title=".env" icon="shield-check"
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=secure_password
+POSTGRES_DB=myapp
+DATABASE_URL=postgresql://admin:secure_password@localhost:5433/myapp?sslmode=disable
+```
 
-    Start your database:
+<Warning>
+  Change the default password before using in any shared environment.
+</Warning>
 
-    ```bash title="Start Database" icon="play"
-    docker compose up -d
-    ```
+Start your database:
 
-    Verify it's running:
+```bash title="Start Database" icon="play"
+docker compose up -d
+```
 
-    ```bash title="Verify Database" icon="circle-check"
-    docker compose ps
-    ```
+Verify it's running:
 
-    You should see the postgres service in "Up" status.
-  </Step>
+```bash title="Verify Database" icon="circle-check"
+docker compose ps
+```
 
-  <Step title="Configure Database in Suga">
-    Open the Suga dashboard:
+You should see the postgres service in "Up" status.
 
-    ```bash title="Open Suga Editor" icon="pencil-ruler"
-    suga edit
-    ```
+## Configure Database in Suga
 
-    Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
+Open the Suga dashboard:
 
-    ![Database Configuration](/images/database.png)
+```bash title="Open Suga Editor" icon="pencil-ruler"
+suga edit
+```
 
-    This automatically updates your `suga.yaml`:
+Drag a database resource onto your project canvas and connect it to your service. Set the environment key to `DATABASE_URL`.
 
-    ```yaml title="suga.yaml" icon="file-code"
-    name: my-app
-    services:
+![Database Configuration](/images/database.png)
+
+This automatically updates your `suga.yaml`:
+
+```yaml title="suga.yaml" icon="file-code"
+name: my-app
+services:
+  api:
+    # Your service configuration here
+databases:
+  mydb:
+    access:
       api:
-        # Your service configuration here
-    databases:
-      mydb:
-        access:
-          api:
-            - query
-        env_var_key: DATABASE_URL
-    ```
+        - query
+    env_var_key: DATABASE_URL
+```
 
-    <Info>
-      For local development, you manually set `DATABASE_URL` to point to your Docker database. When deployed, Suga automatically configures this same environment variable with your production database URL.
-    </Info>
-  </Step>
+<Info>
+  For local development, you manually set `DATABASE_URL` to point to your Docker database. When deployed, Suga automatically configures this same environment variable with your production database URL.
+</Info>
 
-  <Step title="Initialize Database Schema">
-    You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
+## Initialize Database Schema
 
-    Create an `init.sql` file in your project root:
+You can set up your database schema however you prefer - using SQL files, ORM migrations, or database management tools. Below is one simple approach using a SQL file.
 
-    ```sql title="init.sql" icon="database"
-    DROP TABLE IF EXISTS users;
+Create an `init.sql` file in your project root:
 
-    CREATE TABLE users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
+```sql title="init.sql" icon="database"
+DROP TABLE IF EXISTS users;
 
-    INSERT INTO users (email) VALUES
-      ('admin@example.com'),
-      ('user@example.com');
-    ```
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
 
-    Apply your schema:
+INSERT INTO users (email) VALUES
+  ('admin@example.com'),
+  ('user@example.com');
+```
 
-    ```bash title="Reset Database with Schema" icon="refresh-cw"
-    docker compose down -v
-    docker compose up -d
-    sleep 2
-    docker compose exec -T postgres psql -U admin -d myapp < init.sql
-    ```
+Apply your schema:
 
-    <Tip>
-      For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
-    </Tip>
-  </Step>
+```bash title="Reset Database with Schema" icon="refresh-cw"
+docker compose down -v
+docker compose up -d
+sleep 2
+docker compose exec -T postgres psql -U admin -d myapp < init.sql
+```
 
-  <Step title="Test Your Database Connection">
-    Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
+<Tip>
+  For production, use a proper migration tool like golang-migrate, Flyway, or your ORM's migration system.
+</Tip>
 
-    First, verify you can connect to the database directly:
+## Test Your Database Connection
 
-    ```bash title="Test Direct Connection" icon="database"
-    docker compose exec postgres psql -U admin -d myapp -c "SELECT * FROM users;"
-    ```
+Your application can now access the database using the `DATABASE_URL` environment variable that Suga provides. The connection string will be automatically injected when you run `suga dev`.
 
-    You should see your test data. Now start your application:
+First, verify you can connect to the database directly:
 
-    ```bash title="Start Your Application" icon="rocket"
-    suga dev
-    ```
+```bash title="Test Direct Connection" icon="database"
+docker compose exec postgres psql -U admin -d myapp -c "SELECT * FROM users;"
+```
 
-    Your application now has access to the `DATABASE_URL` environment variable and can connect to PostgreSQL. Create a simple endpoint or function in your application to test the database connection and verify everything works end-to-end.
-  </Step>
-</Steps>
+You should see your test data. Now start your application:
+
+```bash title="Start Your Application" icon="rocket"
+suga dev
+```
+
+Your application now has access to the `DATABASE_URL` environment variable and can connect to PostgreSQL. Create a simple endpoint or function in your application to test the database connection and verify everything works end-to-end.
 
 <Expandable title="Troubleshooting" defaultOpen={false}>
   **Database won't start:**
