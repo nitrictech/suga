@@ -18,13 +18,21 @@ type PlatformRepository struct {
 
 var _ terraform.PlatformRepository = (*PlatformRepository)(nil)
 
-func (r *PlatformRepository) GetPlatform(name string) (*terraform.PlatformSpec, error) {
-	// Split the name into team, lib, and revision using a regex <team>/<lib>@<revision>
+// PlatformTarget represents a parsed platform target string
+type PlatformTarget struct {
+	Team     string
+	Platform string
+	Revision int
+}
+
+// ParsePlatformTarget parses a platform target string in the format <team>/<platform>@<revision>
+// Returns nil if the format is invalid
+func ParsePlatformTarget(target string) (*PlatformTarget, error) {
 	re := regexp.MustCompile(`^(?P<team>[a-z][a-z0-9-]*)/(?P<platform>[a-z][a-z0-9-]*)@(?P<revision>\d+)$`)
-	matches := re.FindStringSubmatch(name)
+	matches := re.FindStringSubmatch(target)
 
 	if matches == nil {
-		return nil, fmt.Errorf("invalid platform name format: %s. Expected format: <team>/<platform>@<revision> e.g. %s/aws@1", name, version.CommandName)
+		return nil, fmt.Errorf("invalid platform name format: %s. Expected format: <team>/<platform>@<revision> e.g. %s/aws@1", target, version.CommandName)
 	}
 
 	// Extract named groups
@@ -37,6 +45,23 @@ func (r *PlatformRepository) GetPlatform(name string) (*terraform.PlatformSpec, 
 	if err != nil {
 		return nil, fmt.Errorf("invalid revision format: %s. Expected integer", revisionStr)
 	}
+
+	return &PlatformTarget{
+		Team:     team,
+		Platform: platform,
+		Revision: revision,
+	}, nil
+}
+
+func (r *PlatformRepository) GetPlatform(name string) (*terraform.PlatformSpec, error) {
+	parsed, err := ParsePlatformTarget(name)
+	if err != nil {
+		return nil, err
+	}
+
+	team := parsed.Team
+	platform := parsed.Platform
+	revision := parsed.Revision
 
 	// Smart ordering: try public first if the platform team doesn't match current user's team
 	if team != r.currentTeam {

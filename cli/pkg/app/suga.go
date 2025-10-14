@@ -19,6 +19,7 @@ import (
 	"github.com/nitrictech/suga/cli/internal/build"
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/devserver"
+	"github.com/nitrictech/suga/cli/internal/platforms"
 	"github.com/nitrictech/suga/cli/internal/simulation"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
 	"github.com/nitrictech/suga/cli/internal/version"
@@ -438,6 +439,25 @@ func (c *SugaApp) New(projectName string, force bool) error {
 	return nil
 }
 
+// getPlatformReadmeURL constructs the URL to the platform README page
+// Returns empty string if the target format is invalid
+func (c *SugaApp) getPlatformReadmeURL(target, currentTeam string) string {
+	parsed, err := platforms.ParsePlatformTarget(target)
+	if err != nil {
+		return ""
+	}
+
+	baseURL := c.config.GetSugaServerUrl()
+
+	// Determine if this is a public or private platform
+	// Public platforms use: /platforms/{team}/{platform}
+	// Private platforms use: /{currentTeam}/platforms/{platform}
+	if parsed.Team == currentTeam {
+		return baseURL.JoinPath(currentTeam, "platforms", parsed.Platform).String()
+	}
+	return baseURL.JoinPath("platforms", parsed.Team, parsed.Platform).String()
+}
+
 // Build handles the build command logic
 func (c *SugaApp) Build() error {
 	team := c.getCurrentTeam()
@@ -464,12 +484,28 @@ func (c *SugaApp) Build() error {
 	fmt.Println(c.styles.Success.Render("\n " + icons.Check + " Terraform generated successfully"))
 	fmt.Println(c.styles.Faint.Render("   output written to " + stackPath))
 
+	// Parse platform target to construct README URL
+	platformURL := c.getPlatformReadmeURL(appSpec.Target, team.Slug)
+
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("1. Run", c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath)), "to move to the stack directory")
-	fmt.Println("2. Initialize the stack", c.styles.Emphasize.Render("terraform init -upgrade"))
-	fmt.Println("3. Optionally, preview with", c.styles.Emphasize.Render("terraform plan"))
-	fmt.Println("4. Deploy with", c.styles.Emphasize.Render("terraform apply"))
+
+	steps := []string{}
+
+	steps = append(steps, fmt.Sprintf("Run %s to move to the stack directory", c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath))))
+	steps = append(steps, fmt.Sprintf("Initialize the stack %s", c.styles.Emphasize.Render("terraform init -upgrade")))
+
+	if platformURL != "" {
+		steps = append(steps, fmt.Sprintf("Complete platform setup (project IDs, credentials, etc.): %s", c.styles.Emphasize.Render(platformURL)))
+	}
+
+	steps = append(steps, fmt.Sprintf("Optionally, preview with %s", c.styles.Emphasize.Render("terraform plan")))
+	steps = append(steps, fmt.Sprintf("Deploy with %s", c.styles.Emphasize.Render("terraform apply")))
+
+	for i, step := range steps {
+		fmt.Printf("%d. %s\n", i+1, step)
+	}
+	fmt.Println()
 
 	return nil
 }
