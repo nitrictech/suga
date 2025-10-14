@@ -489,13 +489,18 @@ func (c *SugaApp) Build() error {
 
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println("1. Run", c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath)), "to move to the stack directory")
-	fmt.Println("2. Initialize the stack", c.styles.Emphasize.Render("terraform init -upgrade"))
+	step := 1
+	fmt.Printf("%d. Run %s to move to the stack directory\n", step, c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath)))
+	step++
+	fmt.Printf("%d. Initialize the stack %s\n", step, c.styles.Emphasize.Render("terraform init -upgrade"))
+	step++
 	if platformURL != "" {
-		fmt.Println("3. Complete platform setup (project IDs, credentials, etc.):", c.styles.Emphasize.Render(platformURL))
+		fmt.Printf("%d. Complete platform setup (project IDs, credentials, etc.): %s\n", step, c.styles.Emphasize.Render(platformURL))
+		step++
 	}
-	fmt.Println("4. Optionally, preview with", c.styles.Emphasize.Render("terraform plan"))
-	fmt.Println("5. Deploy with", c.styles.Emphasize.Render("terraform apply"))
+	fmt.Printf("%d. Optionally, preview with %s\n", step, c.styles.Emphasize.Render("terraform plan"))
+	step++
+	fmt.Printf("%d. Deploy with %s\n", step, c.styles.Emphasize.Render("terraform apply"))
 
 	return nil
 }
