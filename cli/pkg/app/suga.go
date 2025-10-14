@@ -489,18 +489,23 @@ func (c *SugaApp) Build() error {
 
 	fmt.Println()
 	fmt.Println("Next steps:")
-	step := 1
-	fmt.Printf("%d. Run %s to move to the stack directory\n", step, c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath)))
-	step++
-	fmt.Printf("%d. Initialize the stack %s\n", step, c.styles.Emphasize.Render("terraform init -upgrade"))
-	step++
+
+	steps := []string{}
+
+	steps = append(steps, fmt.Sprintf("Run %s to move to the stack directory", c.styles.Emphasize.Render(fmt.Sprintf("cd %s", stackPath))))
+	steps = append(steps, fmt.Sprintf("Initialize the stack %s", c.styles.Emphasize.Render("terraform init -upgrade")))
+
 	if platformURL != "" {
-		fmt.Printf("%d. Complete platform setup (project IDs, credentials, etc.): %s\n", step, c.styles.Emphasize.Render(platformURL))
-		step++
+		steps = append(steps, fmt.Sprintf("Complete platform setup (project IDs, credentials, etc.): %s", c.styles.Emphasize.Render(platformURL)))
 	}
-	fmt.Printf("%d. Optionally, preview with %s\n", step, c.styles.Emphasize.Render("terraform plan"))
-	step++
-	fmt.Printf("%d. Deploy with %s\n", step, c.styles.Emphasize.Render("terraform apply"))
+
+	steps = append(steps, fmt.Sprintf("Optionally, preview with %s", c.styles.Emphasize.Render("terraform plan")))
+	steps = append(steps, fmt.Sprintf("Deploy with %s", c.styles.Emphasize.Render("terraform apply")))
+
+	for i, step := range steps {
+		fmt.Printf("%d. %s\n", i+1, step)
+	}
+	fmt.Println()
 
 	return nil
 }
