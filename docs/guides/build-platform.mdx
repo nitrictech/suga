@@ -1,0 +1,433 @@
+---
+title: "Platform Development Guide"
+description: "Learn to build platforms with Suga through a hands-on example."
+---
+
+Platforms can start simple and evolve as your needs grow. This guide walks through building a single platform that supports multiple deployment strategies using standard [plugin](/platforms#plugins) libraries provided by the Suga team, which include plugins for Lambda, Fargate, CloudFront, S3, VPC, and Neon databases.
+
+**Phase 1: Serverless Platform** - Build a minimal platform with Lambda functions, databases, storage, and CDN.
+
+**Phase 2: Add Stateful Services** - Extend the same platform to support containers running on Amazon ECS Fargate, alongside Lambda by adding VPC infrastructure, load balancers, and security groups.
+
+<Note>
+  **New to Suga platforms?** See the [Platforms Overview](/platforms) to understand how platforms work and why they're useful. Don't want to manage platforms? Use Suga's default platforms and jump to the [Quickstart](/quickstart).
+</Note>
+
+## Phase 1: Build Serverless Platform
+
+<Steps>
+  <Step title="Understanding the Architecture" icon="book">
+    This architecture shows a CloudFront distribution routing requests to a Lambda function, which accesses an S3 bucket and a Neon database.
+
+    ![Serverless Functions Architecture](/images/build-platform/aws-lambda-arch.png)
+
+    The platform will need the following resource blueprints to deploy this architecture:
+    - **Entrypoint** - CloudFront CDN for routing requests
+    - **Service** - Lambda functions with IAM role for running code and accessing resources
+    - **Bucket** - S3 for file storage
+    - **Database** - Neon PostgreSQL
+  </Step>
+
+  <Step title="Create New Platform" icon="cog">
+    Sign in to the Suga platform editor at [https://app.addsuga.com](https://app.addsuga.com), select your team, then click **"Create New Platform"**.
+
+    ![Suga Platform Dashboard](/images/build-platform/create-platform.png)
+
+    Fill out the platform details and click **"Create Platform"**:
+
+    ![Create New Platform Dialog](/images/build-platform/platform-details.png)
+
+    <Info>
+      Platforms are owned by teams and shared with team members. Public platforms are visible to all Suga users, while private platforms are only visible to your team.
+    </Info>
+
+    The platform editor has two sections:
+
+    - **[Foundations](/platforms#variables)** - Common infrastructure shared by other resources (VPCs, load balancers) and common variables for platform configuration
+    - **[Resource Blueprints](/platforms#resource-blueprints)** - Templates that define how to provision application specific resources, such as services, databases, buckets, and entrypoints
+
+    ![Edit Platform Dialog](/images/build-platform/edit-platform.png)
+
+
+  </Step>
+
+  <Step title="Configure Entrypoint Blueprints" icon="globe">
+    This blueprint maps an application's entrypoints to a CloudFront distribution that routes HTTP traffic to services. Without this, applications would have no way to receive external HTTP requests.
+
+    Expand **Entrypoint Blueprints** in Resource Blueprints.
+
+    <Tip>
+      Browse available plugins by clicking any blueprint category. Request custom plugins from the Suga team.
+    </Tip>
+
+    Add the `cloudfront` plugin and apply the following configuration:
+    ```yaml
+    name: default
+
+    # Properties
+    default_cache_policy_id: <leave-blank-or-existing-policy-id>
+    ```
+
+    <Info>
+      Leave blank for default, or use an existing policy ID from AWS console for consistency.
+    </Info>
+
+  </Step>
+
+  <Step title="Configure Service Blueprints" icon="box">
+    This blueprint maps an application's services to Lambda functions for serverless execution. This is the compute layer where application code runs.
+
+    Expand **Service Blueprints** in Resource Blueprints.
+
+    Add the `lambda` plugin and apply the following configuration:
+    ```yaml
+    name: lambda
+    ```
+
+    Add the `iam-role` plugin as the identity to enable automatic IAM permission generation for accessing buckets and databases:
+
+    ![Add IAM-Role](/images/build-platform/add-iam-role.png)
+
+
+  </Step>
+
+  <Step title="Configure Bucket Blueprints" icon="box">
+    This blueprint maps an application's buckets to S3 for object storage with automatic IAM permissions. Applications use buckets to store and retrieve files like images, documents, or user uploads.
+
+    Expand **Bucket Blueprints** in Resource Blueprints.
+
+    Add the `s3-bucket` plugin and apply the following configuration:
+    ```yaml
+    name: default
+    ```
+
+  </Step>
+
+  <Step title="Configure Database Blueprints" icon="database">
+    This blueprint maps an application's databases to Neon PostgreSQL with automatic credential injection into services. Applications use databases to persist and query structured data.
+
+    Expand **Database Blueprints** in Resource Blueprints.
+
+    Add platform variable in **Foundations** to specify which Neon project to create databases in:
+    ```yaml
+    neon_project_id:
+      type: string
+      description: ""
+      default: <your-neon-project-id>
+      nullable: false
+    ```
+
+    Add the `database` plugin and apply the following configuration:
+    ```yaml
+    name: default
+
+    # Variables
+    neon_branch_id:
+      type: string
+      description: The ID of the Neon branch to use if using an existing branch
+      default: null
+      nullable: true
+
+    # Properties
+    project_id: ${var.neon_project_id}
+    branch_id: ${self.neon_branch_id}
+    ```
+
+    <Info>
+      Suga uses three types of references in platform configurations:
+      - `${var.name}` - References platform variables from Foundations
+      - `${self.name}` - References resource-specific variables defined in the same resource blueprint
+      - `${infra.name.output}` - References outputs from infrastructure components (you'll see this in Phase 2)
+    </Info>
+
+    <Info>
+      Applications can optionally set `neon_branch_id` for isolated Neon branches (e.g., one per PR).
+    </Info>
+
+  </Step>
+
+  <Step title="Save Your Platform" icon="save">
+    Click "Commit Revision" in the platform editor, add a descriptive commit message (e.g., "Initial serverless platform with Lambda, S3, and Neon"), and commit.
+
+    <Info>
+      Each commit creates a new platform revision. Applications reference specific revisions, so you can safely update platforms without breaking existing apps. New applications always use the latest revision.
+    </Info>
+  </Step>
+
+  <Step title="Test with an Application" icon="rocket">
+    Create an [application](/projects) from the project editor and design your application architecture using the platform you just created.
+
+    <Tip>
+      Not familiar with building applications with Suga? Start with the [Quickstart guide](/quickstart).
+    </Tip>
+
+    The diagram below shows an example application using this platform. Once you've created your application, use the build icon to [build your Terraform](/cli/build).
+
+    ![Test Platform](/images/build-platform/test-platform.png)
+
+    <Info>
+      Suga generates Terraform for CloudFront→Lambda routing, IAM policies for declared resources, and database credential injection.
+    </Info>
+  </Step>
+</Steps>
+
+## Phase 2: Add Stateful Services
+
+<Steps>
+  <Step title="Understanding the Architecture" icon="book">
+    This architecture shows CloudFront routing to an Application Load Balancer, which distributes traffic to Fargate containers in a VPC. The containers access the same S3 bucket and Neon database.
+
+    ![Stateful Services Architecture](/images/build-platform/aws-fargate-arch.png)
+
+    To extend the platform with stateful services, the platform will need the following infrastructure and blueprints:
+
+    **Shared Infrastructure (Foundations)**:
+    - **VPC** - Private network for Fargate containers
+    - **Security Group Rules** - Firewall rules for container traffic
+    - **Load Balancer** - Internal ALB for routing to Fargate containers
+
+    **Service Blueprint (Resource Blueprints)**:
+    - **Service** - Fargate containers with IAM role as an alternative to Lambda
+
+    <Note>
+      Applications can declare multiple services—some using `lambda`, others using `fargate`, along with as many buckets and databases as needed.
+    </Note>
+  </Step>
+
+  <Step title="Configure VPC Infrastructure" icon="cloud">
+    This shared infrastructure configures the VPC network foundation with isolated subnets, NAT gateways, and routing for stateful containers. Unlike serverless Lambda functions, Fargate containers require a private network to run securely.
+
+    In the **Foundations** section, expand **Infrastructure**.
+
+    Add the `vpc` plugin and apply the following configuration:
+    ```yaml
+    name: aws_vpc
+
+    # Variables
+    single_nat_gateway:
+      type: bool
+      description: ""
+      default: true
+      nullable: false
+
+    # Properties
+    enable_nat_gateway: true
+    single_nat_gateway: ${self.single_nat_gateway}
+    ```
+
+    <Warning>
+      `single_nat_gateway = true` reduces costs but removes redundancy. Use multiple for production HA.
+    </Warning>
+
+  </Step>
+
+  <Step title="Configure Platform Variables" icon="cog">
+    These platform variables configure the network ports for container communication. The `container_port` defines where containers listen for traffic, while `lb_listener_port` defines where the load balancer accepts incoming requests.
+
+    Add platform variables in **Foundations**:
+
+    ```yaml
+    container_port:
+      type: number
+      description: ""
+      default: 8080
+      nullable: false
+
+    lb_listener_port:
+      type: number
+      description: ""
+      default: 80
+      nullable: false
+    ```
+
+  </Step>
+
+  <Step title="Configure Security Group Rules" icon="shield">
+    This shared infrastructure configures firewall rules for container network traffic: outbound internet access, health check access, and CDN-only ingress. These rules ensure containers can communicate with external services while blocking unauthorized access.
+
+    In the **Foundations** section, expand **Infrastructure**.
+
+    **Outbound Internet Access**
+
+    Add the `security-group-rule` plugin and apply the following configuration:
+    ```yaml
+    name: aws_sg_http_egress
+
+    # Dependencies
+    ${infra.aws_vpc}
+
+    # Properties
+    type: egress
+    protocol: -1
+    cidr_blocks: ["0.0.0.0/0"]
+    security_group_ids: ["${infra.aws_vpc.default_security_group_id}"]
+    ```
+
+    <Info>
+      Dependencies ensure infrastructure is created in the correct order, creating the VPC before this security group rule.
+    </Info>
+
+    <Info>
+      `cidr_blocks: ["0.0.0.0/0"]` allows outbound traffic to any IP address on the internet.
+    </Info>
+
+    **Health Check Access**
+
+    Add another `security-group-rule` plugin and apply the following configuration:
+    ```yaml
+    name: aws_sg_health_check_ingress
+
+    # Dependencies
+    ${infra.aws_vpc}
+
+    # Properties
+    type: ingress
+    protocol: tcp
+    self: true
+    from_port: ${var.container_port}
+    to_port: ${var.container_port}
+    security_group_ids: ["${infra.aws_vpc.default_security_group_id}"]
+    ```
+
+    <Info>
+      `self: true` allows same-security-group communication for load balancer health checks.
+    </Info>
+
+    **CloudFront Access**
+
+    Add another `security-group-rule` plugin and apply the following configuration:
+    ```yaml
+    name: aws_sg_allow_cloudfront
+
+    # Dependencies
+    ${infra.aws_vpc}
+
+    # Properties
+    type: ingress
+    protocol: tcp
+    from_port: ${var.lb_listener_port}
+    to_port: ${var.lb_listener_port}
+    prefix_list_names: ["com.amazonaws.global.cloudfront.origin-facing"]
+    security_group_ids: ["${infra.aws_vpc.default_security_group_id}"]
+    ```
+
+    <Info>
+      `prefix_list_names` restricts access to CloudFront and prevents direct internet access with DDoS protection.
+    </Info>
+
+  </Step>
+
+  <Step title="Configure Load Balancer" icon="cloud">
+    This shared infrastructure configures an internal Application Load Balancer to route traffic and perform health checks for containers. The load balancer distributes incoming requests across container instances and removes unhealthy containers from rotation.
+
+    In the **Foundations** section, expand **Infrastructure**.
+
+    Add the `loadbalancer` plugin and apply the following configuration:
+
+    ```yaml
+    name: aws_lb
+
+    # Dependencies
+    ${infra.aws_vpc}
+    ${infra.aws_sg_http_egress}
+    ${infra.aws_sg_health_check_ingress}
+    ${infra.aws_sg_allow_cloudfront}
+
+    # Properties
+    internal: true
+    subnets: ${infra.aws_vpc.private_subnets}
+    security_groups: ["${infra.aws_vpc.default_security_group_id}"]
+    ```
+
+    <Info>
+      Properties like `subnets` and `security_groups` use `${infra.aws_vpc.*}` to access outputs from the VPC infrastructure component. This wires the load balancer to the correct network configuration.
+    </Info>
+
+  </Step>
+
+  <Step title="Configure Service Blueprints" icon="box">
+    This blueprint maps application services to Fargate containers for stateful workloads, providing an alternative to the Lambda blueprint from Phase 1. Stateful containers support long-running processes, persistent connections, and custom runtimes that aren't suitable for serverless functions.
+
+    Expand **Service Blueprints** in Resource Blueprints.
+
+    Add the `fargate` plugin and apply the following configuration:
+    ```yaml
+    name: fargate
+
+    # Dependencies
+    ${infra.aws_lb}
+    ${infra.aws_vpc}
+    ```
+
+    <Info>
+      The plugin name becomes the subtype dropdown option in the application editor. Use descriptive names when adding multiple service plugins.
+    </Info>
+
+    Add the `iam-role` plugin as the identity to enable automatic IAM permission generation for accessing buckets and databases:
+
+    ![Add IAM-Role](/images/build-platform/add-iam-role.png)
+
+    Configure the Fargate properties:
+    ```yaml
+    # Properties
+    vpc_id: ${infra.aws_vpc.vpc_id}
+    subnets: ${infra.aws_vpc.private_subnets}
+    security_groups: ["${infra.aws_vpc.default_security_group_id}"]
+    alb_arn: ${infra.aws_lb.arn}
+    alb_security_group: ${infra.aws_vpc.default_security_group_id}
+    container_port: ${var.container_port}
+    ```
+
+    <Info>
+      These properties wire Fargate containers into the VPC network and register them with the load balancer for traffic routing and health checks.
+    </Info>
+
+  </Step>
+
+  <Step title="Test Complete Platform" icon="rocket">
+    Your platform now supports both architectures!
+
+    Applications select blueprints using the subtype dropdown (`fargate` or `lambda`).
+
+    ![Test Platform](/images/build-platform/test-platform-subtype.png)
+
+    This enables different services within the same application to use different architectures based on their requirements.
+
+    ![Test Platform Multiple Services](/images/build-platform/test-multiple-services.png)
+
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+**Infrastructure reference errors**
+
+If you see errors about missing infrastructure references:
+- Verify plugin names match exactly (e.g., `${infra.aws_vpc}` requires a plugin named `aws_vpc`)
+- Check that dependencies are declared before using outputs
+- Ensure infrastructure components are in the Foundations section, not Resource Blueprints
+
+**Platform won't commit**
+
+If the platform editor shows validation errors:
+- Check that all required properties are filled in
+- Verify variable references use the correct syntax (`${var.name}`, not `$var.name`)
+- Look for typos in plugin names or property names
+
+**Terraform generation fails**
+
+If building an application produces Terraform errors:
+- Verify the platform revision is committed and saved
+- Check that blueprint names are unique within each category
+- Ensure all `${infra.*}` references point to existing infrastructure outputs
+
+## Next Steps
+
+- **Test with a real application**: Create an [application](/projects) using this platform, [build the Terraform](/cli/build), and deploy to AWS to verify everything works end-to-end
+- **Share with your team**: Make the platform available to your team so they can start building applications
+- **Create environment variants**: Duplicate your platform with environment-specific variables (e.g., smaller instances for dev, larger for prod)
+
+<Tip>
+  Test with 1-2 applications before broad rollout to identify configuration issues early.
+</Tip>
+
