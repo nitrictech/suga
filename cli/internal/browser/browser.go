@@ -21,8 +21,25 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 )
+
+// isWSL detects if we're running inside Windows Subsystem for Linux.
+func isWSL() bool {
+	// Check for WSL-specific environment variable
+	if os.Getenv("WSL_DISTRO_NAME") != "" {
+		return true
+	}
+
+	// Fallback: check /proc/version for "microsoft" or "WSL"
+	if data, err := os.ReadFile("/proc/version"); err == nil {
+		version := strings.ToLower(string(data))
+		return strings.Contains(version, "microsoft") || strings.Contains(version, "wsl")
+	}
+
+	return false
+}
 
 // Commands returns a list of possible commands to use to open a url.
 func Commands() [][]string {
@@ -37,7 +54,14 @@ func Commands() [][]string {
 	case "windows":
 		cmds = append(cmds, []string{"cmd", "/c", "start"})
 	default:
-		if os.Getenv("DISPLAY") != "" {
+		// Check if we're running in WSL - if so, use Windows commands
+		if isWSL() {
+			// cmd.exe /c start properly handles URLs without side effects
+			cmds = append(cmds, []string{"cmd.exe", "/c", "start"})
+			// Fallback options for WSL
+			cmds = append(cmds, []string{"powershell.exe", "-Command", "Start-Process"})
+			cmds = append(cmds, []string{"explorer.exe"})
+		} else if os.Getenv("DISPLAY") != "" {
 			// xdg-open is only for use in a desktop environment.
 			cmds = append(cmds, []string{"xdg-open"})
 		}
