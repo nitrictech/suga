@@ -22,6 +22,16 @@ serverless
 subnets
 runtimes
 rollout
+VPCs
+fmt
+gcloud
+dynamodb_table
+gcs
+azurerm
+resource_group_name
+storage_account_name
+container_name
+tfstatestorage
 
 # Defaults from mintlify
 Mintlify

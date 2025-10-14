@@ -95,7 +95,7 @@ Choose your backend provider and add the appropriate configuration:
   terraform {
     backend "azurerm" {
       resource_group_name  = "terraform-state-rg"
-      storage_account_name = "terraformstatestorage"
+      storage_account_name = "tfstatestorage"
       container_name       = "terraform-state"
       key                  = "suga.terraform.tfstate"
     }
