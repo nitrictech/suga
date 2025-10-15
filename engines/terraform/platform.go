@@ -56,7 +56,7 @@ type PlatformSpec struct {
 type Variable struct {
 	Type        string      `json:"type" yaml:"type"`
 	Description string      `json:"description" yaml:"description"`
-	Default     interface{} `json:"default" yaml:"default"`
+	Default     interface{} `json:"default,omitempty" yaml:"default,omitempty"`
 	Nullable    bool        `json:"nullable" yaml:"nullable"`
 }
 
