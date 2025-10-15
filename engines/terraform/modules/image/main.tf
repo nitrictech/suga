@@ -1,5 +1,5 @@
 locals {
-  context_path     = "${path.root}/../../../${var.build_context != "." ? var.build_context : ""}"
+  context_path     = abspath("${path.root}/../../../${var.build_context != "." ? var.build_context : ""}")
   original_command = join(" ", compact([data.external.inspect_base_image.result.entrypoint, data.external.inspect_base_image.result.cmd]))
   image_id         = var.image_id == null ? docker_image.base_service.image_id : var.image_id
   build_trigger    = var.image_id == null ? sha1(join("", [for f in fileset(local.context_path, "**") : filesha1("${local.context_path}/${f}")])) : var.image_id
