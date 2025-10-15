@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func LoadFromFile(fs afero.Fs, path string, validate bool) (*Application, error) {
+func LoadFromFile(fs afero.Fs, path string, validate bool, validationOpts ...ValidationOption) (*Application, error) {
 	if exists, err := afero.Exists(fs, path); err != nil {
 		return nil, fmt.Errorf("%s application file could not be loaded at path: %s", version.ProductName, path)
 	} else if !exists {
@@ -46,7 +46,7 @@ func LoadFromFile(fs afero.Fs, path string, validate bool) (*Application, error)
 		validationErrors = append(validationErrors, GetSchemaValidationErrors(results.Errors())...)
 	}
 
-	if appSpecErrors := appSpec.IsValid(); len(appSpecErrors) > 0 {
+	if appSpecErrors := appSpec.IsValid(validationOpts...); len(appSpecErrors) > 0 {
 		validationErrors = append(validationErrors, GetSchemaValidationErrors(appSpecErrors)...)
 	}
 

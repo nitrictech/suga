@@ -465,7 +465,7 @@ func (c *SugaApp) Build() error {
 		return nil
 	}
 
-	appSpec, err := schema.LoadFromFile(c.fs, version.ConfigFileName, true)
+	appSpec, err := schema.LoadFromFile(c.fs, version.ConfigFileName, true, schema.WithRequireSubtypes())
 	if err != nil {
 		return err
 	}
