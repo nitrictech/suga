@@ -209,7 +209,7 @@ Use Ctrl-C to exit
 Test your application:
 
 ```bash title="Write to Storage" icon="upload"
-curl -X POST http://localhost:4000/write/test.txt \
+curl -X POST http://localhost:3000/write/test.txt \
   -H "Content-Type: text/plain" \
   -d "Hello from Suga!"
 ```
@@ -220,7 +220,7 @@ File 'test.txt' written to bucket.
 ```
 
 ```bash title="Read from Storage" icon="download"
-curl http://localhost:4000/read/test.txt
+curl http://localhost:3000/read/test.txt
 ```
 
 Expected response:
