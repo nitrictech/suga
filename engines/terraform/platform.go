@@ -61,9 +61,10 @@ type Variable struct {
 }
 
 type Library struct {
-	Team    string `json:"team" yaml:"team"`
-	Name    string `json:"name" yaml:"name"`
-	Version string `json:"version" yaml:"version"`
+	Team      string `json:"team" yaml:"team"`
+	Name      string `json:"name" yaml:"name"`
+	Version   string `json:"version" yaml:"version"`
+	ServerURL string `json:"server_url,omitempty" yaml:"server_url,omitempty"` // Optional: URL for local plugin server
 }
 
 type Plugin struct {
@@ -77,19 +78,20 @@ func (p PlatformSpec) GetLibrary(id libraryID) (*Library, error) {
 		return nil, fmt.Errorf("library %s not found in platform spec, configured libraries in platform are: %v", id, slices.Collect(maps.Keys(p.Libraries)))
 	}
 
-	// pattern := `^(?P<team>[^/]+)/(?P<library>[^@]+)@(?P<version>.+)$`
-	// re := regexp.MustCompile(pattern)
+	lib := &Library{
+		Team:    id.Team(),
+		Name:    id.Name(),
+		Version: string(libVersion),
+	}
 
-	// matches := re.FindStringSubmatch(string(libVersion))
-	// if len(matches) == 0 {
-	// 	return nil, fmt.Errorf("invalid library format: %s, expected format: `<team>/<platform>@<version>`", libVersion)
-	// }
+	// Check if version is an HTTP/HTTPS URL for local development server
+	versionStr := string(libVersion)
+	if strings.HasPrefix(versionStr, "http://") || strings.HasPrefix(versionStr, "https://") {
+		lib.ServerURL = versionStr
+		lib.Version = "v0.0.0-dev" // Use a special version for local development
+	}
 
-	// team := matches[re.SubexpIndex("team")]
-	// libName := matches[re.SubexpIndex("library")]
-	// version := matches[re.SubexpIndex("version")]
-
-	return &Library{Team: id.Team(), Name: id.Name(), Version: string(libVersion)}, nil
+	return lib, nil
 }
 
 func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
