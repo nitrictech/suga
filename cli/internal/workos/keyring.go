@@ -43,9 +43,10 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 	}
 
 	ring, err := keyring.Open(keyring.Config{
-		ServiceName:      serviceName,
-		FileDir:          fileDir,
-		FilePasswordFunc: keyring.FixedStringPrompt(passphrase),
+		ServiceName:              serviceName,
+		FileDir:                  fileDir,
+		FilePasswordFunc:         keyring.FixedStringPrompt(passphrase),
+		LibSecretCollectionName:  "login",
 		AllowedBackends: []keyring.BackendType{
 			keyring.SecretServiceBackend,
 			keyring.KeychainBackend,
