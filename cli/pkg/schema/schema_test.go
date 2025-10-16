@@ -518,3 +518,85 @@ websites:
 	assert.Contains(t, errString, "main-api:    # <-- entrypoint name main-api must be in snake_case format")
 	assert.Contains(t, errString, "user-db:    # <-- database name user-db must be in snake_case format")
 }
+
+func TestApplication_IsValid_SubtypesOptional(t *testing.T) {
+	app := &Application{
+		Name:   "test-app",
+		Target: "team/platform@1",
+		ServiceIntents: map[string]*ServiceIntent{
+			"api": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+			},
+		},
+		BucketIntents: map[string]*BucketIntent{
+			"storage": {},
+		},
+		EntrypointIntents: map[string]*EntrypointIntent{
+			"main": {
+				Routes: map[string]Route{
+					"/": {TargetName: "api"},
+				},
+			},
+		},
+		DatabaseIntents: map[string]*DatabaseIntent{
+			"users": {EnvVarKey: "DATABASE_URL"},
+		},
+	}
+
+	// Without WithRequireSubtypes, validation should pass
+	violations := app.IsValid()
+	assert.Len(t, violations, 0, "Expected no violations without RequireSubtypes option, got: %v", violations)
+
+	// With WithRequireSubtypes, validation should fail
+	violations = app.IsValid(WithRequireSubtypes())
+	assert.NotEmpty(t, violations, "Expected violations with RequireSubtypes option")
+
+	errString := FormatValidationErrors(GetSchemaValidationErrors(violations))
+	assert.Contains(t, errString, "api:    # <-- service must have a subtype specified for build")
+	assert.Contains(t, errString, "storage:    # <-- bucket must have a subtype specified for build")
+	assert.Contains(t, errString, "main:    # <-- entrypoint must have a subtype specified for build")
+	assert.Contains(t, errString, "users:    # <-- database must have a subtype specified for build")
+}
+
+func TestApplication_IsValid_WithSubtypes(t *testing.T) {
+	app := &Application{
+		Name:   "test-app",
+		Target: "team/platform@1",
+		ServiceIntents: map[string]*ServiceIntent{
+			"api": {
+				Resource: Resource{SubType: "fargate"},
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+			},
+		},
+		BucketIntents: map[string]*BucketIntent{
+			"storage": {
+				Resource: Resource{SubType: "s3"},
+			},
+		},
+		EntrypointIntents: map[string]*EntrypointIntent{
+			"main": {
+				Resource: Resource{SubType: "alb"},
+				Routes: map[string]Route{
+					"/": {TargetName: "api"},
+				},
+			},
+		},
+		DatabaseIntents: map[string]*DatabaseIntent{
+			"users": {
+				Resource:  Resource{SubType: "postgres"},
+				EnvVarKey: "DATABASE_URL",
+			},
+		},
+	}
+
+	// With subtypes specified, validation should pass with or without RequireSubtypes
+	violations := app.IsValid()
+	assert.Len(t, violations, 0, "Expected no violations without RequireSubtypes option, got: %v", violations)
+
+	violations = app.IsValid(WithRequireSubtypes())
+	assert.Len(t, violations, 0, "Expected no violations with RequireSubtypes option, got: %v", violations)
+}

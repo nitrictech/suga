@@ -9,8 +9,31 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+// ValidationOptions defines options for application validation
+type ValidationOptions struct {
+	RequireSubtypes bool
+}
+
+// ValidationOption is a function that modifies ValidationOptions
+type ValidationOption func(*ValidationOptions)
+
+// WithRequireSubtypes enables validation that requires all resources to have subtypes
+func WithRequireSubtypes() ValidationOption {
+	return func(opts *ValidationOptions) {
+		opts.RequireSubtypes = true
+	}
+}
+
 // Perform additional validation checks on the application
-func (a *Application) IsValid() []gojsonschema.ResultError {
+func (a *Application) IsValid(options ...ValidationOption) []gojsonschema.ResultError {
+	opts := &ValidationOptions{
+		RequireSubtypes: false, // default: subtypes are optional
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
 	// Check the names of all resources are unique
 	violations := a.checkNoNameConflicts()
 	violations = append(violations, a.checkNoReservedNames()...)
@@ -18,6 +41,10 @@ func (a *Application) IsValid() []gojsonschema.ResultError {
 	violations = append(violations, a.checkNoEnvVarCollisions()...)
 	violations = append(violations, a.checkAccessPermissions()...)
 	violations = append(violations, a.checkNoRedundantEntrypointRoutes()...)
+
+	if opts.RequireSubtypes {
+		violations = append(violations, a.checkSubtypesRequired()...)
+	}
 
 	return violations
 }
@@ -194,6 +221,36 @@ func (a *Application) checkNoRedundantEntrypointRoutes() []gojsonschema.ResultEr
 					violations = append(violations, newValidationError(key, err))
 				}
 			}
+		}
+	}
+
+	return violations
+}
+
+func (a *Application) checkSubtypesRequired() []gojsonschema.ResultError {
+	violations := []gojsonschema.ResultError{}
+
+	for name, intent := range a.ServiceIntents {
+		if intent.GetSubType() == "" {
+			violations = append(violations, newValidationError(fmt.Sprintf("services.%s", name), "service must have a subtype specified for build"))
+		}
+	}
+
+	for name, intent := range a.BucketIntents {
+		if intent.GetSubType() == "" {
+			violations = append(violations, newValidationError(fmt.Sprintf("buckets.%s", name), "bucket must have a subtype specified for build"))
+		}
+	}
+
+	for name, intent := range a.EntrypointIntents {
+		if intent.GetSubType() == "" {
+			violations = append(violations, newValidationError(fmt.Sprintf("entrypoints.%s", name), "entrypoint must have a subtype specified for build"))
+		}
+	}
+
+	for name, intent := range a.DatabaseIntents {
+		if intent.GetSubType() == "" {
+			violations = append(violations, newValidationError(fmt.Sprintf("databases.%s", name), "database must have a subtype specified for build"))
 		}
 	}
 
