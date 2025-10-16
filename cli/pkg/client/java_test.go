@@ -120,7 +120,7 @@ func TestGenerateJavaDefaultValues(t *testing.T) {
 	}
 
 	contentStr := string(content)
-	if !strings.Contains(contentStr, "package com.nitric.suga.client;") {
-		t.Error("Expected default package com.nitric.suga.client")
+	if !strings.Contains(contentStr, "package com.addsuga.client;") {
+		t.Error("Expected default package com.addsuga.client")
 	}
 }

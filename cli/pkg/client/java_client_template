@@ -3,8 +3,8 @@
 package {{.Package}};
 
 {{if .Buckets}}
-import com.nitric.suga.client.Bucket;
-import com.nitric.suga.client.SugaClient;
+import com.addsuga.client.Bucket;
+import com.addsuga.client.SugaClient;
 {{end}}
 
 /**

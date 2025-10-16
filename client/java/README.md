@@ -8,7 +8,7 @@ Add the following dependency to your `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>com.nitric</groupId>
+    <groupId>com.addsuga.client</groupId>
     <artifactId>suga-client</artifactId>
     <version>0.0.1</version>
 </dependency>
@@ -17,7 +17,7 @@ Add the following dependency to your `pom.xml`:
 For Gradle, add to your `build.gradle`:
 
 ```gradle
-implementation 'com.nitric:suga-client:0.0.1'
+implementation 'com.addsuga.client:suga-client:0.0.1'
 ```
 
 ## Usage
@@ -25,8 +25,8 @@ implementation 'com.nitric:suga-client:0.0.1'
 ### Basic Example
 
 ```java
-import com.nitric.suga.client.SugaClient;
-import com.nitric.suga.client.Bucket;
+import com.addsuga.client.SugaClient;
+import com.addsuga.client.Bucket;
 
 public class Example {
     public static void main(String[] args) {
@@ -90,7 +90,7 @@ public class GeneratedExample {
 Generate presigned URLs for secure file access:
 
 ```java
-import com.nitric.suga.client.Bucket;
+import com.addsuga.client.Bucket;
 import java.time.Duration;
 
 // Get a download URL (valid for 5 minutes by default)

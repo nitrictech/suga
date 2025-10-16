@@ -1,4 +1,4 @@
-package com.nitric.suga.client;
+package com.addsuga.client;
 
 import org.junit.Test;
 import static org.junit.Assert.*;

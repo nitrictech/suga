@@ -1,4 +1,4 @@
-package com.nitric.suga.client;
+package com.addsuga.client;
 
 import com.nitric.suga.storage.v2.StorageGrpc;
 import com.nitric.suga.storage.v2.StorageProto.*;

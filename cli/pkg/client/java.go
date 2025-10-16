@@ -49,7 +49,7 @@ func GenerateJava(fs afero.Fs, appSpec schema.Application, outputDir string, jav
 	}
 
 	if javaPackageName == "" {
-		javaPackageName = "com.nitric.suga.client"
+		javaPackageName = "com.addsuga.client"
 	}
 
 	tmpl := template.Must(template.New("client").Parse(javaClientTemplate))
