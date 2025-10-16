@@ -46,6 +46,7 @@ resource "docker_image" "service" {
       BASE_IMAGE       = local.image_id
       ORIGINAL_COMMAND = local.original_command
     }, var.args)
+    extra_hosts = ["host.docker.internal:host-gateway"]
     tag = ["${var.tag}:latest"]
   }
 

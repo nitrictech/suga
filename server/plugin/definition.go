@@ -7,8 +7,9 @@ type GoPlugin struct {
 }
 
 type PluginDefinition struct {
-	Gets    []string   `json:"Gets"`
-	Pubsub  []GoPlugin `json:"Pubsub"`
-	Storage []GoPlugin `json:"Storage"`
-	Service GoPlugin   `json:"Service"`
+	Gets       []string   `json:"Gets"`
+	Goproxies  []string   `json:"Goproxies,omitempty"` // List of GOPROXY URLs to use
+	Pubsub     []GoPlugin `json:"Pubsub"`
+	Storage    []GoPlugin `json:"Storage"`
+	Service    GoPlugin   `json:"Service"`
 }
