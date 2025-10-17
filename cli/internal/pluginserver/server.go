@@ -222,8 +222,6 @@ func (s *PluginServer) findPluginManifest(pluginName string) (string, []byte, er
 
 func (s *PluginServer) Start(addr string) error {
 	fmt.Printf("Starting plugin server on %s\n", addr)
-	fmt.Printf("Plugin paths: %v\n", s.pluginPaths)
-	fmt.Printf("Module paths: %v\n", s.modulePaths)
 	return http.ListenAndServe(addr, s)
 }
 
