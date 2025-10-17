@@ -22,8 +22,12 @@ public class SugaClient {
     /**
      * Create a new SugaClient with custom server address
      * @param address The gRPC server address (e.g., "localhost:50051")
+     * @throws IllegalArgumentException if address is null or empty
      */
     public SugaClient(String address) {
+        if (address == null || address.trim().isEmpty()) {
+            throw new IllegalArgumentException("Address cannot be null or empty");
+        }
         this.channel = ManagedChannelBuilder.forTarget(address)
                 .usePlaintext()
                 .build();
@@ -42,17 +46,38 @@ public class SugaClient {
      * Create a new Bucket instance
      * @param bucketName The name of the bucket
      * @return A new Bucket instance
+     * @throws IllegalArgumentException if bucketName is null or empty
      */
-    protected Bucket createBucket(String bucketName) {
+    public Bucket createBucket(String bucketName) {
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Bucket name cannot be null or empty");
+        }
         return new Bucket(storageClient, bucketName);
     }
 
     /**
      * Close the client and release resources
+     * @throws RuntimeException if shutdown fails or times out
      */
     public void close() {
-        if (channel != null) {
+        if (channel != null && !channel.isShutdown()) {
             channel.shutdown();
+            try {
+                // Wait for the channel to terminate within a reasonable timeout
+                if (!channel.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                    // Force shutdown if graceful shutdown didn't complete in time
+                    channel.shutdownNow();
+                    if (!channel.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                        throw new RuntimeException("Failed to shutdown gRPC channel within timeout");
+                    }
+                }
+            } catch (InterruptedException e) {
+                // Restore interrupted status
+                Thread.currentThread().interrupt();
+                // Force shutdown
+                channel.shutdownNow();
+                throw new RuntimeException("Interrupted while shutting down gRPC channel", e);
+            }
         }
     }
 

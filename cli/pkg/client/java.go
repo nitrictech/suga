@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
 	"text/template"
 
 	_ "embed"
@@ -15,6 +18,45 @@ import (
 
 //go:embed java_client_template
 var javaClientTemplate string
+
+// Java package name validation
+var javaPackageRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*$`)
+
+// Common Java reserved keywords that cannot be used as package segments
+var javaReservedWords = map[string]bool{
+	"abstract": true, "assert": true, "boolean": true, "break": true, "byte": true,
+	"case": true, "catch": true, "char": true, "class": true, "const": true,
+	"continue": true, "default": true, "do": true, "double": true, "else": true,
+	"enum": true, "extends": true, "final": true, "finally": true, "float": true,
+	"for": true, "goto": true, "if": true, "implements": true, "import": true,
+	"instanceof": true, "int": true, "interface": true, "long": true, "native": true,
+	"new": true, "null": true, "package": true, "private": true, "protected": true,
+	"public": true, "return": true, "short": true, "static": true, "strictfp": true,
+	"super": true, "switch": true, "synchronized": true, "this": true, "throw": true,
+	"throws": true, "transient": true, "try": true, "void": true, "volatile": true,
+	"while": true, "true": true, "false": true,
+}
+
+func validateJavaPackageName(packageName string) error {
+	if packageName == "" {
+		return fmt.Errorf("Java package name cannot be empty")
+	}
+
+	// Check overall pattern
+	if !javaPackageRegex.MatchString(packageName) {
+		return fmt.Errorf("invalid Java package name '%s': must be dot-separated identifiers, each starting with a letter or underscore and followed only by letters, digits or underscores", packageName)
+	}
+
+	// Check each segment for reserved words
+	segments := strings.Split(packageName, ".")
+	for _, segment := range segments {
+		if javaReservedWords[segment] {
+			return fmt.Errorf("invalid Java package name '%s': segment '%s' is a Java reserved keyword", packageName, segment)
+		}
+	}
+
+	return nil
+}
 
 type JavaSDKTemplateData struct {
 	Package string
@@ -36,6 +78,11 @@ func AppSpecToJavaTemplateData(appSpec schema.Application, javaPackageName strin
 		buckets = append(buckets, normalized)
 	}
 
+	// Sort buckets deterministically to ensure stable generated code across runs
+	sort.Slice(buckets, func(i, j int) bool {
+		return buckets[i].Unmodified() < buckets[j].Unmodified()
+	})
+
 	return JavaSDKTemplateData{
 		Package: javaPackageName,
 		Buckets: buckets,
@@ -50,6 +97,11 @@ func GenerateJava(fs afero.Fs, appSpec schema.Application, outputDir string, jav
 
 	if javaPackageName == "" {
 		javaPackageName = "com.addsuga.client"
+	}
+
+	// Validate Java package name
+	if err := validateJavaPackageName(javaPackageName); err != nil {
+		return fmt.Errorf("invalid Java package name: %w", err)
 	}
 
 	tmpl := template.Must(template.New("client").Parse(javaClientTemplate))

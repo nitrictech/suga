@@ -27,14 +27,15 @@ implementation 'com.addsuga.client:suga-client:0.0.1'
 ```java
 import com.addsuga.client.SugaClient;
 import com.addsuga.client.Bucket;
+import java.util.List;
 
 public class Example {
     public static void main(String[] args) {
         // Create a client
         SugaClient client = new SugaClient();
         
-        // Create a bucket instance
-        Bucket myBucket = new Bucket(client.getStorageClient(), "my-bucket");
+        // Create a bucket instance using the public API
+        Bucket myBucket = client.createBucket("my-bucket");
         
         // Write data to the bucket
         byte[] data = "Hello, World!".getBytes();

@@ -18,6 +18,12 @@ public class Bucket {
     private final StorageGrpc.StorageBlockingStub storageClient;
 
     public Bucket(StorageGrpc.StorageBlockingStub storageClient, String bucketName) {
+        if (storageClient == null) {
+            throw new IllegalArgumentException("Storage client cannot be null");
+        }
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Bucket name cannot be null or empty");
+        }
         this.storageClient = storageClient;
         this.name = bucketName;
     }
@@ -26,9 +32,14 @@ public class Bucket {
      * Read a file from the bucket
      * @param key The key of the file to read
      * @return The file contents as byte array
+     * @throws IllegalArgumentException if key is null or empty
      * @throws RuntimeException if the operation fails
      */
     public byte[] read(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+        
         StorageReadRequest request = StorageReadRequest.newBuilder()
                 .setBucketName(name)
                 .setKey(key)
@@ -37,8 +48,10 @@ public class Bucket {
         try {
             StorageReadResponse response = storageClient.read(request);
             return response.getBody().toByteArray();
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to read file '" + key + "' from bucket '" + name + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read file from the " + name + " bucket", e);
+            throw new RuntimeException("Failed to read file '" + key + "' from bucket '" + name + "'", e);
         }
     }
 
@@ -46,9 +59,17 @@ public class Bucket {
      * Write a file to the bucket
      * @param key The key of the file to write
      * @param data The file contents
+     * @throws IllegalArgumentException if key is null or empty, or data is null
      * @throws RuntimeException if the operation fails
      */
     public void write(String key, byte[] data) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+        if (data == null) {
+            throw new IllegalArgumentException("Data cannot be null");
+        }
+        
         StorageWriteRequest request = StorageWriteRequest.newBuilder()
                 .setBucketName(name)
                 .setKey(key)
@@ -57,17 +78,24 @@ public class Bucket {
 
         try {
             storageClient.write(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to write file '" + key + "' to bucket '" + name + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to write file to bucket", e);
+            throw new RuntimeException("Failed to write file '" + key + "' to bucket '" + name + "'", e);
         }
     }
 
     /**
      * Delete a file from the bucket
      * @param key The key of the file to delete
+     * @throws IllegalArgumentException if key is null or empty
      * @throws RuntimeException if the operation fails
      */
     public void delete(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+        
         StorageDeleteRequest request = StorageDeleteRequest.newBuilder()
                 .setBucketName(name)
                 .setKey(key)
@@ -75,21 +103,26 @@ public class Bucket {
 
         try {
             storageClient.delete(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to delete file '" + key + "' from bucket '" + name + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to delete file from bucket", e);
+            throw new RuntimeException("Failed to delete file '" + key + "' from bucket '" + name + "'", e);
         }
     }
 
     /**
      * List files in the bucket with a given prefix
-     * @param prefix The prefix to filter files
+     * @param prefix The prefix to filter files (can be null or empty for all files)
      * @return List of file keys
      * @throws RuntimeException if the operation fails
      */
     public List<String> list(String prefix) {
+        // Prefix can be null or empty, which means list all files
+        String safePrefix = prefix == null ? "" : prefix;
+        
         StorageListBlobsRequest request = StorageListBlobsRequest.newBuilder()
                 .setBucketName(name)
-                .setPrefix(prefix)
+                .setPrefix(safePrefix)
                 .build();
 
         try {
@@ -97,8 +130,10 @@ public class Bucket {
             return response.getBlobsList().stream()
                     .map(StorageListBlobsResponse.Blob::getKey)
                     .collect(Collectors.toList());
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to list files in bucket '" + name + "' with prefix '" + safePrefix + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to list files in bucket", e);
+            throw new RuntimeException("Failed to list files in bucket '" + name + "' with prefix '" + safePrefix + "'", e);
         }
     }
 
@@ -106,9 +141,14 @@ public class Bucket {
      * Check if a file exists in the bucket
      * @param key The key of the file to check
      * @return true if the file exists, false otherwise
+     * @throws IllegalArgumentException if key is null or empty
      * @throws RuntimeException if the operation fails
      */
     public boolean exists(String key) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+        
         StorageExistsRequest request = StorageExistsRequest.newBuilder()
                 .setBucketName(name)
                 .setKey(key)
@@ -117,8 +157,10 @@ public class Bucket {
         try {
             StorageExistsResponse response = storageClient.exists(request);
             return response.getExists();
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to check if file '" + key + "' exists in bucket '" + name + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to check if file exists in bucket", e);
+            throw new RuntimeException("Failed to check if file '" + key + "' exists in bucket '" + name + "'", e);
         }
     }
 
@@ -138,6 +180,15 @@ public class Bucket {
         private final java.time.Duration expiry;
 
         public PresignUrlOptions(Mode mode, java.time.Duration expiry) {
+            if (mode == null) {
+                throw new IllegalArgumentException("Mode cannot be null");
+            }
+            if (expiry == null) {
+                throw new IllegalArgumentException("Expiry cannot be null");
+            }
+            if (expiry.isNegative() || expiry.isZero()) {
+                throw new IllegalArgumentException("Expiry must be positive");
+            }
             this.mode = mode;
             this.expiry = expiry;
         }
@@ -168,6 +219,13 @@ public class Bucket {
     }
 
     private String preSignUrl(String key, PresignUrlOptions options) {
+        if (key == null || key.trim().isEmpty()) {
+            throw new IllegalArgumentException("Key cannot be null or empty");
+        }
+        if (options == null) {
+            throw new IllegalArgumentException("Options cannot be null");
+        }
+        
         StoragePreSignUrlRequest.Operation operation = options.getMode() == Mode.WRITE
                 ? StoragePreSignUrlRequest.Operation.WRITE
                 : StoragePreSignUrlRequest.Operation.READ;
@@ -187,8 +245,10 @@ public class Bucket {
         try {
             StoragePreSignUrlResponse response = storageClient.preSignUrl(request);
             return response.getUrl();
+        } catch (io.grpc.StatusRuntimeException e) {
+            throw new RuntimeException("Failed to get presigned URL for file '" + key + "' in bucket '" + name + "': " + e.getStatus().getDescription(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to get presigned URL for file", e);
+            throw new RuntimeException("Failed to get presigned URL for file '" + key + "' in bucket '" + name + "'", e);
         }
     }
 
@@ -207,11 +267,17 @@ public class Bucket {
      * @param key The key of the file
      * @param options Options for URL generation
      * @return The presigned download URL
+     * @throws IllegalArgumentException if key is null or empty, options is null, or mode is not READ
      * @throws RuntimeException if the operation fails
      */
     public String getDownloadURL(String key, PresignUrlOptions options) {
-        PresignUrlOptions readOptions = new PresignUrlOptions(Mode.READ, options.getExpiry());
-        return preSignUrl(key, readOptions);
+        if (options == null) {
+            throw new IllegalArgumentException("Options cannot be null");
+        }
+        if (options.getMode() != Mode.READ) {
+            throw new IllegalArgumentException("Options mode must be READ for download URLs, but was " + options.getMode());
+        }
+        return preSignUrl(key, options);
     }
 
     /**
@@ -229,11 +295,17 @@ public class Bucket {
      * @param key The key of the file
      * @param options Options for URL generation
      * @return The presigned upload URL
+     * @throws IllegalArgumentException if key is null or empty, options is null, or mode is not WRITE
      * @throws RuntimeException if the operation fails
      */
     public String getUploadURL(String key, PresignUrlOptions options) {
-        PresignUrlOptions writeOptions = new PresignUrlOptions(Mode.WRITE, options.getExpiry());
-        return preSignUrl(key, writeOptions);
+        if (options == null) {
+            throw new IllegalArgumentException("Options cannot be null");
+        }
+        if (options.getMode() != Mode.WRITE) {
+            throw new IllegalArgumentException("Options mode must be WRITE for upload URLs, but was " + options.getMode());
+        }
+        return preSignUrl(key, options);
     }
 
     /**

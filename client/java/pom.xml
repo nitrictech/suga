@@ -37,9 +37,9 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <grpc.version>1.66.0</grpc.version>
-        <protobuf.version>4.28.3</protobuf.version>
-        <protoc.version>4.28.3</protoc.version>
+        <grpc.version>1.76.0</grpc.version>
+        <protobuf.version>4.29.2</protobuf.version>
+        <protoc.version>4.29.2</protoc.version>
     </properties>
 
     <dependencies>
@@ -163,6 +163,36 @@
                 <configuration>
                     <doclint>none</doclint>
                 </configuration>
+            </plugin>
+
+            <!-- Spotless Maven plugin for code formatting -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.43.0</version>
+                <configuration>
+                    <java>
+                        <includes>
+                            <include>src/main/java/**/*.java</include>
+                            <include>src/test/java/**/*.java</include>
+                        </includes>
+                        <importOrder />
+                        <removeUnusedImports />
+                        <googleJavaFormat>
+                            <version>1.19.2</version>
+                            <style>GOOGLE</style>
+                        </googleJavaFormat>
+                        <formatAnnotations />
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>

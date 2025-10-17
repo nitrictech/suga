@@ -2,9 +2,9 @@
 
 package {{.Package}};
 
+import com.addsuga.client.SugaClient;
 {{if .Buckets}}
 import com.addsuga.client.Bucket;
-import com.addsuga.client.SugaClient;
 {{end}}
 
 /**
