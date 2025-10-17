@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/aws/jsii-runtime-go"
@@ -44,23 +45,22 @@ func (e *TerraformEngine) resolvePluginsForService(servicePlugin *ResourcePlugin
 	pluginDef.Gets = gets
 
 	// Collect all local server proxies from platform libraries
-	goproxies := make(map[string]bool)
+	goproxies := []string{}
 	for _, libVersion := range e.platform.Libraries {
 		// Check if this is an HTTP URL (local server)
 		if strings.HasPrefix(string(libVersion), "http://") || strings.HasPrefix(string(libVersion), "https://") {
 			// Replace localhost with host.docker.internal for Docker builds
 			proxy := strings.Replace(string(libVersion), "localhost", "host.docker.internal", 1)
 			proxy = strings.Replace(proxy, "127.0.0.1", "host.docker.internal", 1)
-			goproxies[proxy] = true
+			if !slices.Contains(goproxies, proxy) {
+				goproxies = append(goproxies, proxy)
+			}
 		}
 	}
 
 	// Convert proxy map to slice
 	if len(goproxies) > 0 {
-		pluginDef.Goproxies = make([]string, 0, len(goproxies))
-		for proxy := range goproxies {
-			pluginDef.Goproxies = append(pluginDef.Goproxies, proxy)
-		}
+		pluginDef.Goproxies = goproxies
 	}
 
 	return pluginDef, nil
