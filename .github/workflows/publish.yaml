@@ -141,3 +141,82 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: ./client/python/dist/
+
+  publish-java:
+    name: Publish - Java Client Maven Central
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client/java
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Set Version
+        run: |
+          VER="${{ github.ref_name }}"
+          # Strip leading "v" from tag name (e.g., v1.2.3 -> 1.2.3)
+          VER="${VER#v}"
+          # Convert SemVer prerelease tokens to Maven format
+          VER=$(echo "$VER" | sed -E 's/-rc\.?([0-9]+)/-RC\1/g')
+          VER=$(echo "$VER" | sed -E 's/-beta\.?([0-9]+)/-BETA\1/g')
+          VER=$(echo "$VER" | sed -E 's/-alpha\.?([0-9]+)/-ALPHA\1/g')
+          mvn versions:set -DnewVersion="$VER"
+
+      - name: Generate protobuf sources
+        run: mvn protobuf:compile protobuf:compile-custom
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          if [[ "${{ github.ref_name }}" =~ ^.*(-rc|-beta|-alpha).*$ ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Maven Central (Release)
+        if: steps.prerelease.outputs.is_prerelease == 'false'
+        run: mvn clean deploy -P release
+        env:
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Deploy to Maven Central (Snapshot)
+        if: steps.prerelease.outputs.is_prerelease == 'true'
+        run: |
+          # For prereleases, deploy as snapshot
+          VER="${{ github.ref_name }}"
+          VER="${VER#v}"
+          VER=$(echo "$VER" | sed -E 's/-rc\.?([0-9]+)/-RC\1-SNAPSHOT/g')
+          VER=$(echo "$VER" | sed -E 's/-beta\.?([0-9]+)/-BETA\1-SNAPSHOT/g')
+          VER=$(echo "$VER" | sed -E 's/-alpha\.?([0-9]+)/-ALPHA\1-SNAPSHOT/g')
+          mvn versions:set -DnewVersion="$VER"
+          mvn clean deploy -P release
+        env:
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
