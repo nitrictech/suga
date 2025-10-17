@@ -18,27 +18,33 @@ import (
 type PluginServer struct {
 	fs          afero.Fs
 	mux         *http.ServeMux
-	pluginPaths []string               // Directories containing plugin manifests
-	modulePaths []string               // Directories containing Go modules
+	basePath    string                 // Base directory to search for plugins and modules
 	pluginCache map[string]*PluginInfo // Cache of discovered plugins by name
+	moduleCache []string               // Cache of discovered Go module names
 }
 
-type ServerConfig struct {
-	PluginPaths []string
-	ModulePaths []string
-}
+func NewPluginServer(fs afero.Fs, basePath string) (*PluginServer, error) {
+	plugins, err := discoverPlugins(fs, basePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover plugins: %w", err)
+	}
 
-func NewPluginServer(fs afero.Fs, config ServerConfig) *PluginServer {
+	modules, err := discoverModules(fs, basePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to discover modules: %w", err)
+	}
+
 	s := &PluginServer{
 		fs:          fs,
 		mux:         http.NewServeMux(),
-		pluginPaths: config.PluginPaths,
-		modulePaths: config.ModulePaths,
-		pluginCache: make(map[string]*PluginInfo),
+		basePath:    basePath,
+		pluginCache: plugins,
+		moduleCache: modules,
 	}
 
 	s.setupRoutes()
-	return s
+
+	return s, nil
 }
 
 func (s *PluginServer) setupRoutes() {
@@ -52,6 +58,9 @@ func (s *PluginServer) setupRoutes() {
 
 	// Terraform module zip endpoint
 	s.mux.HandleFunc("/terraform-modules/", s.handleTerraformModuleZip)
+
+	// Go modules discovery endpoint
+	s.mux.HandleFunc("/api/modules", s.handleDiscoverModules)
 
 	// Go module proxy endpoints - use catch-all pattern
 	s.mux.HandleFunc("/", s.handleModuleProxy)
@@ -167,54 +176,52 @@ func (s *PluginServer) handleTerraformModuleZip(w http.ResponseWriter, r *http.R
 // findPluginManifest searches for a plugin manifest by name field
 // Returns the manifest path and content, or an error if not found
 func (s *PluginServer) findPluginManifest(pluginName string) (string, []byte, error) {
-	for _, basePath := range s.pluginPaths {
-		var foundPath string
-		var foundData []byte
+	var foundPath string
+	var foundData []byte
 
-		// Walk through the plugin path looking for manifests
-		err := afero.Walk(s.fs, basePath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+	// Walk through the base path looking for manifests
+	err := afero.Walk(s.fs, s.basePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
-			if info.IsDir() {
-				return nil
-			}
-
-			// Check if this is a manifest file (yaml or yml only)
-			filename := filepath.Base(path)
-			if filename != "manifest.yaml" && filename != "manifest.yml" {
-				return nil
-			}
-
-			// Read and parse manifest
-			manifestData, err := afero.ReadFile(s.fs, path)
-			if err != nil {
-				return nil // Skip files we can't read
-			}
-
-			var manifest map[string]interface{}
-			if err := yaml.Unmarshal(manifestData, &manifest); err != nil {
-				return nil // Skip invalid manifests
-			}
-
-			// Check if this manifest matches the requested plugin name
-			if name, ok := manifest["name"].(string); ok && name == pluginName {
-				foundPath = path
-				foundData = manifestData
-				return filepath.SkipAll // Stop walking once found
-			}
-
+		if info.IsDir() {
 			return nil
-		})
-
-		if err != nil && err != filepath.SkipAll {
-			continue // Try next base path
 		}
 
-		if foundPath != "" {
-			return foundPath, foundData, nil
+		// Check if this is a manifest file (yaml or yml only)
+		filename := filepath.Base(path)
+		if filename != "manifest.yaml" && filename != "manifest.yml" {
+			return nil
 		}
+
+		// Read and parse manifest
+		manifestData, err := afero.ReadFile(s.fs, path)
+		if err != nil {
+			return nil // Skip files we can't read
+		}
+
+		var manifest map[string]interface{}
+		if err := yaml.Unmarshal(manifestData, &manifest); err != nil {
+			return nil // Skip invalid manifests
+		}
+
+		// Check if this manifest matches the requested plugin name
+		if name, ok := manifest["name"].(string); ok && name == pluginName {
+			foundPath = path
+			foundData = manifestData
+			return filepath.SkipAll // Stop walking once found
+		}
+
+		return nil
+	})
+
+	if err != nil && err != filepath.SkipAll {
+		return "", nil, err
+	}
+
+	if foundPath != "" {
+		return foundPath, foundData, nil
 	}
 
 	return "", nil, fmt.Errorf("plugin %s not found", pluginName)
@@ -405,24 +412,13 @@ func (s *PluginServer) handleModuleLatestWithPath(w http.ResponseWriter, r *http
 	_ = json.NewEncoder(w).Encode(info)
 }
 
-// findModule searches for a Go module in the configured module paths or plugin paths
+// findModule searches for a Go module in the base path
 // Returns the module directory and version
 // For package paths like github.com/foo/bar/pkg, it finds the module root by looking for go.mod
 func (s *PluginServer) findModule(modulePath string) (string, string, error) {
-	// Try module paths first
-	for _, basePath := range s.modulePaths {
-		moduleDir, err := s.findModuleInPath(basePath, modulePath)
-		if err == nil {
-			return moduleDir, "v0.0.0-dev", nil
-		}
-	}
-
-	// If no module paths specified or not found, try plugin paths
-	for _, basePath := range s.pluginPaths {
-		moduleDir, err := s.findModuleInPath(basePath, modulePath)
-		if err == nil {
-			return moduleDir, "v0.0.0-dev", nil
-		}
+	moduleDir, err := s.findModuleInPath(s.basePath, modulePath)
+	if err == nil {
+		return moduleDir, "v0.0.0-dev", nil
 	}
 
 	return "", "", fmt.Errorf("module %s not found in local paths", modulePath)
@@ -477,73 +473,135 @@ func (s *PluginServer) findModuleInPath(basePath, modulePath string) (string, er
 	return "", fmt.Errorf("module not found")
 }
 
-// DiscoverPlugins scans plugin paths and returns discovered plugins
-func (s *PluginServer) DiscoverPlugins() ([]PluginInfo, error) {
-	plugins := []PluginInfo{}
+// discoverPlugins scans the base path and returns discovered plugins as a map
+func discoverPlugins(fs afero.Fs, basePath string) (map[string]*PluginInfo, error) {
+	plugins := make(map[string]*PluginInfo)
 
-	for _, basePath := range s.pluginPaths {
-		// Walk through looking for manifest.yaml or manifest.yml files
-		err := afero.Walk(s.fs, basePath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if info.IsDir() {
-				return nil
-			}
-
-			// Check if this is a manifest file (yaml or yml only)
-			filename := filepath.Base(path)
-			if filename != "manifest.yaml" && filename != "manifest.yml" {
-				return nil
-			}
-
-			// Read and parse manifest to get the plugin name
-			manifestData, err := afero.ReadFile(s.fs, path)
-			if err != nil {
-				return nil // Skip files we can't read
-			}
-
-			var manifest map[string]interface{}
-			if err := yaml.Unmarshal(manifestData, &manifest); err != nil {
-				return nil // Skip invalid manifests
-			}
-
-			// Extract name from manifest
-			pluginName, ok := manifest["name"].(string)
-			if !ok || pluginName == "" {
-				return nil // Skip if no name in manifest
-			}
-
-			// Extract terraform module path from deployment section
-			var terraformModulePath string
-			if deployment, ok := manifest["deployment"].(map[string]interface{}); ok {
-				if tfPath, ok := deployment["terraform"].(string); ok {
-					terraformModulePath = tfPath
-				}
-			}
-
-			pluginInfo := PluginInfo{
-				Name:                pluginName,
-				Path:                path,
-				Dir:                 filepath.Dir(path),
-				TerraformModulePath: terraformModulePath,
-			}
-
-			plugins = append(plugins, pluginInfo)
-
-			// Cache the plugin info
-			s.pluginCache[pluginName] = &pluginInfo
-
-			return nil
-		})
-
+	// Walk through looking for manifest.yaml or manifest.yml files
+	err := afero.Walk(fs, basePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil, err
+			return err
 		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		// Check if this is a manifest file (yaml or yml only)
+		filename := filepath.Base(path)
+		if filename != "manifest.yaml" && filename != "manifest.yml" {
+			return nil
+		}
+
+		// Read and parse manifest to get the plugin name
+		manifestData, err := afero.ReadFile(fs, path)
+		if err != nil {
+			return nil // Skip files we can't read
+		}
+
+		var manifest map[string]interface{}
+		if err := yaml.Unmarshal(manifestData, &manifest); err != nil {
+			return nil // Skip invalid manifests
+		}
+
+		// Extract name from manifest
+		pluginName, ok := manifest["name"].(string)
+		if !ok || pluginName == "" {
+			return nil // Skip if no name in manifest
+		}
+
+		// Extract terraform module path from deployment section
+		var terraformModulePath string
+		if deployment, ok := manifest["deployment"].(map[string]interface{}); ok {
+			if tfPath, ok := deployment["terraform"].(string); ok {
+				terraformModulePath = tfPath
+			}
+		}
+
+		pluginInfo := PluginInfo{
+			Name:                pluginName,
+			Path:                path,
+			Dir:                 filepath.Dir(path),
+			TerraformModulePath: terraformModulePath,
+		}
+
+		plugins[pluginName] = &pluginInfo
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return plugins, nil
+}
+
+// discoverModules scans the base path and returns discovered Go modules
+func discoverModules(fs afero.Fs, basePath string) ([]string, error) {
+	modules := []string{}
+	visited := make(map[string]bool)
+
+	err := afero.Walk(fs, basePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Continue walking on errors
+		}
+
+		// Look for go.mod files
+		if !info.IsDir() && info.Name() == "go.mod" {
+			// Read go.mod to get the module name
+			data, err := afero.ReadFile(fs, path)
+			if err != nil {
+				return nil
+			}
+
+			// Parse first line: "module github.com/foo/bar"
+			lines := strings.Split(string(data), "\n")
+			if len(lines) > 0 {
+				firstLine := strings.TrimSpace(lines[0])
+				if strings.HasPrefix(firstLine, "module ") {
+					moduleDecl := strings.TrimPrefix(firstLine, "module ")
+					moduleDecl = strings.TrimSpace(moduleDecl)
+
+					// Add to list if not already seen
+					if !visited[moduleDecl] {
+						modules = append(modules, moduleDecl)
+						visited[moduleDecl] = true
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return modules, nil
+}
+
+// handleDiscoverModules returns the cached list of discovered Go modules
+func (s *PluginServer) handleDiscoverModules(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"modules": s.moduleCache,
+	})
+}
+
+// GetPlugins returns the cached list of discovered plugins
+func (s *PluginServer) GetPlugins() []PluginInfo {
+	plugins := []PluginInfo{}
+	for _, plugin := range s.pluginCache {
+		plugins = append(plugins, *plugin)
+	}
+	return plugins
+}
+
+// GetModules returns the cached list of discovered Go modules
+func (s *PluginServer) GetModules() []string {
+	return s.moduleCache
 }
 
 type PluginInfo struct {

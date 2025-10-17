@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/nitrictech/suga/cli/internal/pluginserver"
 	"github.com/nitrictech/suga/cli/internal/version"
@@ -26,11 +25,7 @@ func NewPluginCmd(injector do.Injector) *cobra.Command {
 
 // NewPluginServeCmd creates the plugin serve command
 func NewPluginServeCmd(injector do.Injector) *cobra.Command {
-	var (
-		port        int
-		pluginPaths []string
-		modulePaths []string
-	)
+	var port int
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -46,17 +41,8 @@ Example usage:
   # Serve plugins from current directory
   suga plugin serve
 
-  # Serve plugins from specific directory
-  suga plugin serve --plugin-path ./my-plugins
-
-  # Serve multiple plugin directories
-  suga plugin serve --plugin-path ./plugins1 --plugin-path ./plugins2
-
-  # Also serve Go modules for runtime dependencies
-  suga plugin serve --plugin-path ./plugins --module-path ./go-modules
-
 Plugin directory structure:
-  {plugin-path}/{plugin-name}/manifest.yaml
+  {plugin-name}/manifest.yaml
 
 Example platform.yaml configuration:
   libraries:
@@ -68,47 +54,20 @@ The team, library, and version are specified in the platform.yaml, not in the di
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fs := afero.NewOsFs()
 
-			// Default to current directory if no paths specified
-			if len(pluginPaths) == 0 {
-				cwd, err := os.Getwd()
-				if err != nil {
-					return fmt.Errorf("failed to get current directory: %w", err)
-				}
-				pluginPaths = []string{cwd}
-			}
-
-			// Convert relative paths to absolute
-			for i, path := range pluginPaths {
-				if !filepath.IsAbs(path) {
-					absPath, err := filepath.Abs(path)
-					if err != nil {
-						return fmt.Errorf("failed to resolve path %s: %w", path, err)
-					}
-					pluginPaths[i] = absPath
-				}
-			}
-
-			for i, path := range modulePaths {
-				if !filepath.IsAbs(path) {
-					absPath, err := filepath.Abs(path)
-					if err != nil {
-						return fmt.Errorf("failed to resolve path %s: %w", path, err)
-					}
-					modulePaths[i] = absPath
-				}
-			}
-
-			// Create and start server
-			server := pluginserver.NewPluginServer(fs, pluginserver.ServerConfig{
-				PluginPaths: pluginPaths,
-				ModulePaths: modulePaths,
-			})
-
-			// Discover and list available plugins
-			plugins, err := server.DiscoverPlugins()
+			// Use current directory
+			cwd, err := os.Getwd()
 			if err != nil {
-				return fmt.Errorf("failed to discover plugins: %w", err)
+				return fmt.Errorf("failed to get current directory: %w", err)
 			}
+
+			// Create and start server (automatically discovers plugins and modules)
+			server, err := pluginserver.NewPluginServer(fs, cwd)
+			if err != nil {
+				return fmt.Errorf("failed to create plugin server: %w", err)
+			}
+
+			// Get discovered plugins
+			plugins := server.GetPlugins()
 
 			fmt.Printf("\n%s Plugin Server\n", version.ProductName)
 			fmt.Println("==================")
@@ -145,8 +104,6 @@ The team, library, and version are specified in the platform.yaml, not in the di
 	}
 
 	cmd.Flags().IntVarP(&port, "port", "p", 9000, "Port to listen on")
-	cmd.Flags().StringSliceVar(&pluginPaths, "plugin-path", nil, "Path(s) to search for plugin manifests (can be specified multiple times)")
-	cmd.Flags().StringSliceVar(&modulePaths, "module-path", nil, "Path(s) to search for Go modules (can be specified multiple times)")
 
 	return cmd
 }
