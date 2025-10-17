@@ -60,7 +60,7 @@ Plugin directory structure:
 
 Example platform.yaml configuration:
   libraries:
-    myteam/myplugins: http://localhost:8080
+    myteam/myplugins: http://localhost:9000
 
 Then use plugins from that library in your resource blueprints.
 The team, library, and version are specified in the platform.yaml, not in the directory structure.
@@ -144,7 +144,7 @@ The team, library, and version are specified in the platform.yaml, not in the di
 		},
 	}
 
-	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
+	cmd.Flags().IntVarP(&port, "port", "p", 9000, "Port to listen on")
 	cmd.Flags().StringSliceVar(&pluginPaths, "plugin-path", nil, "Path(s) to search for plugin manifests (can be specified multiple times)")
 	cmd.Flags().StringSliceVar(&modulePaths, "module-path", nil, "Path(s) to search for Go modules (can be specified multiple times)")
 
