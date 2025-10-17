@@ -11,6 +11,7 @@ import (
 
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/cli/internal/plugins"
+	"github.com/nitrictech/suga/cli/internal/pluginserver"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/engines/terraform"
 	"github.com/samber/do/v2"
@@ -52,7 +53,10 @@ func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam s
 		return "", err
 	}
 
-	engine := terraform.New(platform, terraform.WithRepository(pluginRepo))
+	// Wrap the plugin repository in a composite repository to support local plugin servers
+	compositeRepo := pluginserver.NewCompositePluginRepository(platform, pluginRepo)
+
+	engine := terraform.New(platform, terraform.WithRepository(compositeRepo))
 
 	stackPath, err := engine.Apply(appSpec)
 	if err != nil {
