@@ -18,6 +18,7 @@ resource "docker_image" "base_service" {
       dockerfile = "${local.context_path}/${var.dockerfile}"
       tag        = ["${var.tag}:base"]
       build_args = var.args
+      build_log_file = "${local.context_path}/.suga/build/${var.tag}_tf_build.log"
     }
   }
   
@@ -47,6 +48,7 @@ resource "docker_image" "service" {
       ORIGINAL_COMMAND = local.original_command
     }, var.args)
     extra_hosts = ["host.docker.internal:host-gateway"]
+    build_log_file = "${local.context_path}/.suga/build/${var.tag}_tf_build_wrapped.log"
     tag = ["${var.tag}:latest"]
   }
 
