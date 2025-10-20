@@ -223,12 +223,3 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-  # Keep Java alias for backward compatibility
-  publish-java:
-    name: Publish - Java Client Maven Central (Legacy Alias)
-    needs: publish-kotlin
-    runs-on: ubuntu-latest
-    steps:
-      - name: Legacy Java Publishing Complete
-        run: echo "Java publishing completed via Kotlin/Java workflow"
