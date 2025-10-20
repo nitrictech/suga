@@ -142,8 +142,8 @@ jobs:
         with:
           packages-dir: ./client/python/dist/
 
-  publish-java:
-    name: Publish - Java Client Maven Central
+  publish-kotlin:
+    name: Publish - Kotlin/Java Client Maven Central
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -185,6 +185,9 @@ jobs:
       - name: Generate protobuf sources
         run: mvn protobuf:compile protobuf:compile-custom
 
+      - name: Compile Kotlin and Java sources
+        run: mvn compile
+
       - name: Run tests
         run: mvn test
 
@@ -220,3 +223,12 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+  # Keep Java alias for backward compatibility
+  publish-java:
+    name: Publish - Java Client Maven Central (Legacy Alias)
+    needs: publish-kotlin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Legacy Java Publishing Complete
+        run: echo "Java publishing completed via Kotlin/Java workflow"

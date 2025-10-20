@@ -7,7 +7,7 @@ all: package
 clean:
 	mvn clean
 
-# Compile the project
+# Compile the project (includes both Kotlin and Java)
 compile:
 	mvn compile
 
@@ -31,11 +31,11 @@ install:
 deploy:
 	mvn deploy
 
-# Format code (if using spotless or similar)
+# Format code (Kotlin and Java)
 format:
 	mvn spotless:apply
 
-# Check code formatting
+# Check code formatting (Kotlin and Java)
 check-format:
 	mvn spotless:check
 
@@ -47,11 +47,13 @@ verify:
 help:
 	@echo "Available targets:"
 	@echo "  clean        - Clean the project"
-	@echo "  compile      - Compile the project"
+	@echo "  compile      - Compile the project (Kotlin and Java)"
 	@echo "  gen-proto    - Generate protobuf sources"
 	@echo "  test         - Run tests"
 	@echo "  package      - Package the project"
 	@echo "  install      - Install to local repository"
 	@echo "  deploy       - Deploy to remote repository"
+	@echo "  format       - Format Kotlin and Java code"
+	@echo "  check-format - Check code formatting for Kotlin and Java"
 	@echo "  verify       - Run all checks"
 	@echo "  help         - Show this help message"

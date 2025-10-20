@@ -21,35 +21,35 @@ func TestGenerateJava(t *testing.T) {
 	// Create an in-memory filesystem
 	fs := afero.NewMemMapFs()
 
-	// Test Java generation
+	// Test Kotlin generation (via Java function for backward compatibility)
 	err := GenerateJava(fs, appSpec, "test-output", "com.example.test")
 	if err != nil {
 		t.Fatalf("GenerateJava() error = %v", err)
 	}
 
-	// Check if the file was created
-	exists, err := afero.Exists(fs, "test-output/GeneratedSugaClient.java")
+	// Check if the Kotlin file was created
+	exists, err := afero.Exists(fs, "test-output/GeneratedSugaClient.kt")
 	if err != nil {
 		t.Fatalf("Failed to check if file exists: %v", err)
 	}
 	if !exists {
-		t.Error("Expected GeneratedSugaClient.java to be created, but it doesn't exist")
+		t.Error("Expected GeneratedSugaClient.kt to be created, but it doesn't exist")
 	}
 
 	// Read and verify the generated content
-	content, err := afero.ReadFile(fs, "test-output/GeneratedSugaClient.java")
+	content, err := afero.ReadFile(fs, "test-output/GeneratedSugaClient.kt")
 	if err != nil {
 		t.Fatalf("Failed to read generated file: %v", err)
 	}
 
 	contentStr := string(content)
 
-	// Verify key parts of the generated Java code
+	// Verify key parts of the generated Kotlin code
 	expectedParts := []string{
-		"package com.example.test;",
-		"public class GeneratedSugaClient extends SugaClient",
-		"public final Bucket myTestBucket;",
-		"this.myTestBucket = createBucket(\"my-test-bucket\");",
+		"package com.example.test",
+		"class GeneratedSugaClient : SugaClient",
+		"val myTestBucket: Bucket",
+		"this.myTestBucket = createBucket(\"my-test-bucket\")",
 	}
 
 	for _, expected := range expectedParts {
@@ -59,7 +59,7 @@ func TestGenerateJava(t *testing.T) {
 	}
 }
 
-func TestAppSpecToJavaTemplateData(t *testing.T) {
+func TestAppSpecToKotlinTemplateData(t *testing.T) {
 	appSpec := schema.Application{
 		Name:   "test-app",
 		Target: "team/platform@1",
@@ -71,9 +71,9 @@ func TestAppSpecToJavaTemplateData(t *testing.T) {
 		},
 	}
 
-	data, err := AppSpecToJavaTemplateData(appSpec, "com.test")
+	data, err := AppSpecToKotlinTemplateData(appSpec, "com.test")
 	if err != nil {
-		t.Fatalf("AppSpecToJavaTemplateData() error = %v", err)
+		t.Fatalf("AppSpecToKotlinTemplateData() error = %v", err)
 	}
 
 	if data.Package != "com.test" {
@@ -104,23 +104,23 @@ func TestGenerateJavaDefaultValues(t *testing.T) {
 		t.Fatalf("GenerateJava() with defaults error = %v", err)
 	}
 
-	// Should create file in default location
-	exists, err := afero.Exists(fs, "suga/java/client/GeneratedSugaClient.java")
+	// Should create Kotlin file in default location
+	exists, err := afero.Exists(fs, "suga/kotlin/client/GeneratedSugaClient.kt")
 	if err != nil {
 		t.Fatalf("Failed to check if default file exists: %v", err)
 	}
 	if !exists {
-		t.Error("Expected GeneratedSugaClient.java to be created in default location")
+		t.Error("Expected GeneratedSugaClient.kt to be created in default location")
 	}
 
 	// Read and verify default package
-	content, err := afero.ReadFile(fs, "suga/java/client/GeneratedSugaClient.java")
+	content, err := afero.ReadFile(fs, "suga/kotlin/client/GeneratedSugaClient.kt")
 	if err != nil {
 		t.Fatalf("Failed to read generated file: %v", err)
 	}
 
 	contentStr := string(content)
-	if !strings.Contains(contentStr, "package com.addsuga.client;") {
+	if !strings.Contains(contentStr, "package com.addsuga.client") {
 		t.Error("Expected default package com.addsuga.client")
 	}
 }

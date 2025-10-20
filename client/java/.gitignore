@@ -85,3 +85,7 @@ Desktop.ini
 # Generated protobuf sources
 src/main/java/com/nitric/suga/storage/
 src/main/java/com/nitric/suga/pubsub/
+
+# Kotlin build artifacts
+*.kotlin_module
+.kotlin/

@@ -1,6 +1,6 @@
-# Suga Java Client
+# Suga Kotlin/Java Client
 
-The official Java client library for [Suga](https://github.com/nitrictech/suga).
+The official Kotlin/Java client library for [Suga](https://github.com/nitrictech/suga). Now written in Kotlin for better developer experience while maintaining full Java compatibility.
 
 ## Installation
 
@@ -22,7 +22,44 @@ implementation 'com.addsuga.client:suga-client:0.0.1'
 
 ## Usage
 
-### Basic Example
+### Basic Example (Kotlin)
+
+```kotlin
+import com.addsuga.client.SugaClient
+import com.addsuga.client.Bucket
+
+fun main() {
+    // Create a client
+    val client = SugaClient()
+    
+    // Create a bucket instance using the public API
+    val myBucket = client.createBucket("my-bucket")
+    
+    // Write data to the bucket
+    val data = "Hello, World!".toByteArray()
+    myBucket.write("example.txt", data)
+    
+    // Read data from the bucket
+    val readData = myBucket.read("example.txt")
+    println(String(readData))
+    
+    // Check if a file exists
+    val exists = myBucket.exists("example.txt")
+    println("File exists: $exists")
+    
+    // List files with a prefix
+    val files = myBucket.list("example")
+    println("Files: $files")
+    
+    // Delete a file
+    myBucket.delete("example.txt")
+    
+    // Close the client (or use use() for automatic resource management)
+    client.close()
+}
+```
+
+### Basic Example (Java)
 
 ```java
 import com.addsuga.client.SugaClient;
@@ -62,9 +99,29 @@ public class Example {
 }
 ```
 
-### Generated Client Example
+### Generated Client Example (Kotlin)
 
 When using the Suga CLI to generate client code, you'll get a generated client class:
+
+```kotlin
+import com.example.GeneratedSugaClient
+
+fun main() {
+    // Create the generated client
+    val client = GeneratedSugaClient()
+    
+    // Access your buckets directly (assuming you have a bucket named "my-bucket")
+    client.myBucket.write("test.txt", "Hello from generated client!".toByteArray())
+    
+    val data = client.myBucket.read("test.txt")
+    println(String(data))
+    
+    // Close the client
+    client.close()
+}
+```
+
+### Generated Client Example (Java)
 
 ```java
 import com.example.GeneratedSugaClient;
@@ -86,9 +143,23 @@ public class GeneratedExample {
 }
 ```
 
-### Presigned URLs
+### Presigned URLs (Kotlin)
 
 Generate presigned URLs for secure file access:
+
+```kotlin
+import com.addsuga.client.Bucket
+import java.time.Duration
+
+// Get a download URL (valid for 5 minutes by default)
+val downloadUrl = bucket.getDownloadURL("my-file.txt")
+
+// Get an upload URL with custom expiry
+val uploadUrl = bucket.getUploadURL("new-file.txt",
+    Bucket.PresignUrlOptions.write(Duration.ofHours(1)))
+```
+
+### Presigned URLs (Java)
 
 ```java
 import com.addsuga.client.Bucket;
@@ -98,7 +169,7 @@ import java.time.Duration;
 String downloadUrl = bucket.getDownloadURL("my-file.txt");
 
 // Get an upload URL with custom expiry
-String uploadUrl = bucket.getUploadURL("new-file.txt", 
+String uploadUrl = bucket.getUploadURL("new-file.txt",
     Bucket.PresignUrlOptions.write(Duration.ofHours(1)));
 ```
 
@@ -112,6 +183,12 @@ export SUGA_SERVICE_ADDRESS=your-server:50051
 
 Or set it programmatically:
 
+**Kotlin:**
+```kotlin
+val client = SugaClient("your-server:50051")
+```
+
+**Java:**
 ```java
 SugaClient client = new SugaClient("your-server:50051");
 ```
@@ -148,6 +225,8 @@ Provides methods for interacting with cloud storage buckets.
 
 ### Building from Source
 
+This project now uses Kotlin with Java compatibility. Both languages are compiled together:
+
 ```bash
 mvn clean compile
 ```
@@ -164,6 +243,20 @@ The protobuf sources are automatically generated during the build process. To ma
 
 ```bash
 mvn protobuf:compile protobuf:compile-custom
+```
+
+### Code Formatting
+
+Format both Kotlin and Java code:
+
+```bash
+mvn spotless:apply
+```
+
+Check formatting:
+
+```bash
+mvn spotless:check
 ```
 
 ## License
