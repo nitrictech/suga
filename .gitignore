@@ -28,3 +28,18 @@ tools/protoc*.zip
 tools/readme.txt
 
 *.coverprofile
+
+# file for publishing to test registry
+client/java/test-settings.xml 
+
+
+# Generated protobuf sources
+src/main/java/com/addsuga/
+target/generated-sources/
+
+# Kotlin build artifacts
+*.kotlin_module
+.kotlin/
+
+# Maven settings (may contain sensitive credentials)
+*settings.xml

@@ -2,8 +2,8 @@ package com.addsuga.client
 
 import com.google.protobuf.ByteString
 import com.google.protobuf.Duration
-import com.nitric.suga.storage.v2.StorageGrpc
-import com.nitric.suga.storage.v2.StorageProto.*
+import io.suga.proto.storage.v2.*
+import io.suga.proto.storage.v2.StorageGrpc
 import java.time.temporal.ChronoUnit
 
 /** Bucket provides methods for interacting with cloud storage buckets */

@@ -83,9 +83,12 @@ ehthumbs.db
 Desktop.ini
 
 # Generated protobuf sources
-src/main/java/com/nitric/suga/storage/
-src/main/java/com/nitric/suga/pubsub/
+src/main/java/com/addsuga/
+target/generated-sources/
 
 # Kotlin build artifacts
 *.kotlin_module
 .kotlin/
+
+# Maven settings (may contain sensitive credentials)
+*settings.xml

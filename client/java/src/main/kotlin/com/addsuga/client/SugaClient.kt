@@ -1,8 +1,8 @@
 package com.addsuga.client
 
-import com.nitric.suga.storage.v2.StorageGrpc
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
+import io.suga.proto.storage.v2.StorageGrpc
 import java.util.concurrent.TimeUnit
 
 /**
