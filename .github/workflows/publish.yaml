@@ -7,7 +7,50 @@ on:
       - "*"
 
 jobs:
+  test-java-compatibility:
+    name: Test Java Compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java-version: [8, 11, 17, 21]
+    defaults:
+      run:
+        working-directory: ./client/java
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-java${{ matrix.java-version }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-java${{ matrix.java-version }}-
+            ${{ runner.os }}-m2-
+
+      - name: Generate protobuf sources
+        run: mvn protobuf:compile protobuf:compile-custom
+
+      - name: Compile Kotlin and Java sources
+        run: mvn compile
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Verify JAR can be built
+        run: mvn package -DskipTests
+
   publish-goreleaser:
+    needs: test-java-compatibility
     name: Publish - Go Releaser
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +72,7 @@ jobs:
 
   publish-node:
     name: Publish - NodeJS Client NPM
+    needs: test-java-compatibility
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -95,6 +139,7 @@ jobs:
 
   publish-python:
     name: Publish - Python Client PyPI
+    needs: test-java-compatibility
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -144,6 +189,7 @@ jobs:
 
   publish-kotlin:
     name: Publish - Kotlin/Java Client Maven Central
+    needs: test-java-compatibility
     runs-on: ubuntu-latest
     defaults:
       run:
