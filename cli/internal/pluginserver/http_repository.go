@@ -20,9 +20,10 @@ type HTTPPluginRepository struct {
 }
 
 func NewHTTPPluginRepository(serverURL string) *HTTPPluginRepository {
+	base := strings.TrimRight(serverURL, "/")
 	return &HTTPPluginRepository{
-		serverURL: serverURL,
-		client:    &http.Client{},
+		serverURL: base,
+		client:    &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
