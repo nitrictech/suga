@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
 	"github.com/nitrictech/suga/engines/terraform"
