@@ -2,6 +2,7 @@ package pluginserver
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/nitrictech/suga/engines/terraform"
 )
@@ -9,9 +10,10 @@ import (
 // CompositePluginRepository routes plugin requests to the appropriate repository
 // based on whether the library has a ServerURL (local development) or not (API)
 type CompositePluginRepository struct {
-	platform      *terraform.PlatformSpec
-	defaultRepo   terraform.PluginRepository
-	serverRepos   map[string]terraform.PluginRepository // keyed by ServerURL
+	platform    *terraform.PlatformSpec
+	defaultRepo terraform.PluginRepository
+	serverRepos map[string]terraform.PluginRepository // keyed by ServerURL
+	lock        sync.Mutex
 }
 
 func NewCompositePluginRepository(platform *terraform.PlatformSpec, defaultRepo terraform.PluginRepository) *CompositePluginRepository {
@@ -50,6 +52,8 @@ func (r *CompositePluginRepository) getRepositoryForLibrary(team, libname string
 
 	// If the library has a ServerURL, use HTTP repository
 	if lib.ServerURL != "" {
+		r.lock.Lock()
+		defer r.lock.Unlock()
 		// Check if we already have a repository for this server
 		if repo, ok := r.serverRepos[lib.ServerURL]; ok {
 			return repo, nil
