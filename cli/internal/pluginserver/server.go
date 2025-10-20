@@ -120,11 +120,31 @@ func (s *PluginServer) handleTerraformModuleZip(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// Prevent path traversal: reject absolute paths
+	if filepath.IsAbs(pluginInfo.TerraformModulePath) {
+		http.Error(w, "terraform module path cannot be absolute", http.StatusBadRequest)
+		return
+	}
+
+	// Prevent path traversal: reject paths with leading ".." segments
+	normalizedPath := filepath.FromSlash(pluginInfo.TerraformModulePath)
+	if strings.HasPrefix(normalizedPath, ".."+string(os.PathSeparator)) || normalizedPath == ".." {
+		http.Error(w, "terraform module path cannot escape plugin directory", http.StatusBadRequest)
+		return
+	}
+
 	// Resolve the terraform module path relative to the plugin directory
-	moduleDir := filepath.Join(pluginInfo.Dir, pluginInfo.TerraformModulePath)
+	resolved := filepath.Clean(filepath.Join(pluginInfo.Dir, filepath.FromSlash(pluginInfo.TerraformModulePath)))
+	pluginDir := filepath.Clean(pluginInfo.Dir)
+
+	// Verify containment: ensure resolved path is within plugin directory
+	if resolved != pluginDir && !strings.HasPrefix(resolved, pluginDir+string(os.PathSeparator)) {
+		http.Error(w, "terraform module path must be contained within plugin directory", http.StatusBadRequest)
+		return
+	}
 
 	// Check if the resolved path exists
-	if exists, _ := afero.Exists(s.fs, moduleDir); !exists {
+	if exists, _ := afero.Exists(s.fs, resolved); !exists {
 		http.Error(w, fmt.Sprintf("terraform module not found at %s", pluginInfo.TerraformModulePath), http.StatusNotFound)
 		return
 	}
@@ -135,7 +155,7 @@ func (s *PluginServer) handleTerraformModuleZip(w http.ResponseWriter, r *http.R
 	defer zipWriter.Close()
 
 	// Walk the module directory and add files to zip
-	err := afero.Walk(s.fs, moduleDir, func(path string, info os.FileInfo, err error) error {
+	err := afero.Walk(s.fs, resolved, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -146,7 +166,7 @@ func (s *PluginServer) handleTerraformModuleZip(w http.ResponseWriter, r *http.R
 		}
 
 		// Get relative path
-		relPath, err := filepath.Rel(moduleDir, path)
+		relPath, err := filepath.Rel(resolved, path)
 		if err != nil {
 			return err
 		}
