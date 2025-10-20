@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -60,6 +61,28 @@ type Variable struct {
 	Nullable    bool        `json:"nullable" yaml:"nullable"`
 }
 
+// PlatformValidationError represents validation errors in a platform spec
+type PlatformValidationError struct {
+	Violations []string
+}
+
+func (e *PlatformValidationError) Error() string {
+	if len(e.Violations) == 0 {
+		return "platform spec validation failed"
+	}
+
+	var builder strings.Builder
+	builder.WriteString("platform spec validation failed:\n")
+	for i, violation := range e.Violations {
+		if i > 0 {
+			builder.WriteString("\n")
+		}
+		builder.WriteString("  - ")
+		builder.WriteString(violation)
+	}
+	return builder.String()
+}
+
 type Library struct {
 	Team      string `json:"team" yaml:"team"`
 	Name      string `json:"name" yaml:"name"`
@@ -100,6 +123,54 @@ func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
 		libraries[id], _ = p.GetLibrary(id)
 	}
 	return libraries
+}
+
+// Validate checks the platform spec for security issues and malformed data
+func (p *PlatformSpec) Validate() error {
+	var violations []string
+
+	// Validate library server URLs
+	for libID, libVersion := range p.Libraries {
+		versionStr := string(libVersion)
+
+		// Check if this is a URL (for local development servers)
+		if strings.HasPrefix(versionStr, "http://") || strings.HasPrefix(versionStr, "https://") {
+			if err := validateServerURL(string(libID), versionStr); err != nil {
+				violations = append(violations, err.Error())
+			}
+		}
+	}
+
+	if len(violations) > 0 {
+		return &PlatformValidationError{Violations: violations}
+	}
+
+	return nil
+}
+
+// validateServerURL validates that a server URL is well-formed and safe
+func validateServerURL(libraryID, serverURL string) error {
+	parsedURL, err := url.Parse(serverURL)
+	if err != nil {
+		return fmt.Errorf("library %s: invalid server URL: %w", libraryID, err)
+	}
+
+	// Ensure valid scheme
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("library %s: invalid server URL scheme - must be http or https", libraryID)
+	}
+
+	// Ensure host is present
+	if parsedURL.Host == "" {
+		return fmt.Errorf("library %s: invalid server URL - missing host", libraryID)
+	}
+
+	// Reject URLs with embedded credentials
+	if parsedURL.User != nil {
+		return fmt.Errorf("library %s: invalid server URL - URLs with embedded credentials are not allowed", libraryID)
+	}
+
+	return nil
 }
 
 type MissingResourceBlueprintError struct {
@@ -200,8 +271,16 @@ func PlatformSpecFromReader(reader io.Reader) (*PlatformSpec, error) {
 	}
 
 	err = yaml.Unmarshal(byt, &spec)
+	if err != nil {
+		return &spec, err
+	}
 
-	return &spec, err
+	// Validate the platform spec after deserialization
+	if err := spec.Validate(); err != nil {
+		return &spec, err
+	}
+
+	return &spec, nil
 }
 
 func PlatformSpecFromFile(fs afero.Fs, filePath string) (*PlatformSpec, error) {
