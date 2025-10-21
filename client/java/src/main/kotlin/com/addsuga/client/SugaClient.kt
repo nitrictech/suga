@@ -25,8 +25,19 @@ open class SugaClient : AutoCloseable {
   constructor(address: String) {
     require(address.isNotBlank()) { "Address cannot be null or empty" }
 
-    this.channel = ManagedChannelBuilder.forTarget(address).usePlaintext().build()
+    val isSecure = System.getenv("SUGA_SERVICE_SECURE")?.let {
+      it.trim().equals("true", ignoreCase = true)
+    } ?: false
+
+    val channelBuilder = ManagedChannelBuilder.forTarget(address)
+    this.channel = if (isSecure) {
+      channelBuilder.useTransportSecurity().build()
+    } else {
+      channelBuilder.usePlaintext().build()
+    }
+    
     this.storageClient = StorageGrpc.newBlockingStub(channel)
+      .withDeadlineAfter(10, TimeUnit.SECONDS)
   }
 
   /**

@@ -24,7 +24,7 @@ service Storage {
   rpc PreSignUrl (StoragePreSignUrlRequest) returns (StoragePreSignUrlResponse);
   // List blobs currently in the bucket
   rpc ListBlobs (StorageListBlobsRequest) returns (StorageListBlobsResponse);
-  // Determine is an object exists in a bucket
+  // Determine if an object exists in a bucket
   rpc Exists (StorageExistsRequest) returns (StorageExistsResponse);
 }
 
