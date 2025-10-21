@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/api"
+	"github.com/nitrictech/suga/cli/internal/style"
+	"github.com/nitrictech/suga/cli/internal/style/icons"
 	"github.com/nitrictech/suga/engines/terraform"
 )
 
@@ -42,6 +44,8 @@ func (r *HTTPPluginRepository) GetResourcePlugin(team, libname, version, name st
 	// Transform relative Terraform module paths to HTTP URLs
 	r.transformTerraformModulePath(&resourcePluginManifest.Deployment, name)
 
+	fmt.Printf("%s Using local plugin: %s from %s\n", style.Green(icons.Check), name, r.serverURL)
+
 	return resourcePluginManifest, nil
 }
 
@@ -58,6 +62,8 @@ func (r *HTTPPluginRepository) GetIdentityPlugin(team, libname, version, name st
 
 	// Transform relative Terraform module paths to HTTP URLs
 	r.transformTerraformModulePath(&identityPluginManifest.Deployment, name)
+
+	fmt.Printf("%s Using local plugin: %s from %s\n", style.Green(icons.Check), name, r.serverURL)
 
 	return identityPluginManifest, nil
 }
