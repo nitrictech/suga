@@ -1,6 +1,6 @@
 # Suga Kotlin/Java Client
 
-The official Kotlin/Java client library for [Suga](https://github.com/nitrictech/suga). Now written in Kotlin for better developer experience while maintaining full Java compatibility.
+The official Kotlin/Java client library for [Suga](https://github.com/nitrictech/suga).
 
 ## Installation
 
@@ -99,49 +99,6 @@ public class Example {
 }
 ```
 
-### Generated Client Example (Kotlin)
-
-When using the Suga CLI to generate client code, you'll get a generated client class:
-
-```kotlin
-import com.example.GeneratedSugaClient
-
-fun main() {
-    // Create the generated client
-    val client = GeneratedSugaClient()
-    
-    // Access your buckets directly (assuming you have a bucket named "my-bucket")
-    client.myBucket.write("test.txt", "Hello from generated client!".toByteArray())
-    
-    val data = client.myBucket.read("test.txt")
-    println(String(data))
-    
-    // Close the client
-    client.close()
-}
-```
-
-### Generated Client Example (Java)
-
-```java
-import com.example.GeneratedSugaClient;
-
-public class GeneratedExample {
-    public static void main(String[] args) {
-        // Create the generated client
-        GeneratedSugaClient client = new GeneratedSugaClient();
-        
-        // Access your buckets directly (assuming you have a bucket named "my-bucket")
-        client.myBucket.write("test.txt", "Hello from generated client!".getBytes());
-        
-        byte[] data = client.myBucket.read("test.txt");
-        System.out.println(new String(data));
-        
-        // Close the client
-        client.close();
-    }
-}
-```
 
 ### Presigned URLs (Kotlin)
 
@@ -193,33 +150,6 @@ val client = SugaClient("your-server:50051")
 SugaClient client = new SugaClient("your-server:50051");
 ```
 
-## API Reference
-
-### SugaClient
-
-The base client class that manages the gRPC connection to the Suga runtime.
-
-#### Methods
-
-- `SugaClient()` - Create a client with default configuration
-- `SugaClient(String address)` - Create a client with custom server address
-- `void close()` - Close the client and release resources
-
-### Bucket
-
-Provides methods for interacting with cloud storage buckets.
-
-#### Methods
-
-- `byte[] read(String key)` - Read a file from the bucket
-- `void write(String key, byte[] data)` - Write a file to the bucket
-- `void delete(String key)` - Delete a file from the bucket
-- `List<String> list(String prefix)` - List files with a given prefix
-- `boolean exists(String key)` - Check if a file exists
-- `String getDownloadURL(String key)` - Get a presigned download URL
-- `String getUploadURL(String key)` - Get a presigned upload URL
-- `String getDownloadURL(String key, PresignUrlOptions options)` - Get download URL with options
-- `String getUploadURL(String key, PresignUrlOptions options)` - Get upload URL with options
 
 ## Development
 
@@ -236,33 +166,3 @@ mvn clean compile
 ```bash
 mvn test
 ```
-
-### Generating Protobuf Sources
-
-The protobuf sources are automatically generated during the build process. To manually generate them:
-
-```bash
-mvn protobuf:compile protobuf:compile-custom
-```
-
-### Code Formatting
-
-Format both Kotlin and Java code:
-
-```bash
-mvn spotless:apply
-```
-
-Check formatting:
-
-```bash
-mvn spotless:check
-```
-
-## License
-
-This project is licensed under the MPL-2.0 License - see the [LICENSE](../../LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
