@@ -8,7 +8,7 @@ import com.addsuga.client.Bucket;
 {{end}}
 
 /**
- * Generated client provides access to suga application resources
+ * Generated client provides access to Suga application resources
  */
 public class GeneratedSugaClient extends SugaClient {
     {{range .Buckets}}
