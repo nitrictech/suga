@@ -30,6 +30,7 @@
             "pages": [
               "guides",
               "guides/add-suga",
+              "guides/mcp-integration",
               "guides/build-platform",
               "guides/database-migration",
               "guides/terraform-backend-config",

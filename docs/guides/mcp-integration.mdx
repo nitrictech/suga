@@ -1,0 +1,145 @@
+---
+title: 'Add Suga Docs to Your AI Agent'
+description: 'Connect the Suga documentation MCP server to your coding agents for real-time documentation access'
+---
+
+## Overview
+
+Suga's documentation is available through a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server, enabling AI coding agents to query our documentation in real-time. This integration allows your AI tools to provide accurate, up-to-date information about Suga without manually copying documentation into context windows.
+
+## MCP Server URL
+
+The Suga documentation MCP server is hosted at:
+
+```
+https://docs.addsuga.com/mcp
+```
+
+This server provides:
+- **Documentation Search**: Query all Suga documentation, guides, and CLI references
+- **Real-time Access**: Always get the latest documentation without manual updates
+
+## Integration Guides
+
+Follow the instructions below for your preferred coding agent:
+
+<Tabs>
+<Tab title="Claude Code">
+
+Claude Code supports MCP servers through a simple CLI command:
+
+```bash
+claude mcp add --transport http suga-docs https://docs.addsuga.com/mcp
+```
+
+This adds the Suga documentation server to your Claude Code configuration.
+
+**Verify Installation**
+
+Check that the server was added successfully:
+
+```bash
+claude mcp list
+```
+
+You should see `suga-docs` in the list of available MCP servers.
+
+**Usage**
+
+Once configured, Claude Code can automatically query Suga documentation when you ask questions about Suga features, CLI commands, or implementation patterns.
+
+Example queries:
+- "How do I set up database migrations in Suga?"
+- "What are the available Suga CLI commands for managing environments?"
+- "Show me how to configure a custom platform in Suga"
+
+**Project-Specific Configuration**
+
+To share this configuration with your team, add it to your project's `.mcp.json` file:
+
+```json
+{
+  "mcpServers": {
+    "suga-docs": {
+      "url": "https://docs.addsuga.com/mcp"
+    }
+  }
+}
+```
+
+Commit this file to your repository so all team members can access the Suga documentation MCP server.
+
+**Documentation**: [Claude Code MCP Guide](https://docs.claude.com/en/docs/claude-code/mcp)
+
+</Tab>
+
+<Tab title="Cursor">
+
+**Adding to Cursor**
+
+1. Open Cursor Settings (`Cmd/Ctrl + ,`)
+2. Navigate to **Features** > **Model Context Protocol**
+3. Click **Add MCP Server**
+4. Configure the server:
+
+```json
+{
+  "mcpServers": {
+    "suga-docs": {
+      "url": "https://docs.addsuga.com/mcp"
+    }
+  }
+}
+```
+
+5. Save and restart Cursor
+
+**Usage in Cursor**
+
+Once configured, you can reference Suga documentation in your Cursor conversations:
+
+- Use `Cmd+K` or `Ctrl+K` to open the composer
+- Ask questions about Suga features and the AI will query the documentation
+- The MCP server provides context automatically when relevant
+
+**Documentation**: [Cursor MCP Guide](https://docs.cursor.com/context/model-context-protocol)
+
+</Tab>
+
+
+<Tab title="Windsurf">
+
+**Adding to Windsurf**
+
+1. Open Windsurf Settings
+2. Navigate to **MCP Servers**
+3. Click **Add Server**
+4. Enter the configuration:
+
+```json
+{
+  "mcpServers": {
+    "suga-docs": {
+      "serverUrl": "https://docs.addsuga.com/mcp"
+    }
+  }
+}
+```
+
+5. Save and restart Windsurf
+
+**Usage in Windsurf**
+
+Windsurf's Cascade AI will automatically query the Suga documentation when you ask about Suga-related topics.
+
+**Documentation**: [Windsurf MCP Integration Guide](https://docs.windsurf.com/windsurf/cascade/mcp)
+
+</Tab>
+
+</Tabs>
+
+## Learn More
+
+- [Model Context Protocol Documentation](https://modelcontextprotocol.io)
+- [Suga CLI Reference](/cli)
+- [Suga Quickstart Guide](/quickstart)
