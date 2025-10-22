@@ -94,3 +94,123 @@ func (c *SugaApiClient) GetPublicPluginManifest(team, lib, libVersion, name stri
 
 	return c.parsePluginManifest(body, "public")
 }
+
+func (c *SugaApiClient) ListPluginLibraries(team string) ([]PluginLibraryWithVersions, error) {
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/plugin_libraries", url.PathEscape(team)), true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		if response.StatusCode == 401 {
+			return nil, ErrUnauthenticated
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s plugin libraries list endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s plugin libraries list endpoint: %v", version.ProductName, err)
+	}
+
+	var librariesResponse ListPluginLibrariesResponse
+	err = json.Unmarshal(body, &librariesResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s plugin libraries list endpoint: %v", version.ProductName, err)
+	}
+	return librariesResponse.Libraries, nil
+}
+
+func (c *SugaApiClient) ListPublicPluginLibraries(team string) ([]PluginLibraryWithVersions, error) {
+	response, err := c.get(fmt.Sprintf("/api/public/plugin_libraries/%s", url.PathEscape(team)), true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s public plugin libraries list endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s public plugin libraries list endpoint: %v", version.ProductName, err)
+	}
+
+	var librariesResponse ListPluginLibrariesResponse
+	err = json.Unmarshal(body, &librariesResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s public plugin libraries list endpoint: %v", version.ProductName, err)
+	}
+	return librariesResponse.Libraries, nil
+}
+
+func (c *SugaApiClient) GetPluginLibraryVersion(team, lib, libVersion string) (*PluginLibraryVersion, error) {
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/plugin_libraries/%s/versions/%s", url.PathEscape(team), url.PathEscape(lib), url.PathEscape(libVersion)), true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		if response.StatusCode == 401 {
+			return nil, ErrUnauthenticated
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s plugin library version endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s plugin library version endpoint: %v", version.ProductName, err)
+	}
+
+	var versionResponse GetPluginLibraryVersionResponse
+	err = json.Unmarshal(body, &versionResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s plugin library version endpoint: %v", version.ProductName, err)
+	}
+	return versionResponse.Version, nil
+}
+
+func (c *SugaApiClient) GetPublicPluginLibraryVersion(team, lib, libVersion string) (*PluginLibraryVersion, error) {
+	response, err := c.get(fmt.Sprintf("/api/public/plugin_libraries/%s/%s/versions/%s", url.PathEscape(team), url.PathEscape(lib), url.PathEscape(libVersion)), true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s public plugin library version endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s public plugin library version endpoint: %v", version.ProductName, err)
+	}
+
+	var versionResponse GetPluginLibraryVersionResponse
+	err = json.Unmarshal(body, &versionResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s public plugin library version endpoint: %v", version.ProductName, err)
+	}
+	return versionResponse.Version, nil
+}
