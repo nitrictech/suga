@@ -42,6 +42,7 @@ func NewRootCmd(injector do.Injector) *cobra.Command {
 	rootCmd.AddCommand(NewConfigCmd(injector))
 	rootCmd.AddCommand(NewTeamCmd(injector))
 	rootCmd.AddCommand(NewPluginCmd(injector))
+	rootCmd.AddCommand(NewMcpCmd(injector))
 
 	return rootCmd
 }
