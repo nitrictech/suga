@@ -511,9 +511,9 @@ func (c *SugaApp) Build() error {
 }
 
 // Generate handles the generate command logic
-func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bool, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir string) error {
+func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag, javaFlag, kotlinFlag bool, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir, javaOutputDir, javaPackageName, kotlinOutputDir, kotlinPackageName string) error {
 	// Check if at least one language flag is provided
-	if !goFlag && !pythonFlag && !javascriptFlag && !typescriptFlag {
+	if !goFlag && !pythonFlag && !javascriptFlag && !typescriptFlag && !javaFlag && !kotlinFlag {
 		return fmt.Errorf("at least one language flag must be specified")
 	}
 
@@ -548,6 +548,22 @@ func (c *SugaApp) Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag bo
 	if typescriptFlag {
 		fmt.Println("Generating NodeJS client...")
 		err = client.GenerateTypeScript(c.fs, *appSpec, typescriptOutputDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	if javaFlag {
+		fmt.Println("Generating Java client...")
+		err = client.GenerateJava(c.fs, *appSpec, javaOutputDir, javaPackageName)
+		if err != nil {
+			return err
+		}
+	}
+
+	if kotlinFlag {
+		fmt.Println("Generating Kotlin client...")
+		err = client.GenerateKotlin(c.fs, *appSpec, kotlinOutputDir, kotlinPackageName)
 		if err != nil {
 			return err
 		}

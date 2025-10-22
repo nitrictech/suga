@@ -84,8 +84,8 @@ func NewBuildCmd(injector do.Injector) *cobra.Command {
 // NewGenerateCmd creates the generate command
 func NewGenerateCmd(injector do.Injector) *cobra.Command {
 	var (
-		goFlag, pythonFlag, javascriptFlag, typescriptFlag                                    bool
-		goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir string
+		goFlag, pythonFlag, javascriptFlag, typescriptFlag, javaFlag, kotlinFlag                                                                                  bool
+		goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir, javaOutputDir, javaPackageName, kotlinOutputDir, kotlinPackageName string
 	)
 
 	cmd := &cobra.Command{
@@ -97,7 +97,7 @@ func NewGenerateCmd(injector do.Injector) *cobra.Command {
 			if err != nil {
 				cobra.CheckErr(err)
 			}
-			cobra.CheckErr(app.Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir))
+			cobra.CheckErr(app.Generate(goFlag, pythonFlag, javascriptFlag, typescriptFlag, javaFlag, kotlinFlag, goOutputDir, goPackageName, pythonOutputDir, javascriptOutputDir, typescriptOutputDir, javaOutputDir, javaPackageName, kotlinOutputDir, kotlinPackageName))
 		},
 	}
 
@@ -114,6 +114,14 @@ func NewGenerateCmd(injector do.Injector) *cobra.Command {
 
 	cmd.Flags().BoolVar(&typescriptFlag, "ts", false, "Generate TypeScript client")
 	cmd.Flags().StringVar(&typescriptOutputDir, "ts-out", "", "Output directory for TypeScript client")
+
+	cmd.Flags().BoolVar(&javaFlag, "java", false, "Generate Java client (Kotlin-compatible)")
+	cmd.Flags().StringVar(&javaOutputDir, "java-out", "", "Output directory for Java client")
+	cmd.Flags().StringVar(&javaPackageName, "java-package-name", "", "Package name for Java client")
+
+	cmd.Flags().BoolVar(&kotlinFlag, "kotlin", false, "Generate Kotlin client")
+	cmd.Flags().StringVar(&kotlinOutputDir, "kotlin-out", "", "Output directory for Kotlin client")
+	cmd.Flags().StringVar(&kotlinPackageName, "kotlin-package-name", "", "Package name for Kotlin client")
 
 	return cmd
 }

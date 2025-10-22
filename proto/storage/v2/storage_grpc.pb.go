@@ -8,6 +8,7 @@ package storagepb
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -32,7 +33,7 @@ type StorageClient interface {
 	PreSignUrl(ctx context.Context, in *StoragePreSignUrlRequest, opts ...grpc.CallOption) (*StoragePreSignUrlResponse, error)
 	// List blobs currently in the bucket
 	ListBlobs(ctx context.Context, in *StorageListBlobsRequest, opts ...grpc.CallOption) (*StorageListBlobsResponse, error)
-	// Determine is an object exists in a bucket
+	// Determine if an object exists in a bucket
 	Exists(ctx context.Context, in *StorageExistsRequest, opts ...grpc.CallOption) (*StorageExistsResponse, error)
 }
 
@@ -112,7 +113,7 @@ type StorageServer interface {
 	PreSignUrl(context.Context, *StoragePreSignUrlRequest) (*StoragePreSignUrlResponse, error)
 	// List blobs currently in the bucket
 	ListBlobs(context.Context, *StorageListBlobsRequest) (*StorageListBlobsResponse, error)
-	// Determine is an object exists in a bucket
+	// Determine if an object exists in a bucket
 	Exists(context.Context, *StorageExistsRequest) (*StorageExistsResponse, error)
 	mustEmbedUnimplementedStorageServer()
 }
