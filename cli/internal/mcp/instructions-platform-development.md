@@ -108,10 +108,13 @@ Use MCP tools to find plugins to compose:
 The plugin manifest shows you:
 
 - **inputs**: What configuration the plugin needs
+  - Each input has a Terraform `type` (string, number, bool, list(type), map(type), object({...}))
+  - Each input has a `required` flag
   - Required inputs MUST be provided in `properties:`
   - Optional inputs can be omitted or provided
 
 - **outputs**: What values the plugin exposes
+  - Each output has a Terraform type
   - Used to wire plugins together
   - Referenced in other plugins' properties via `${infra.resource_name.output_name}`
 
@@ -121,7 +124,18 @@ The plugin manifest shows you:
 **Example from manifest**:
 ```yaml
 # Plugin manifest shows:
-# inputs: { cpu: number, memory: number, container_port: number, ... }
+# inputs: {
+#   cpu: {type: "number", required: true},
+#   memory: {type: "number", required: true},
+#   container_port: {type: "number", required: true},
+#   security_groups: {type: "list(string)", required: true},
+#   tags: {type: "map(string)", required: false}
+# }
+# outputs: {
+#   service_url: {type: "string"},
+#   task_arn: {type: "string"},
+#   security_group_ids: {type: "list(string)"}
+# }
 # required_identities: ["aws"]
 
 services:
@@ -134,10 +148,269 @@ services:
           library: suga/aws
           plugin: iam-role  # Provides AWS identity
     properties:
-      cpu: 256              # Required input
-      memory: 512           # Required input
-      container_port: 8080  # Required input
+      cpu: 256                    # number
+      memory: 512                 # number
+      container_port: 8080        # number
+      security_groups:            # list(string)
+        - sg-abc123
+        - sg-def456
+      tags:                       # map(string)
+        Environment: prod
+        Team: platform
 ```
+
+### Step 2a: Understanding Terraform Types in Plugin Manifests
+
+Plugin manifests use Terraform's type system. Understanding these is CRITICAL for configuring properties correctly.
+
+#### **Primitive Types**
+- `string` - Text values: `"hello"`, `${var.name}`
+- `number` - Numeric values: `256`, `3.14`, `${var.cpu}`
+- `bool` - Boolean values: `true`, `false`, `${var.enabled}`
+
+#### **Collection Types**
+- `list(type)` - Ordered list of same-typed values
+  - Example: `list(string)` → `["a", "b", "c"]`
+  - Example: `list(number)` → `[1, 2, 3]`
+
+- `set(type)` - Unordered set of unique same-typed values
+  - Example: `set(string)` → `["unique1", "unique2"]`
+
+- `map(type)` - Key-value pairs where values are same-typed
+  - Example: `map(string)` → `{key1 = "value1", key2 = "value2"}`
+  - Example: `map(number)` → `{count = 5, size = 100}`
+
+- `tuple([type1, type2, ...])` - Fixed-length, ordered list with specific types per position
+  - Example: `tuple([string, number, bool])` → `["name", 42, true]`
+
+#### **Structural Type**
+- `object({attr1 = type1, attr2 = type2, ...})` - Complex structure with named attributes
+  - Example: `object({name = string, port = number})` → `{name = "api", port = 8080}`
+
+#### **Special Type**
+- `any` - Accepts any type (use carefully, type-check the manifest!)
+
+**Examples from real manifests**:
+```yaml
+# Simple types
+cpu: {type: "number", required: true}
+name: {type: "string", required: true}
+enabled: {type: "bool", required: false}
+
+# List types
+security_groups: {type: "list(string)", required: true}
+ports: {type: "list(number)", required: false}
+
+# Map types
+tags: {type: "map(string)", required: false}
+annotations: {type: "map(any)", required: false}
+
+# Object types
+vpc_config: {
+  type: "object({vpc_id = string, subnets = list(string), security_groups = list(string)})",
+  required: true
+}
+
+# Nested complex types
+route_rules: {
+  type: "list(object({path = string, priority = number, target_arn = string}))",
+  required: true
+}
+```
+
+### Step 2b: Configuring Properties - Matching Types
+
+Properties must match the Terraform types from the plugin manifest. Here's how to provide values for each type:
+
+#### **For Primitive Types**
+```yaml
+properties:
+  # string
+  name: "my-resource"
+  region: ${var.aws_region}
+
+  # number
+  cpu: 256
+  memory: ${self.memory}
+
+  # bool
+  enabled: true
+  monitoring: ${var.enable_monitoring}
+```
+
+#### **For list(type)**
+```yaml
+# Plugin input: security_groups: {type: "list(string)"}
+properties:
+  security_groups:
+    - sg-abc123
+    - sg-def456
+    - ${infra.vpc.default_security_group_id}
+
+# Or reference an output that returns list(string)
+properties:
+  subnets: ${infra.vpc.private_subnets}  # This output must be list(string)
+```
+
+#### **For map(type)**
+```yaml
+# Plugin input: tags: {type: "map(string)"}
+properties:
+  tags:
+    Environment: production
+    Team: platform
+    ManagedBy: suga
+
+# Or use merge() to combine maps
+properties:
+  tags: ${merge(var.default_tags, {Application = "api"})}
+```
+
+#### **For object({...})**
+```yaml
+# Plugin input: vpc_config: {type: "object({vpc_id = string, subnets = list(string)})"}
+properties:
+  vpc_config:
+    vpc_id: ${infra.vpc.vpc_id}
+    subnets: ${infra.vpc.private_subnets}
+
+# Or build with Terraform functions
+properties:
+  vpc_config: ${merge(
+    {vpc_id = infra.vpc.vpc_id},
+    {subnets = infra.vpc.private_subnets}
+  )}
+```
+
+#### **For list(object({...}))**
+```yaml
+# Plugin input: rules: {type: "list(object({path = string, priority = number}))"}
+properties:
+  rules:
+    - path: /api/*
+      priority: 100
+    - path: /admin/*
+      priority: 200
+
+# Or construct dynamically
+properties:
+  rules: ${[
+    for idx, path in var.api_paths : {
+      path     = path
+      priority = (idx + 1) * 100
+    }
+  ]}
+```
+
+### Step 2c: Using Terraform Functions
+
+Terraform functions can help construct values matching the required types:
+
+**String Functions**:
+```yaml
+properties:
+  # format() returns string
+  name: ${format("%s-%s-cluster", var.environment, var.region)}
+
+  # join() returns string
+  allowed_cidrs: ${join(",", var.cidr_list)}
+
+  # lower(), upper() return string
+  region: ${lower(var.aws_region)}
+```
+
+**List Functions**:
+```yaml
+properties:
+  # concat() returns list(type)
+  all_subnets: ${concat(infra.vpc.private_subnets, infra.vpc.public_subnets)}
+
+  # flatten() returns list(type)
+  flat_list: ${flatten(var.nested_lists)}
+
+  # distinct() returns list(type)
+  unique_items: ${distinct(var.items_with_duplicates)}
+
+  # slice() returns list(type)
+  first_two: ${slice(var.all_items, 0, 2)}
+```
+
+**Map Functions**:
+```yaml
+properties:
+  # merge() returns map(type)
+  all_tags: ${merge(var.default_tags, var.custom_tags, {ManagedBy = "suga"})}
+
+  # zipmap() returns map(type)
+  name_to_id: ${zipmap(var.names, var.ids)}
+
+  # keys() returns list(string), values() returns list(type)
+  tag_keys: ${keys(var.tags)}
+  tag_values: ${values(var.tags)}
+```
+
+**Type Conversion**:
+```yaml
+properties:
+  # Convert between types
+  port_string: ${tostring(var.port_number)}      # number → string
+  count_number: ${tonumber(var.count_string)}    # string → number
+  enabled_bool: ${tobool(var.enabled_string)}    # string → bool
+
+  # Convert collections
+  sg_list: ${tolist(var.sg_set)}                 # set → list
+  tags_map: ${tomap(var.tags_object)}            # object → map
+```
+
+**Conditional Expressions**:
+```yaml
+properties:
+  # Returns value matching required type
+  cpu: ${var.environment == "prod" ? 1024 : 256}  # Returns number
+
+  subnets: ${var.use_private ? infra.vpc.private_subnets : infra.vpc.public_subnets}  # Returns list(string)
+```
+
+### Step 2d: Type Validation - Common Mistakes
+
+**❌ WRONG - Type Mismatches**:
+```yaml
+# Plugin expects: security_groups: {type: "list(string)"}
+properties:
+  security_groups: sg-abc123  # ❌ String instead of list(string)
+
+# Plugin expects: cpu: {type: "number"}
+properties:
+  cpu: "256"  # ❌ String instead of number
+
+# Plugin expects: tags: {type: "map(string)"}
+properties:
+  tags:  # ❌ List instead of map
+    - key: value
+```
+
+**✅ CORRECT - Proper Types**:
+```yaml
+# Plugin expects: security_groups: {type: "list(string)"}
+properties:
+  security_groups:  # ✅ list(string)
+    - sg-abc123
+
+# Plugin expects: cpu: {type: "number"}
+properties:
+  cpu: 256  # ✅ number
+
+# Plugin expects: tags: {type: "map(string)"}
+properties:
+  tags:  # ✅ map(string)
+    Environment: prod
+```
+
+**Verification Steps**:
+1. Call `get_plugin_manifest` - note the exact type string (e.g., `"list(string)"`)
+2. Provide values in YAML that match that type structure
+3. Use Terraform functions that return the correct type
+4. For outputs, verify the output type matches the required input type
 
 ### Step 3: Define Resource-Level Variables
 
