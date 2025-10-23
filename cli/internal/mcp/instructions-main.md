@@ -34,6 +34,21 @@ Before using the MCP tools, identify your scenario:
 
 ---
 
+### Scenario 3: Plugin Library Development
+**Goal**: Create or modify plugins in a plugin library to provide infrastructure building blocks
+
+**When to use**:
+- You want to create reusable Terraform modules for infrastructure resources
+- You need to implement cloud provider-specific resources (Lambda, S3, Fargate, etc.)
+- You're building the lowest-level building blocks that platforms compose
+- You need to provide Go runtime code for services and buckets
+
+**Next Step**: Read the **`suga://guides/plugin-library-development`** resource for detailed instructions
+
+**Key Concept**: You create the building blocks (plugins) that platforms use. Each plugin is a Terraform module with a manifest, and services/buckets require Go runtime code.
+
+---
+
 ## Important Notes
 
 ### Team Parameter
@@ -48,6 +63,7 @@ The MCP server requires authentication via `suga login`. If you receive authenti
 - **`suga://schema/platform`** - JSON Schema for `platform.yaml` platform definition files (if available)
 - **`suga://guides/app-development`** - Detailed guide for application development
 - **`suga://guides/platform-development`** - Detailed guide for platform development
+- **`suga://guides/plugin-library-development`** - Detailed guide for plugin library development
 
 ## Critical Reminder
 

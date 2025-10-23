@@ -22,6 +22,9 @@ var appDevelopmentInstructions string
 //go:embed instructions-platform-development.md
 var platformDevelopmentInstructions string
 
+//go:embed instructions-plugin-library-development.md
+var pluginLibraryDevelopmentInstructions string
+
 // Server wraps the MCP server with Suga API client
 type Server struct {
 	mcpServer *mcp.Server
@@ -226,6 +229,14 @@ func (s *Server) registerResources() error {
 		Description: "Complete guide for creating platform.yaml platform definition files",
 		MIMEType:    "text/markdown",
 	}, s.handlePlatformDevelopmentGuide)
+
+	// Register plugin library development guide
+	s.mcpServer.AddResource(&mcp.Resource{
+		URI:         "suga://guides/plugin-library-development",
+		Name:        "Plugin Library Development Guide",
+		Description: "Complete guide for creating Suga plugin libraries with Terraform modules and Go runtime code",
+		MIMEType:    "text/markdown",
+	}, s.handlePluginLibraryDevelopmentGuide)
 
 	return nil
 }
@@ -673,6 +684,18 @@ func (s *Server) handlePlatformDevelopmentGuide(ctx context.Context, req *mcp.Re
 				URI:      "suga://guides/platform-development",
 				MIMEType: "text/markdown",
 				Text:     platformDevelopmentInstructions,
+			},
+		},
+	}, nil
+}
+
+func (s *Server) handlePluginLibraryDevelopmentGuide(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{
+			{
+				URI:      "suga://guides/plugin-library-development",
+				MIMEType: "text/markdown",
+				Text:     pluginLibraryDevelopmentInstructions,
 			},
 		},
 	}, nil
