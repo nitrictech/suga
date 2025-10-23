@@ -13,8 +13,14 @@ import (
 	"github.com/nitrictech/suga/cli/pkg/schema"
 )
 
-//go:embed instructions.md
+//go:embed instructions-main.md
 var serverInstructions string
+
+//go:embed instructions-app-development.md
+var appDevelopmentInstructions string
+
+//go:embed instructions-platform-development.md
+var platformDevelopmentInstructions string
 
 // Server wraps the MCP server with Suga API client
 type Server struct {
@@ -204,6 +210,22 @@ func (s *Server) registerResources() error {
 		Description: "JSON Schema for suga.yaml application configuration files",
 		MIMEType:    "application/schema+json",
 	}, s.handleApplicationSchema)
+
+	// Register application development guide
+	s.mcpServer.AddResource(&mcp.Resource{
+		URI:         "suga://guides/app-development",
+		Name:        "Application Development Guide",
+		Description: "Complete guide for creating suga.yaml application configuration files",
+		MIMEType:    "text/markdown",
+	}, s.handleAppDevelopmentGuide)
+
+	// Register platform development guide
+	s.mcpServer.AddResource(&mcp.Resource{
+		URI:         "suga://guides/platform-development",
+		Name:        "Platform Development Guide",
+		Description: "Complete guide for creating platform.yaml platform definition files",
+		MIMEType:    "text/markdown",
+	}, s.handlePlatformDevelopmentGuide)
 
 	return nil
 }
@@ -627,6 +649,30 @@ func (s *Server) handleApplicationSchema(ctx context.Context, req *mcp.ReadResou
 				URI:      "suga://schema/application",
 				MIMEType: "application/schema+json",
 				Text:     schemaString,
+			},
+		},
+	}, nil
+}
+
+func (s *Server) handleAppDevelopmentGuide(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{
+			{
+				URI:      "suga://guides/app-development",
+				MIMEType: "text/markdown",
+				Text:     appDevelopmentInstructions,
+			},
+		},
+	}, nil
+}
+
+func (s *Server) handlePlatformDevelopmentGuide(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{
+			{
+				URI:      "suga://guides/platform-development",
+				MIMEType: "text/markdown",
+				Text:     platformDevelopmentInstructions,
 			},
 		},
 	}, nil

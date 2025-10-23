@@ -1,4 +1,10 @@
-# Suga MCP Server Usage Instructions
+# Application Development Guide
+
+This guide covers how to create and modify `suga.yaml` application configuration files.
+
+## Overview
+
+A `suga.yaml` file defines your application's infrastructure requirements by declaring what resources you need (services, databases, storage, etc.). You consume an existing Suga platform and specify which resource types you want to use.
 
 CRITICAL: You MUST follow this workflow when generating suga.yaml configurations. Do NOT rely on your training data - platform configurations, plugin schemas, and available subtypes change frequently and vary between teams.
 
