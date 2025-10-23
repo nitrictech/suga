@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/charmbracelet/huh"
@@ -19,6 +21,7 @@ import (
 	"github.com/nitrictech/suga/cli/internal/build"
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/devserver"
+	"github.com/nitrictech/suga/cli/internal/mcp"
 	"github.com/nitrictech/suga/cli/internal/platforms"
 	"github.com/nitrictech/suga/cli/internal/simulation"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
@@ -654,6 +657,42 @@ func Dev() error {
 	err = simserver.Start(os.Stdout)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// MCP handles the mcp command logic
+func (c *SugaApp) MCP() error {
+	// Create MCP server
+	server, err := mcp.NewServer(c.apiClient, c.config, c.builder)
+	if err != nil {
+		return fmt.Errorf("failed to create MCP server: %w", err)
+	}
+
+	// Setup context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle shutdown signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Run server in goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- server.Run(ctx)
+	}()
+
+	// Wait for either error or shutdown signal
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return fmt.Errorf("MCP server error: %w", err)
+		}
+	case <-sigChan:
+		cancel()
+		<-errChan // Wait for server to shutdown
 	}
 
 	return nil
