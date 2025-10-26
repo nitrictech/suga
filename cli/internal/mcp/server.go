@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nitrictech/suga/cli/internal/api"
@@ -486,7 +489,21 @@ func (s *Server) handleBuild(ctx context.Context, req *mcp.CallToolRequest, args
 		projectFile = "./suga.yaml"
 	}
 
-	stackPath, err := s.builder.BuildProjectFromFile(projectFile, team)
+	// Prevent path traversal
+	clean := filepath.Clean(projectFile)
+	absProject, err := filepath.Abs(clean)
+	if err != nil {
+		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("Invalid project file path: %v", err)}}}, nil, nil
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("Cannot determine working directory: %v", err)}}}, nil, nil
+	}
+	if !strings.HasPrefix(absProject, wd+string(os.PathSeparator)) && absProject != filepath.Join(wd, "suga.yaml") {
+		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: "project_file must be within the current workspace"}}}, nil, nil
+	}
+
+	stackPath, err := s.builder.BuildProjectFromFile(clean, team)
 	if err != nil {
 		return &mcp.CallToolResult{
 			IsError: true,
