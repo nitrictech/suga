@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/nitrictech/suga/cli/internal/api"
@@ -31,6 +32,7 @@ type Server struct {
 	apiClient *api.SugaApiClient
 	config    *config.Config
 	builder   *build.BuilderService
+	docsProxy *DocsProxy
 }
 
 // NewServer creates a new MCP server with the given API client and config
@@ -50,6 +52,9 @@ func NewServer(apiClient *api.SugaApiClient, cfg *config.Config, builder *build.
 	})
 
 	s.mcpServer = mcpServer
+
+	// Initialize docs proxy (but don't fail if it can't connect)
+	s.docsProxy = NewDocsProxy()
 
 	// Register tools
 	if err := s.registerTools(); err != nil {
@@ -147,6 +152,17 @@ type BuildArgs struct {
 
 // registerTools registers all available tools with the MCP server
 func (s *Server) registerTools() error {
+	// Connect to docs proxy and register docs tools first
+	ctx := context.Background()
+	if err := s.docsProxy.Connect(ctx); err != nil {
+		log.Printf("Warning: failed to connect to docs server, documentation features will be unavailable: %v", err)
+	} else {
+		// Register docs tools if connection succeeded
+		if err := s.registerDocsProxyTools(); err != nil {
+			log.Printf("Warning: failed to register docs tools: %v", err)
+		}
+	}
+
 	// Register list_templates tool
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
 		Name:        "list_templates",
@@ -700,3 +716,28 @@ func (s *Server) handlePluginLibraryDevelopmentGuide(ctx context.Context, req *m
 		},
 	}, nil
 }
+
+// registerDocsProxyTools registers all tools from the docs proxy server
+func (s *Server) registerDocsProxyTools() error {
+	tools := s.docsProxy.GetTools()
+	for _, tool := range tools {
+		// Create a closure to capture the tool name for this iteration
+		toolName := tool.Name
+
+		// Register a proxy handler for this tool
+		mcp.AddTool(s.mcpServer, tool, func(ctx context.Context, req *mcp.CallToolRequest, args map[string]interface{}) (*mcp.CallToolResult, any, error) {
+			result, err := s.docsProxy.CallTool(ctx, toolName, args)
+			if err != nil {
+				return &mcp.CallToolResult{
+					IsError: true,
+					Content: []mcp.Content{
+						&mcp.TextContent{Text: fmt.Sprintf("Failed to call docs tool: %v", err)},
+					},
+				}, nil, nil
+			}
+			return result, nil, nil
+		})
+	}
+	return nil
+}
+
