@@ -33,6 +33,7 @@ storage_account_name
 container_name
 tfstatestorage
 mcpServers
+mcp
 
 # Defaults from mintlify
 Mintlify
