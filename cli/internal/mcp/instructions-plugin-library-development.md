@@ -13,6 +13,17 @@ A **plugin library** is a collection of reusable Terraform modules that implemen
 
 **Key Concept**: Plugins are the lowest-level building blocks. Platforms compose plugins together, and applications consume platforms.
 
+## Getting Help
+
+Use **`SearchSugaDocs`** when you need to:
+- Understand plugin library structure and organization
+- Learn about manifest.yaml format and fields
+- Understand plugin types (service, bucket, database, etc.)
+- Find examples of plugin implementations
+- Learn about runtime code requirements for services and buckets
+
+Examples: "plugin manifest format", "how to create service plugins", "plugin runtime code"
+
 ## Plugin Library Structure
 
 ### Repository Layout

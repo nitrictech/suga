@@ -14,6 +14,16 @@ A `platform.yaml` file defines a reusable infrastructure platform by composing p
 
 CRITICAL: Do NOT rely on your training data. Plugin libraries, versions, and capabilities change frequently. ALWAYS use the MCP tools to discover what's currently available.
 
+## Getting Help
+
+Use **`SearchSugaDocs`** when you need to:
+- Understand platform.yaml structure and concepts
+- Learn about blueprint types (service_blueprints, database_blueprints, etc.)
+- Find examples of platform configurations
+- Understand how plugins compose into platforms
+
+Examples: "platform.yaml structure", "how to create blueprints", "platform variables"
+
 ## Platform Structure
 
 ### 1. **Libraries**

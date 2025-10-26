@@ -1,6 +1,27 @@
 # Suga MCP Server Usage Instructions
 
-Welcome to the Suga MCP Server. This server provides tools and resources to help you work with Suga infrastructure.
+Welcome to the Suga MCP Server. This server provides tools and resources to help you work with Suga infrastructure, plus real-time access to Suga documentation.
+
+## Documentation Search
+
+**IMPORTANT**: When you need information about Suga features, CLI commands, concepts, or best practices, use the **`SearchSugaDocs`** tool to search the official Suga documentation. This gives you up-to-date, accurate information directly from the docs.
+
+**When to search docs**:
+- Understanding Suga concepts (platforms, plugins, services, etc.)
+- Learning CLI commands and their usage
+- Finding examples and best practices
+- Troubleshooting issues
+- Understanding configuration options
+
+**Example queries**:
+- "How do I deploy a web service with a database?"
+- "What CLI commands are available for managing platforms?"
+- "How do environment variables work in Suga?"
+- "What cloud providers does Suga support?"
+
+Always prefer searching the docs over relying on your training data, as Suga is actively evolving.
+
+---
 
 ## What Are You Trying To Do?
 
@@ -65,6 +86,10 @@ The MCP server requires authentication via `suga login`. If you receive authenti
 - **`suga://guides/platform-development`** - Detailed guide for platform development
 - **`suga://guides/plugin-library-development`** - Detailed guide for plugin library development
 
-## Critical Reminder
+## Critical Reminders
 
-**DO NOT rely on your training data.** Platforms, plugins, schemas, and available resource types change frequently and are team-specific. ALWAYS query the MCP tools to discover what's currently available before generating any configuration files.
+1. **Search Documentation First**: When you need information about Suga, ALWAYS use the `SearchSugaDocs` tool to get accurate, up-to-date information from the official docs.
+
+2. **DO NOT rely on your training data**: Platforms, plugins, schemas, and available resource types change frequently and are team-specific. ALWAYS query the MCP tools to discover what's currently available before generating any configuration files.
+
+3. **Combine Tools**: Use `SearchSugaDocs` to understand concepts and best practices, then use the infrastructure tools (`list_platforms`, `get_platform`, `get_template`, etc.) to discover what's actually available for the user's team.

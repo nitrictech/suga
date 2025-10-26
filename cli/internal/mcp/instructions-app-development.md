@@ -10,6 +10,14 @@ CRITICAL: You MUST follow this workflow when generating suga.yaml configurations
 
 ## REQUIRED Workflow for Generating suga.yaml
 
+### Step 0: Search Documentation (Optional but Recommended)
+If you need to understand Suga concepts, configuration options, or best practices:
+
+1. Use **`SearchSugaDocs`** to query the official documentation
+2. Examples: "suga.yaml structure", "how to deploy services", "environment variables"
+
+This gives you accurate, up-to-date information about Suga features.
+
 ### Step 1: ALWAYS Start with Discovery
 Before writing ANY suga.yaml content, you MUST:
 
