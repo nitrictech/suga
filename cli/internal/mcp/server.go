@@ -549,7 +549,7 @@ func (s *Server) handleBuild(ctx context.Context, req *mcp.CallToolRequest, args
 		return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: "project_file must be within the current workspace"}}}, nil, nil
 	}
 
-	stackPath, err := s.builder.BuildProjectFromFile(clean, team)
+	stackPath, err := s.builder.BuildProjectFromFile(clean, team, build.BuildOptions{})
 	if err != nil {
 		return &mcp.CallToolResult{
 			IsError: true,
@@ -657,4 +657,3 @@ func (s *Server) registerDocsProxyTools() error {
 	}
 	return nil
 }
-
