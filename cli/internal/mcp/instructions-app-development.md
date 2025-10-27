@@ -50,7 +50,7 @@ The plugin manifests you see in the build manifest response are INTERNAL platfor
 ```yaml
 serviceIntents:
   my_service:
-    subtype: fargate
+    subtype: lambda
     memory: 512        # ❌ WRONG - This is a plugin input, not valid config
     cpu: 256           # ❌ WRONG - This is a plugin input, not valid config
 ```
@@ -59,12 +59,13 @@ serviceIntents:
 ```yaml
 serviceIntents:
   my_service:
-    subtype: fargate   # ✅ CORRECT - subtype is in the schema
+    subtype: lambda   # ✅ CORRECT - subtype is in the schema
     container:         # ✅ CORRECT - container is in the schema
       image:
         uri: node:18
     env:               # ✅ CORRECT - env is in the schema
       PORT: "3000"
+    dev: npm run dev
 ```
 
 The ONLY valid fields for suga.yaml are defined in the suga://schema/application resource. Platform and plugin properties/variables/inputs are internal configuration that the platform uses during deployment - they are NOT user-facing configuration options.
@@ -189,7 +190,7 @@ target: nitric/aws-platform@2              # ✅ From step 1
 name: node-api
 serviceIntents:
   api_service:                             # ✅ snake_case
-    subtype: fargate                       # ✅ From service_blueprints keys
+    subtype: lambda                       # ✅ From service_blueprints keys
     container:
       image:
         uri: node:18                       # ✅ Exactly one container type
