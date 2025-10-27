@@ -1,37 +1,17 @@
 package workos
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
+	"github.com/nitrictech/suga/cli/internal/auth"
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/workos/http"
 	"github.com/samber/do/v2"
 )
 
-var (
-	ErrNotFound        = errors.New("no token found")
-	ErrUnauthenticated = errors.New("unauthenticated")
-)
-
-type TokenStore interface {
-	// GetTokens returns the tokens from the store, or nil if no tokens are found
-	GetTokens() (*Tokens, error)
-	// SaveTokens saves the tokens to the store
-	SaveTokens(*Tokens) error
-	// Clear clears the tokens from the store
-	Clear() error
-}
-
-type Tokens struct {
-	AccessToken  string     `json:"access_token"`
-	RefreshToken string     `json:"refresh_token"`
-	User         *http.User `json:"user"`
-}
-
 type WorkOSAuth struct {
-	tokenStore TokenStore
+	tokenStore auth.TokenStore
 	httpClient *http.HttpClient
 }
 
@@ -54,16 +34,17 @@ func NewWorkOSAuth(inj do.Injector) (*WorkOSAuth, error) {
 	}
 	httpClient := http.NewHttpClient("", opts...)
 
-	tokenStore := do.MustInvoke[*KeyringTokenStore](inj)
+	tokenStore := do.MustInvoke[auth.TokenStore](inj)
 
 	return &WorkOSAuth{tokenStore: tokenStore, httpClient: httpClient}, nil
 }
 
-func (a *WorkOSAuth) Login() (*http.User, error) {
+func (a *WorkOSAuth) Login() (*auth.User, error) {
 	tokens, _ := a.tokenStore.GetTokens()
 
 	if tokens != nil {
 		if err := a.RefreshToken(RefreshTokenOptions{}); err == nil {
+			tokens, _ = a.tokenStore.GetTokens()
 			return tokens.User, nil
 		}
 
@@ -93,7 +74,7 @@ func (a *WorkOSAuth) GetAccessToken(forceRefresh bool) (string, error) {
 		if err := a.RefreshToken(RefreshTokenOptions{}); err != nil {
 			return "", fmt.Errorf("token refresh failed: %w", err)
 		}
-		
+
 		// Reload tokens after refresh to get the updated access token
 		tokens, err = a.tokenStore.GetTokens()
 		if err != nil {
@@ -118,7 +99,7 @@ func (a *WorkOSAuth) RefreshToken(options RefreshTokenOptions) error {
 	}
 
 	if tokens.RefreshToken == "" {
-		return fmt.Errorf("%w: no refresh token", ErrUnauthenticated)
+		return fmt.Errorf("%w: no refresh token", auth.ErrUnauthenticated)
 	}
 
 	workosToken, err := a.httpClient.AuthenticateWithRefreshToken(tokens.RefreshToken, http.AuthenticatedWithRefreshTokenOptions{
@@ -131,7 +112,11 @@ func (a *WorkOSAuth) RefreshToken(options RefreshTokenOptions) error {
 	tokens.AccessToken = workosToken.AccessToken
 	tokens.RefreshToken = workosToken.RefreshToken
 
-	err = a.tokenStore.SaveTokens(tokens)
+	err = a.tokenStore.SaveTokens(&auth.Tokens{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		User:         tokens.User,
+	})
 	if err != nil {
 		return err
 	}
@@ -140,5 +125,6 @@ func (a *WorkOSAuth) RefreshToken(options RefreshTokenOptions) error {
 }
 
 func (a *WorkOSAuth) Logout() error {
-	return a.tokenStore.Clear()
+	_ = a.tokenStore.Clear()
+	return nil
 }

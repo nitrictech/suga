@@ -20,8 +20,10 @@ import (
 
 type TeamApp struct {
 	apiClient *api.SugaApiClient
-	auth      *workos.WorkOSAuth
-	styles    tui.AppStyles
+	// auth uses WorkOSAuth directly because team switching requires
+	// WorkOS-specific organization ID during token refresh
+	auth   *workos.WorkOSAuth
+	styles tui.AppStyles
 }
 
 func NewTeamApp(injector do.Injector) (*TeamApp, error) {
@@ -30,6 +32,7 @@ func NewTeamApp(injector do.Injector) (*TeamApp, error) {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 
+	// Use WorkOSAuth directly for team switching functionality
 	auth := do.MustInvoke[*workos.WorkOSAuth](injector)
 
 	styles := tui.NewAppStyles()

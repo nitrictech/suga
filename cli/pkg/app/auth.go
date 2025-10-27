@@ -4,19 +4,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/nitrictech/suga/cli/internal/auth"
 	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
 	"github.com/nitrictech/suga/cli/internal/version"
-	"github.com/nitrictech/suga/cli/internal/workos"
 	"github.com/samber/do/v2"
 )
 
 type AuthApp struct {
-	auth *workos.WorkOSAuth
+	auth auth.Auth
 }
 
 func NewAuthApp(injector do.Injector) (*AuthApp, error) {
-	auth := do.MustInvoke[*workos.WorkOSAuth](injector)
+	auth := do.MustInvokeAs[auth.Auth](injector)
 	return &AuthApp{auth: auth}, nil
 }
 
@@ -45,7 +45,7 @@ func (c *AuthApp) Logout() {
 
 	err := c.auth.Logout()
 	if err != nil {
-		if !errors.Is(err, workos.ErrNotFound) {
+		if !errors.Is(err, auth.ErrNotFound) {
 			fmt.Printf("\n%s Error logging out: %s\n", style.Red(icons.Cross), err)
 			return
 		}
