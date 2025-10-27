@@ -2,7 +2,6 @@ package workos
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -27,8 +26,8 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 		return nil, fmt.Errorf("token key is required")
 	}
 
-	hash := sha256.Sum256([]byte(tokenKey))
-	hashedKey := fmt.Sprintf("%x", hash)
+	encodedKey := base64.RawURLEncoding.EncodeToString([]byte(tokenKey))
+	accountName := fmt.Sprintf("suga-auth-%s", encodedKey)
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -44,6 +43,7 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 
 	ring, err := keyring.Open(keyring.Config{
 		ServiceName:              serviceName,
+		KeychainTrustApplication: true,
 		FileDir:                  fileDir,
 		FilePasswordFunc:         keyring.FixedStringPrompt(passphrase),
 		LibSecretCollectionName:  "login",
@@ -60,7 +60,7 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 
 	return &KeyringTokenStore{
 		ring: ring,
-		key:  hashedKey,
+		key:  accountName,
 	}, nil
 }
 
@@ -89,8 +89,9 @@ func (s *KeyringTokenStore) SaveTokens(tokens *Tokens) error {
 	}
 
 	err = s.ring.Set(keyring.Item{
-		Key:  s.key,
-		Data: data,
+		Key:   s.key,
+		Data:  data,
+		Label: "Suga CLI Authentication Token",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save token to keyring: %w", err)
