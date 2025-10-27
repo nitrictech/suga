@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nitrictech/suga/cli/internal/auth"
 	"github.com/nitrictech/suga/cli/internal/browser"
 	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
@@ -68,24 +69,20 @@ func (a *WorkOSAuth) performDeviceAuth() error {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("device authorization timed out")
-		default:
-			select {
-			case <-ctx.Done():
-				return fmt.Errorf("device authorization timed out")
-			case <-time.After(pollInterval):
-				// Continue to poll
-			}
-
+		case <-time.After(pollInterval):
 			// Create a context with timeout for this specific request
 			reqCtx, reqCancel := context.WithTimeout(ctx, 10*time.Second)
 			tokenResp, err := a.httpClient.PollDeviceTokenWithContext(reqCtx, deviceResp.DeviceCode)
 			reqCancel()
 
 			if err == nil {
-				err := a.tokenStore.SaveTokens(&Tokens{
+				err := a.tokenStore.SaveTokens(&auth.Tokens{
 					AccessToken:  tokenResp.AccessToken,
 					RefreshToken: tokenResp.RefreshToken,
-					User:         &tokenResp.User,
+					User: &auth.User{
+						Email:     tokenResp.User.Email,
+						FirstName: tokenResp.User.FirstName,
+					},
 				})
 				if err != nil {
 					return fmt.Errorf("failed to save tokens: %w", err)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/nitrictech/suga/cli/cmd"
 	"github.com/nitrictech/suga/cli/internal/api"
+	"github.com/nitrictech/suga/cli/internal/auth"
 	"github.com/nitrictech/suga/cli/internal/build"
 	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/workos"
@@ -13,15 +14,20 @@ import (
 	"github.com/spf13/afero"
 )
 
-func createTokenStore(inj do.Injector) (*workos.KeyringTokenStore, error) {
-	config := do.MustInvoke[*config.Config](inj)
-	apiUrl := config.GetSugaServerUrl()
+func createTokenStore(inj do.Injector) (auth.TokenStore, error) {
+	cfg := do.MustInvoke[*config.Config](inj)
+	apiUrl := cfg.GetSugaServerUrl()
 
-	tokenStore, err := workos.NewKeyringTokenStore("suga.cli", apiUrl.String())
+	homeConfigPath, err := config.HomeConfigPath()
 	if err != nil {
 		return nil, err
 	}
-	return tokenStore, nil
+
+	store, err := auth.NewTokenStore("suga.cli", apiUrl.String(), homeConfigPath)
+	if err != nil {
+		return nil, err
+	}
+	return store, nil
 }
 
 func main() {
