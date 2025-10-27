@@ -41,15 +41,20 @@ Example usage:
   # Serve plugins from current directory
   suga plugin serve
 
+  # Use the local plugins in a build
+  suga build -r suga/gcp=http://localhost:9000
+
 Plugin directory structure:
   {plugin-name}/manifest.yaml
 
-Example platform.yaml configuration:
+You can use local plugins in two ways:
+
+1. Replace library in platform.yaml:
   libraries:
     myteam/myplugins: http://localhost:9000
 
-Then use plugins from that library in your resource blueprints.
-The team, library, and version are specified in the platform.yaml, not in the directory structure.
+2. Replace library at build time (recommended):
+  suga build --replace-library suga/gcp=http://localhost:9000
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fs := afero.NewOsFs()

@@ -51,7 +51,35 @@ type PlatformSpec struct {
 	TopicBlueprints      map[string]*ResourceBlueprint `json:"topics,omitempty" yaml:"topics,omitempty"`
 	DatabaseBlueprints   map[string]*ResourceBlueprint `json:"databases,omitempty" yaml:"databases,omitempty"`
 	EntrypointBlueprints map[string]*ResourceBlueprint `json:"entrypoints" yaml:"entrypoints"`
-	InfraSpecs           map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
+	InfraSpecs map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
+
+	libraryReplacements map[libraryID]libraryVersion
+}
+
+func (p *PlatformSpec) ReplaceLibrary(library string, newTarget string) error {
+	if p.Libraries == nil {
+		return fmt.Errorf("cannot apply library replacement, platform %s has no libraries defined, nothing to replace", p.Name)
+	}
+
+	if _, exists := p.Libraries[libraryID(library)]; !exists {
+		keys := slices.Collect(maps.Keys(p.Libraries))
+		return fmt.Errorf("cannot apply library replacement, library %s not found in platform %s. Available libraries are: %v", library, p.Name, keys)
+	}
+
+	if p.libraryReplacements == nil {
+		p.libraryReplacements = make(map[libraryID]libraryVersion)
+	}
+
+	p.libraryReplacements[libraryID(library)] = libraryVersion(newTarget)
+	return nil
+}
+
+func (p *PlatformSpec) HasLibraryReplacement(id libraryID) bool {
+	if p.libraryReplacements == nil {
+		return false
+	}
+	_, hasReplacement := p.libraryReplacements[id]
+	return hasReplacement
 }
 
 type Variable struct {
@@ -101,17 +129,22 @@ func (p PlatformSpec) GetLibrary(id libraryID) (*Library, error) {
 		return nil, fmt.Errorf("library %s not found in platform spec, configured libraries in platform are: %v", id, slices.Collect(maps.Keys(p.Libraries)))
 	}
 
+	if p.libraryReplacements != nil {
+		if replacedVersion, hasReplacement := p.libraryReplacements[id]; hasReplacement {
+			libVersion = replacedVersion
+		}
+	}
+
 	lib := &Library{
 		Team:    id.Team(),
 		Name:    id.Name(),
 		Version: string(libVersion),
 	}
 
-	// Check if version is an HTTP/HTTPS URL for local development server
 	versionStr := string(libVersion)
 	if strings.HasPrefix(versionStr, "http://") || strings.HasPrefix(versionStr, "https://") {
 		lib.ServerURL = versionStr
-		lib.Version = "v0.0.0-dev" // Use a special version for local development
+		lib.Version = "v0.0.0-dev"
 	}
 
 	return lib, nil

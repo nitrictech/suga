@@ -31,20 +31,23 @@ func sanitizeForFilename(input string) string {
 	return re.ReplaceAllString(input, "_")
 }
 
-func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam string) (string, error) {
+type BuildOptions struct {
+	LibraryReplacements map[string]string
+}
+
+func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam string, opts BuildOptions) (string, error) {
 	if appSpec.Target == "" {
 		return "", fmt.Errorf("no target specified in project %s", appSpec.Name)
 	}
 
-	var pluginRepo terraform.PluginRepository = plugins.NewPluginRepository(b.apiClient, currentTeam)
+	onDemandPluginRepo := plugins.NewPluginRepository(b.apiClient, currentTeam)
+
 	var platformRepo terraform.PlatformRepository = nil
 	if !strings.HasPrefix(appSpec.Target, terraform.PlatformReferencePrefix_File) {
 		repo, err := NewRepository(b.apiClient, currentTeam, appSpec.Target)
 		if err != nil {
 			return "", err
 		}
-		// Use the original repositories
-		pluginRepo = repo
 		platformRepo = repo
 	}
 
@@ -53,8 +56,14 @@ func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam s
 		return "", err
 	}
 
-	// Wrap the plugin repository in a composite repository to support local plugin servers
-	compositeRepo := pluginserver.NewCompositePluginRepository(platform, pluginRepo)
+	for library, target := range opts.LibraryReplacements {
+		if err := platform.ReplaceLibrary(library, target); err != nil {
+			return "", fmt.Errorf("failed to replace library %s: %w", library, err)
+		}
+		fmt.Printf("Replacing: %s -> %s\n", library, target)
+	}
+
+	compositeRepo := pluginserver.NewCompositePluginRepository(platform, onDemandPluginRepo)
 
 	engine := terraform.New(platform, terraform.WithRepository(compositeRepo))
 
@@ -65,13 +74,13 @@ func (b *BuilderService) BuildProject(appSpec *schema.Application, currentTeam s
 	return stackPath, nil
 }
 
-func (b *BuilderService) BuildProjectFromFile(projectFile, currentTeam string) (string, error) {
+func (b *BuilderService) BuildProjectFromFile(projectFile, currentTeam string, opts BuildOptions) (string, error) {
 	appSpec, err := schema.LoadFromFile(b.fs, projectFile, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to load project file: %w", err)
 	}
 
-	return b.BuildProject(appSpec, currentTeam)
+	return b.BuildProject(appSpec, currentTeam, opts)
 }
 
 func NewBuilderService(injector do.Injector) (*BuilderService, error) {
