@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/nitrictech/suga/cli/internal/build"
 	"github.com/nitrictech/suga/cli/internal/version"
 	"github.com/nitrictech/suga/cli/pkg/app"
 	"github.com/samber/do/v2"
@@ -67,7 +68,11 @@ func NewNewCmd(injector do.Injector) *cobra.Command {
 
 // NewBuildCmd creates the build command
 func NewBuildCmd(injector do.Injector) *cobra.Command {
-	return &cobra.Command{
+	var (
+		libReplacements map[string]string
+	)
+
+	cmd := &cobra.Command{
 		Use:   "build",
 		Short: fmt.Sprintf("Builds the %s application", version.ProductName),
 		Long:  fmt.Sprintf("Builds an application using the %s application spec and referenced platform.", version.ConfigFileName),
@@ -76,9 +81,15 @@ func NewBuildCmd(injector do.Injector) *cobra.Command {
 			if err != nil {
 				cobra.CheckErr(err)
 			}
-			cobra.CheckErr(app.Build())
+			cobra.CheckErr(app.Build(build.BuildOptions{
+				LibraryReplacements: libReplacements,
+			}))
 		},
 	}
+
+	cmd.Flags().StringToStringVarP(&libReplacements, "replace-library", "r", nil, "Replace library versions in the format <library>=<target>, e.g. suga/aws=http://localhost:9000 or suga/aws=v0.0.4")
+
+	return cmd
 }
 
 // NewGenerateCmd creates the generate command

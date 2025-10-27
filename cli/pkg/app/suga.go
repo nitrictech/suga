@@ -459,7 +459,7 @@ func (c *SugaApp) getPlatformReadmeURL(target, currentTeam string) string {
 }
 
 // Build handles the build command logic
-func (c *SugaApp) Build() error {
+func (c *SugaApp) Build(opts build.BuildOptions) error {
 	team := c.getCurrentTeam()
 	if team == nil {
 		return nil
@@ -476,7 +476,7 @@ func (c *SugaApp) Build() error {
 		return nil
 	}
 
-	stackPath, err := c.builder.BuildProject(appSpec, team.Slug)
+	stackPath, err := c.builder.BuildProject(appSpec, team.Slug, opts)
 	if err != nil {
 		return err
 	}

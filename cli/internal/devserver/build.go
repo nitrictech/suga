@@ -32,7 +32,6 @@ func (n *SugaProjectBuild) OnConnect(send SendFunc) {
 	// No-op
 }
 
-
 func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 	var buildMessage Message[ProjectBuild]
 	err := json.Unmarshal(message, &buildMessage)
@@ -46,7 +45,10 @@ func (n *SugaProjectBuild) OnMessage(message json.RawMessage) {
 		return
 	}
 
-	stackPath, err := n.builder.BuildProjectFromFile(version.ConfigFileName, n.currentTeam)
+	// In future, we could support plugin library replacements here
+	opts := build.BuildOptions{}
+
+	stackPath, err := n.builder.BuildProjectFromFile(version.ConfigFileName, n.currentTeam, opts)
 	if err != nil {
 		fmt.Println(err.Error())
 

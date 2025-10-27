@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -50,7 +51,35 @@ type PlatformSpec struct {
 	TopicBlueprints      map[string]*ResourceBlueprint `json:"topics,omitempty" yaml:"topics,omitempty"`
 	DatabaseBlueprints   map[string]*ResourceBlueprint `json:"databases,omitempty" yaml:"databases,omitempty"`
 	EntrypointBlueprints map[string]*ResourceBlueprint `json:"entrypoints" yaml:"entrypoints"`
-	InfraSpecs           map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
+	InfraSpecs map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
+
+	libraryReplacements map[libraryID]libraryVersion
+}
+
+func (p *PlatformSpec) ReplaceLibrary(library string, newTarget string) error {
+	if p.Libraries == nil {
+		return fmt.Errorf("cannot apply library replacement, platform %s has no libraries defined, nothing to replace", p.Name)
+	}
+
+	if _, exists := p.Libraries[libraryID(library)]; !exists {
+		keys := slices.Collect(maps.Keys(p.Libraries))
+		return fmt.Errorf("cannot apply library replacement, library %s not found in platform %s. Available libraries are: %v", library, p.Name, keys)
+	}
+
+	if p.libraryReplacements == nil {
+		p.libraryReplacements = make(map[libraryID]libraryVersion)
+	}
+
+	p.libraryReplacements[libraryID(library)] = libraryVersion(newTarget)
+	return nil
+}
+
+func (p *PlatformSpec) HasLibraryReplacement(id libraryID) bool {
+	if p.libraryReplacements == nil {
+		return false
+	}
+	_, hasReplacement := p.libraryReplacements[id]
+	return hasReplacement
 }
 
 type Variable struct {
@@ -60,10 +89,33 @@ type Variable struct {
 	Nullable    bool        `json:"nullable" yaml:"nullable"`
 }
 
+// PlatformValidationError represents validation errors in a platform spec
+type PlatformValidationError struct {
+	Violations []string
+}
+
+func (e *PlatformValidationError) Error() string {
+	if len(e.Violations) == 0 {
+		return "platform spec validation failed"
+	}
+
+	var builder strings.Builder
+	builder.WriteString("platform spec validation failed:\n")
+	for i, violation := range e.Violations {
+		if i > 0 {
+			builder.WriteString("\n")
+		}
+		builder.WriteString("  - ")
+		builder.WriteString(violation)
+	}
+	return builder.String()
+}
+
 type Library struct {
-	Team    string `json:"team" yaml:"team"`
-	Name    string `json:"name" yaml:"name"`
-	Version string `json:"version" yaml:"version"`
+	Team      string `json:"team" yaml:"team"`
+	Name      string `json:"name" yaml:"name"`
+	Version   string `json:"version" yaml:"version"`
+	ServerURL string `json:"server_url,omitempty" yaml:"server_url,omitempty"` // Optional: URL for local plugin server
 }
 
 type Plugin struct {
@@ -77,19 +129,25 @@ func (p PlatformSpec) GetLibrary(id libraryID) (*Library, error) {
 		return nil, fmt.Errorf("library %s not found in platform spec, configured libraries in platform are: %v", id, slices.Collect(maps.Keys(p.Libraries)))
 	}
 
-	// pattern := `^(?P<team>[^/]+)/(?P<library>[^@]+)@(?P<version>.+)$`
-	// re := regexp.MustCompile(pattern)
+	if p.libraryReplacements != nil {
+		if replacedVersion, hasReplacement := p.libraryReplacements[id]; hasReplacement {
+			libVersion = replacedVersion
+		}
+	}
 
-	// matches := re.FindStringSubmatch(string(libVersion))
-	// if len(matches) == 0 {
-	// 	return nil, fmt.Errorf("invalid library format: %s, expected format: `<team>/<platform>@<version>`", libVersion)
-	// }
+	lib := &Library{
+		Team:    id.Team(),
+		Name:    id.Name(),
+		Version: string(libVersion),
+	}
 
-	// team := matches[re.SubexpIndex("team")]
-	// libName := matches[re.SubexpIndex("library")]
-	// version := matches[re.SubexpIndex("version")]
+	versionStr := string(libVersion)
+	if strings.HasPrefix(versionStr, "http://") || strings.HasPrefix(versionStr, "https://") {
+		lib.ServerURL = versionStr
+		lib.Version = "v0.0.0-dev"
+	}
 
-	return &Library{Team: id.Team(), Name: id.Name(), Version: string(libVersion)}, nil
+	return lib, nil
 }
 
 func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
@@ -98,6 +156,54 @@ func (p PlatformSpec) GetLibraries() map[libraryID]*Library {
 		libraries[id], _ = p.GetLibrary(id)
 	}
 	return libraries
+}
+
+// Validate checks the platform spec for security issues and malformed data
+func (p *PlatformSpec) Validate() error {
+	var violations []string
+
+	// Validate library server URLs
+	for libID, libVersion := range p.Libraries {
+		versionStr := string(libVersion)
+
+		// Check if this is a URL (for local development servers)
+		if strings.HasPrefix(versionStr, "http://") || strings.HasPrefix(versionStr, "https://") {
+			if err := validateServerURL(string(libID), versionStr); err != nil {
+				violations = append(violations, err.Error())
+			}
+		}
+	}
+
+	if len(violations) > 0 {
+		return &PlatformValidationError{Violations: violations}
+	}
+
+	return nil
+}
+
+// validateServerURL validates that a server URL is well-formed and safe
+func validateServerURL(libraryID, serverURL string) error {
+	parsedURL, err := url.Parse(serverURL)
+	if err != nil {
+		return fmt.Errorf("library %s: invalid server URL: %w", libraryID, err)
+	}
+
+	// Ensure valid scheme
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("library %s: invalid server URL scheme - must be http or https", libraryID)
+	}
+
+	// Ensure host is present
+	if parsedURL.Host == "" {
+		return fmt.Errorf("library %s: invalid server URL - missing host", libraryID)
+	}
+
+	// Reject URLs with embedded credentials
+	if parsedURL.User != nil {
+		return fmt.Errorf("library %s: invalid server URL - URLs with embedded credentials are not allowed", libraryID)
+	}
+
+	return nil
 }
 
 type MissingResourceBlueprintError struct {
@@ -198,8 +304,16 @@ func PlatformSpecFromReader(reader io.Reader) (*PlatformSpec, error) {
 	}
 
 	err = yaml.Unmarshal(byt, &spec)
+	if err != nil {
+		return &spec, err
+	}
 
-	return &spec, err
+	// Validate the platform spec after deserialization
+	if err := spec.Validate(); err != nil {
+		return &spec, err
+	}
+
+	return &spec, nil
 }
 
 func PlatformSpecFromFile(fs afero.Fs, filePath string) (*PlatformSpec, error) {
