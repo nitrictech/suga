@@ -25,7 +25,17 @@ func main() {
 
 	do.Provide(injector, createTokenStore)
 	do.Provide(injector, api.NewSugaApiClient)
-	do.Provide(injector, workos.NewWorkOSAuth)
+
+	if os.Getenv(cmd.AccessTokenEnvVar) != "" {
+		do.Provide(injector, func(i do.Injector) (*api.CallbackTokenProvider, error) {
+			return api.NewCallbackTokenProvider(func() (string, error) {
+				return os.Getenv(cmd.AccessTokenEnvVar), nil
+			}), nil
+		})
+	} else {
+		do.Provide(injector, workos.NewWorkOSAuth)
+	}
+
 	do.Provide(injector, app.NewSugaApp)
 	do.Provide(injector, app.NewAuthApp)
 	do.Provide(injector, build.NewBuilderService)

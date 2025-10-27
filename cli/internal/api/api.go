@@ -74,7 +74,7 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrUnauthenticated, err)
 		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", strings.TrimSpace(fmt.Sprintf("Bearer %s", token)))
 	}
 
 	// Execute the request
@@ -121,9 +121,9 @@ func (c *SugaApiClient) doRequestWithRetry(req *http.Request, requiresAuth bool)
 
 		// Copy headers
 		retryReq.Header = req.Header.Clone()
-		
+
 		// Update authorization header with new token
-		retryReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		retryReq.Header.Set("Authorization", strings.TrimSpace(fmt.Sprintf("Bearer %s", token)))
 
 		// Retry the request
 		return c.httpClient.Do(retryReq)
