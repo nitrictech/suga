@@ -1,23 +1,24 @@
 package workos
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/99designs/keyring"
+	"github.com/zalando/go-keyring"
 )
 
-type KeyringTokenStore struct {
-	ring keyring.Keyring
-	key  string
+func hashTokenKey(tokenKey string) string {
+	// Hash the token key for a consistent length.
+	hash := sha256.Sum256([]byte(tokenKey))
+	return fmt.Sprintf("%x", hash)
 }
 
-// NewKeyringTokenStore tries system keyring first, falls back to encrypted file
+type KeyringTokenStore struct {
+	service  string
+	tokenKey string
+}
+
 func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, error) {
 	if serviceName == "" {
 		return nil, fmt.Errorf("service name is required")
@@ -27,54 +28,22 @@ func NewKeyringTokenStore(serviceName, tokenKey string) (*KeyringTokenStore, err
 		return nil, fmt.Errorf("token key is required")
 	}
 
-	hash := sha256.Sum256([]byte(tokenKey))
-	hashedKey := fmt.Sprintf("%x", hash)
+	hashedTokenKey := hashTokenKey(tokenKey)
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
-	fileDir := filepath.Join(homeDir, ".suga")
-
-	passphrase, err := getOrCreateFilePassphrase(fileDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get file passphrase: %w", err)
-	}
-
-	ring, err := keyring.Open(keyring.Config{
-		ServiceName:              serviceName,
-		FileDir:                  fileDir,
-		FilePasswordFunc:         keyring.FixedStringPrompt(passphrase),
-		LibSecretCollectionName:  "login",
-		AllowedBackends: []keyring.BackendType{
-			keyring.SecretServiceBackend,
-			keyring.KeychainBackend,
-			keyring.WinCredBackend,
-			keyring.FileBackend,
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to open keyring: %w", err)
-	}
-
-	return &KeyringTokenStore{
-		ring: ring,
-		key:  hashedKey,
-	}, nil
+	return &KeyringTokenStore{service: serviceName, tokenKey: hashedTokenKey}, nil
 }
 
 func (s *KeyringTokenStore) GetTokens() (*Tokens, error) {
-	item, err := s.ring.Get(s.key)
+	token, err := keyring.Get(s.service, s.tokenKey)
 	if err != nil {
-		if err == keyring.ErrKeyNotFound {
+		if err == keyring.ErrNotFound {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("failed to retrieve token from keyring: %w", err)
 	}
 
 	var tokens Tokens
-	err = json.Unmarshal(item.Data, &tokens)
+	err = json.Unmarshal([]byte(token), &tokens)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal token: %w", err)
 	}
@@ -83,61 +52,21 @@ func (s *KeyringTokenStore) GetTokens() (*Tokens, error) {
 }
 
 func (s *KeyringTokenStore) SaveTokens(tokens *Tokens) error {
-	data, err := json.Marshal(tokens)
+	json, err := json.Marshal(tokens)
 	if err != nil {
 		return fmt.Errorf("failed to marshal token: %w", err)
 	}
 
-	err = s.ring.Set(keyring.Item{
-		Key:  s.key,
-		Data: data,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to save token to keyring: %w", err)
-	}
-
-	return nil
+	return keyring.Set(s.service, s.tokenKey, string(json))
 }
 
 func (s *KeyringTokenStore) Clear() error {
-	err := s.ring.Remove(s.key)
+	err := keyring.Delete(s.service, s.tokenKey)
 	if err != nil {
-		if err == keyring.ErrKeyNotFound {
+		if err == keyring.ErrNotFound {
 			return ErrNotFound
 		}
 		return fmt.Errorf("failed to delete token from keyring: %w", err)
 	}
 	return nil
-}
-
-// getOrCreateFilePassphrase uses a per-user random passphrase instead of hardcoded constant
-// to prevent mass decryption and follow security best practices (defense in depth)
-func getOrCreateFilePassphrase(fileDir string) (string, error) {
-	passphrasePath := filepath.Join(fileDir, ".keyring-passphrase")
-
-	data, err := os.ReadFile(passphrasePath)
-	if err == nil {
-		return string(data), nil
-	}
-
-	if !os.IsNotExist(err) {
-		return "", fmt.Errorf("failed to read passphrase file: %w", err)
-	}
-
-	if err := os.MkdirAll(fileDir, 0700); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	passphraseBytes := make([]byte, 32)
-	if _, err := rand.Read(passphraseBytes); err != nil {
-		return "", fmt.Errorf("failed to generate random passphrase: %w", err)
-	}
-
-	passphrase := base64.StdEncoding.EncodeToString(passphraseBytes)
-
-	if err := os.WriteFile(passphrasePath, []byte(passphrase), 0600); err != nil {
-		return "", fmt.Errorf("failed to write passphrase file: %w", err)
-	}
-
-	return passphrase, nil
 }
