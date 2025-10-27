@@ -103,8 +103,8 @@ func (c *SugaApiClient) ListPlatforms(team string) ([]PlatformResponse, error) {
 	return platformsResponse.Platforms, nil
 }
 
-func (c *SugaApiClient) ListPublicPlatforms(team string) ([]PlatformResponse, error) {
-	response, err := c.get(fmt.Sprintf("/api/public/platforms/%s", url.PathEscape(team)), true)
+func (c *SugaApiClient) ListPublicPlatforms() ([]PlatformResponse, error) {
+	response, err := c.get("/api/public/platforms", true)
 	if err != nil {
 		return nil, err
 	}

@@ -414,16 +414,39 @@ func (s *Server) handleGetPluginManifest(ctx context.Context, req *mcp.CallToolR
 }
 
 func (s *Server) handleListPlatforms(ctx context.Context, req *mcp.CallToolRequest, args ListPlatformsArgs) (*mcp.CallToolResult, any, error) {
+	if args.Public {
+		// Public platforms don't require team parameter
+		platforms, err := s.apiClient.ListPublicPlatforms()
+		if err != nil {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: fmt.Sprintf("Failed to list platforms: %v", err)},
+				},
+			}, nil, nil
+		}
+
+		resultJSON, err := json.MarshalIndent(platforms, "", "  ")
+		if err != nil {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: fmt.Sprintf("Failed to marshal result: %v", err)},
+				},
+			}, nil, nil
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: string(resultJSON)},
+			},
+		}, nil, nil
+	}
+
 	return s.handleWithTeamAndJSON(
 		func() string { return args.Team },
 		func(team string) (interface{}, error) {
-			var platforms []api.PlatformResponse
-			var err error
-			if args.Public {
-				platforms, err = s.apiClient.ListPublicPlatforms(team)
-			} else {
-				platforms, err = s.apiClient.ListPlatforms(team)
-			}
+			platforms, err := s.apiClient.ListPlatforms(team)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list platforms: %w", err)
 			}
@@ -434,16 +457,39 @@ func (s *Server) handleListPlatforms(ctx context.Context, req *mcp.CallToolReque
 }
 
 func (s *Server) handleListPluginLibraries(ctx context.Context, req *mcp.CallToolRequest, args ListPluginLibrariesArgs) (*mcp.CallToolResult, any, error) {
+	if args.Public {
+		// Public plugin libraries don't require team parameter
+		libraries, err := s.apiClient.ListPublicPluginLibraries()
+		if err != nil {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: fmt.Sprintf("Failed to list plugin libraries: %v", err)},
+				},
+			}, nil, nil
+		}
+
+		resultJSON, err := json.MarshalIndent(libraries, "", "  ")
+		if err != nil {
+			return &mcp.CallToolResult{
+				IsError: true,
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: fmt.Sprintf("Failed to marshal result: %v", err)},
+				},
+			}, nil, nil
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: string(resultJSON)},
+			},
+		}, nil, nil
+	}
+
 	return s.handleWithTeamAndJSON(
 		func() string { return args.Team },
 		func(team string) (interface{}, error) {
-			var libraries []api.PluginLibraryWithVersions
-			var err error
-			if args.Public {
-				libraries, err = s.apiClient.ListPublicPluginLibraries(team)
-			} else {
-				libraries, err = s.apiClient.ListPluginLibraries(team)
-			}
+			libraries, err := s.apiClient.ListPluginLibraries(team)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to list plugin libraries: %w", err)
 			}

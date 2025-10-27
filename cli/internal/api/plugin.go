@@ -127,8 +127,8 @@ func (c *SugaApiClient) ListPluginLibraries(team string) ([]PluginLibraryWithVer
 	return librariesResponse.Libraries, nil
 }
 
-func (c *SugaApiClient) ListPublicPluginLibraries(team string) ([]PluginLibraryWithVersions, error) {
-	response, err := c.get(fmt.Sprintf("/api/public/plugin_libraries/%s", url.PathEscape(team)), true)
+func (c *SugaApiClient) ListPublicPluginLibraries() ([]PluginLibraryWithVersions, error) {
+	response, err := c.get("/api/public/plugin_libraries", true)
 	if err != nil {
 		return nil, err
 	}
