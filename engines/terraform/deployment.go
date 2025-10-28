@@ -28,6 +28,7 @@ type TerraformDeployment struct {
 	identityBlueprints          map[string]*ResourceBlueprint
 	terraformVariables          map[string]cdktf.TerraformVariable
 	instancedTerraformVariables map[string]map[string]cdktf.TerraformVariable
+	sugaProperties              map[string]interface{}
 }
 
 func NewTerraformDeployment(engine *TerraformEngine, stackName string) *TerraformDeployment {
@@ -60,6 +61,9 @@ func NewTerraformDeployment(engine *TerraformEngine, stackName string) *Terrafor
 		terraformVariables:          map[string]cdktf.TerraformVariable{},
 		instancedTerraformVariables: map[string]map[string]cdktf.TerraformVariable{},
 		serviceIdentities:           map[string]map[string]interface{}{},
+		sugaProperties: map[string]interface{}{
+			"stack_id": stackId.Result(),
+		},
 	}
 }
 
