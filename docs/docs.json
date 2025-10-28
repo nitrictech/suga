@@ -30,6 +30,8 @@
             "pages": [
               "guides",
               "guides/add-suga",
+              "guides/personal-access-tokens",
+              "guides/cicd-authentication",
               "guides/mcp-integration",
               "guides/build-platform",
               "guides/database-migration",
@@ -55,7 +57,6 @@
           {
             "group": "Commands",
             "pages": [
-              "cli/access-token",
               "cli/build",
               "cli/completion",
               "cli/config",
