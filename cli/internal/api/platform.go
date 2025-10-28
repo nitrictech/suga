@@ -70,3 +70,63 @@ func (c *SugaApiClient) GetPublicPlatform(team, name string, revision int) (*ter
 	}
 	return &platformRevision.Revision.Content, nil
 }
+
+func (c *SugaApiClient) ListPlatforms(team string) ([]PlatformResponse, error) {
+	response, err := c.get(fmt.Sprintf("/api/teams/%s/platforms", url.PathEscape(team)), true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		if response.StatusCode == 401 {
+			return nil, ErrUnauthenticated
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s platforms list endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s platforms list endpoint: %v", version.ProductName, err)
+	}
+
+	var platformsResponse PlatformsResponse
+	err = json.Unmarshal(body, &platformsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s platforms list endpoint: %v", version.ProductName, err)
+	}
+	return platformsResponse.Platforms, nil
+}
+
+func (c *SugaApiClient) ListPublicPlatforms() ([]PlatformResponse, error) {
+	response, err := c.get("/api/public/platforms", true)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		if response.StatusCode == 404 {
+			return nil, ErrNotFound
+		}
+
+		return nil, fmt.Errorf("received non 200 response from %s public platforms list endpoint: %d", version.ProductName, response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response from %s public platforms list endpoint: %v", version.ProductName, err)
+	}
+
+	var platformsResponse PlatformsResponse
+	err = json.Unmarshal(body, &platformsResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected response from %s public platforms list endpoint: %v", version.ProductName, err)
+	}
+	return platformsResponse.Platforms, nil
+}
