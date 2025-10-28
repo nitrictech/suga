@@ -1,0 +1,139 @@
+---
+title: 'Personal Access Tokens'
+description: 'Create and manage Personal Access Tokens for programmatic access to Suga'
+---
+
+<Warning>
+Treat your access tokens like passwords. For more information, see [Token Security Best Practices](#token-security-best-practices).
+</Warning>
+
+## Overview
+
+Personal Access Tokens (PATs) are an alternative to using passwords for authentication to Suga when using the Suga CLI or API.
+
+Personal access tokens are intended to access Suga resources on your behalf. A token has similar capabilities to access resources and perform actions that you have as the token owner, with a few restrictions.
+
+You can use a personal access token to:
+
+- Authenticate the Suga CLI in CI/CD environments
+- Make direct API calls to Suga services
+- Automate workflows without interactive device authorization flow
+
+You can't use a personal access token to:
+
+- Manage tokens (create, revoke, or edit personal access tokens)
+- Access the Suga Agent chat API (use the [Suga CLI MCP server](/guides/mcp-integration) for AI-assisted development instead)
+
+## Creating a Personal Access Token
+
+<Note>
+Personal access tokens will become inactive if you lose access to the resources they were created for, such as when you're removed from a team or project.
+</Note>
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Log in to [Suga](https://app.addsuga.com) and click the **Settings** link in the navigation menu, then click on **Personal Access Tokens** in the sidebar.
+
+    <img
+      src="/images/personal-access-tokens/personal-access-tokens-settings-page.png"
+      alt="Personal Access Tokens settings page showing the list of tokens with options to generate new tokens"
+    />
+  </Step>
+
+  <Step title="Generate a New Token">
+    Click the **Generate Token** button to open the token creation modal.
+  </Step>
+
+  <Step title="Configure Your Token">
+    In the token creation modal, provide the following information:
+
+    **Token Name** (required)
+    - A descriptive name to help you identify the token's purpose
+    - Example: "GitHub Actions CI", "Production Deploy", "Local Development"
+
+    **Expiration** (required)
+
+    Select an expiration for the token. You should choose the shortest expiration that meets your needs.
+
+    - **7 Days** - Short-term tokens for temporary access or testing
+    - **30 Days** - Standard tokens for most use cases
+    - **60 Days** - Medium-term tokens for ongoing projects
+    - **90 Days** - Long-term tokens for stable workflows
+    - **Custom Date** - Specify an exact expiration date
+    - **No Expiration** - Token never expires (**not recommended**)
+
+<Warning>
+    We recommend against using "No Expiration". For long-term automation, use tokens with defined expiration dates (such as 90 days) and implement a rotation process.
+    </Warning>
+
+    **Description** (optional)
+    - Additional context about the token's purpose or usage
+    - Helps with token management and auditing
+
+    <img
+      src="/images/personal-access-tokens/generate-personal-access-tokens-modal.png"
+      alt="Generate Personal Access Token modal showing fields for token name, expiration date options, and optional description"
+    />
+  </Step>
+
+  <Step title="Copy Your Token">
+    After submitting the form, your token will be displayed **one time only**.
+
+    <Warning>
+    **Important**: Copy the token immediately and store it securely. You will not be able to view this token value again. If you lose the token, you'll need to generate a new one.
+    </Warning>
+
+    <img
+      src="/images/personal-access-tokens/token-created-modal.png"
+      alt="Token created modal displaying the newly generated personal access token with a copy button and warning that it will only be shown once"
+    />
+  </Step>
+</Steps>
+
+## Token Security Best Practices
+
+Personal access tokens are like passwords, and they share the same inherent security risks. Before creating a new personal access token, consider if there is a more secure method of authentication available to you:
+
+- To access Suga from the command line, you can use `suga login` with the device authorization flow instead of creating a personal access token
+- When using a personal access token in a GitHub Actions workflow, consider storing your token as a secret. For more information, see [CI/CD Authentication](/guides/cicd-authentication)
+
+### Keeping your personal access tokens secure
+
+When using a personal access token in a script, you can store your token as a secret and run your script through GitHub Actions or another CI/CD platform. You can also store your token in environment variables.
+
+For best practices:
+
+- **Treat tokens like passwords** - Never share tokens or commit them to version control
+- **Store tokens securely** - Use environment variables or secret management services (like GitHub Secrets, AWS Secrets Manager, HashiCorp Vault)
+- **Use descriptive names** - Make tokens easy to identify and manage
+- **Set appropriate expiration** - Choose the shortest expiration that meets your needs
+- **Rotate regularly** - Periodically regenerate tokens used in production, even before expiration
+- **Revoke unused tokens** - Immediately delete tokens that are no longer needed
+- **Create separate tokens** - Use different tokens for different purposes rather than reusing the same token everywhere
+- **Monitor token usage** - Regularly review your active tokens and their last used timestamps in the Settings page
+- **Revoke on breach** - If a token is compromised, revoke it immediately and investigate what resources may have been accessed
+
+## Managing Tokens
+
+### Viewing Active Tokens
+
+In the Personal Access Tokens section, you can view:
+- Token names and descriptions
+- Creation timestamps
+- Expiration timestamps
+- Last used timestamps
+
+### Revoking Tokens
+
+To revoke a token:
+1. Navigate to **Settings** > **Personal Access Tokens**
+2. Find the token you want to revoke
+3. Click the **Delete** button
+4. Confirm the revocation
+
+Revoked tokens are immediately invalidated and cannot be restored.
+
+## Next Steps
+
+- [Using Personal Access Tokens in CI/CD](/guides/cicd-authentication)
+- [Suga CLI Reference](/cli)
