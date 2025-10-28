@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -10,6 +11,12 @@ import (
 	app_spec_schema "github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/nitrictech/suga/server/plugin"
 )
+
+// valuesEqual compares two values for equality, handling CDKTF tokens and various types
+func valuesEqual(a, b interface{}) bool {
+	// Use deep equality for comparison
+	return reflect.DeepEqual(a, b)
+}
 
 func (e *TerraformEngine) resolvePluginsForService(servicePlugin *ResourcePluginManifest) (*plugin.PluginDefinition, error) {
 	gets := []string{}
@@ -156,6 +163,29 @@ func (td *TerraformDeployment) processBucketResources(appSpec *app_spec_schema.A
 					"actions":    jsii.Strings(expandedActions...),
 					"identities": idMap,
 				}
+
+				// Collect exports for this service
+				if spec.Exports != nil && len(spec.Exports) > 0 {
+					if td.serviceExports[serviceName] == nil {
+						td.serviceExports[serviceName] = make(map[string]interface{})
+					}
+					for exportKey, exportValue := range spec.Exports {
+						// Resolve the export value (it may contain tokens)
+						resolvedValue, err := td.resolveValue(intentName, exportValue)
+						if err != nil {
+							return nil, fmt.Errorf("failed to resolve export %s from bucket %s for service %s: %w", exportKey, intentName, serviceName, err)
+						}
+
+						// Check for conflicts - only error if the values are different
+						if existingValue, exists := td.serviceExports[serviceName][exportKey]; exists {
+							if !valuesEqual(existingValue, resolvedValue) {
+								return nil, fmt.Errorf("export conflict for service '%s': export '%s' is defined by multiple resources with different values. This resource '%s' exports it, but it was already exported with a different value", serviceName, exportKey, intentName)
+							}
+						}
+
+						td.serviceExports[serviceName][exportKey] = resolvedValue
+					}
+				}
 			}
 		}
 
@@ -240,6 +270,29 @@ func (td *TerraformDeployment) processDatabaseResources(appSpec *app_spec_schema
 				servicesInput[serviceName] = map[string]interface{}{
 					"actions":    jsii.Strings(expandedActions...),
 					"identities": idMap,
+				}
+
+				// Collect exports for this service
+				if spec.Exports != nil && len(spec.Exports) > 0 {
+					if td.serviceExports[serviceName] == nil {
+						td.serviceExports[serviceName] = make(map[string]interface{})
+					}
+					for exportKey, exportValue := range spec.Exports {
+						// Resolve the export value (it may contain tokens)
+						resolvedValue, err := td.resolveValue(intentName, exportValue)
+						if err != nil {
+							return nil, fmt.Errorf("failed to resolve export %s from database %s for service %s: %w", exportKey, intentName, serviceName, err)
+						}
+
+						// Check for conflicts - only error if the values are different
+						if existingValue, exists := td.serviceExports[serviceName][exportKey]; exists {
+							if !valuesEqual(existingValue, resolvedValue) {
+								return nil, fmt.Errorf("export conflict for service '%s': export '%s' is defined by multiple resources with different values. This resource '%s' exports it, but it was already exported with a different value", serviceName, exportKey, intentName)
+							}
+						}
+
+						td.serviceExports[serviceName][exportKey] = resolvedValue
+					}
 				}
 			}
 		}

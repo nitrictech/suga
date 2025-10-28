@@ -144,6 +144,32 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 
 		return value, nil
 
+	case "service":
+		if len(specRef.Path) < 1 {
+			return nil, fmt.Errorf("service reference requires at least 1 path component (e.g., service.vpc_id)")
+		}
+
+		exportName := specRef.Path[0]
+
+		// Get the exports for the current service context (intentName)
+		exports, ok := td.serviceExports[intentName]
+		if !ok {
+			return nil, fmt.Errorf("service '%s' has no exports available. This typically means no databases or buckets have been configured to export properties to this service", intentName)
+		}
+
+		value, ok := exports[exportName]
+		if !ok {
+			availableExports := slices.Collect(maps.Keys(exports))
+			return nil, fmt.Errorf("service '%s' does not have export '%s'. Available exports are: %v", intentName, exportName, availableExports)
+		}
+
+		// If there are nested path components, we don't support that for service exports currently
+		if len(specRef.Path) > 1 {
+			return nil, fmt.Errorf("nested property access is not supported for service exports (attempted: service.%s)", strings.Join(specRef.Path, "."))
+		}
+
+		return value, nil
+
 	default:
 		return nil, fmt.Errorf("unknown reference source '%s'", specRef.Source)
 	}

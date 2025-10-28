@@ -21,6 +21,7 @@ type TerraformDeployment struct {
 	engine  *TerraformEngine
 
 	serviceIdentities map[string]map[string]interface{}
+	serviceExports    map[string]map[string]interface{}
 
 	terraformResources          map[string]cdktf.TerraformHclModule
 	terraformInfraResources     map[string]cdktf.TerraformHclModule
@@ -61,6 +62,7 @@ func NewTerraformDeployment(engine *TerraformEngine, stackName string) *Terrafor
 		terraformVariables:          map[string]cdktf.TerraformVariable{},
 		instancedTerraformVariables: map[string]map[string]cdktf.TerraformVariable{},
 		serviceIdentities:           map[string]map[string]interface{}{},
+		serviceExports:              map[string]map[string]interface{}{},
 		sugaProperties: map[string]interface{}{
 			"stack_id": stackId.Result(),
 		},

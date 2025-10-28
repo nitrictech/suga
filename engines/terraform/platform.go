@@ -371,6 +371,7 @@ type ResourceBlueprint struct {
 	Properties map[string]interface{} `json:"properties" yaml:"properties"`
 	DependsOn  []string               `json:"depends_on" yaml:"depends_on,omitempty"`
 	Variables  map[string]Variable    `json:"variables" yaml:"variables,omitempty"`
+	Exports    map[string]interface{} `json:"exports" yaml:"exports,omitempty"`
 }
 
 func (r *ResourceBlueprint) ResolvePlugin(platform *PlatformSpec) (*Plugin, error) {
