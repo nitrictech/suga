@@ -130,7 +130,7 @@ func GetNextListener(opts ...getNextListenerOption) (net.Listener, error) {
 
 	currentPort := options.minPort
 
-	for currentPort < options.maxPort {
+	for currentPort <= options.maxPort {
 		if isPortReserved(currentPort) {
 			currentPort = currentPort + 1
 			continue
