@@ -13,8 +13,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/nitrictech/suga/cli/internal/netx"
+	"github.com/nitrictech/suga/cli/internal/simulation/database"
 	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
 	"github.com/nitrictech/suga/cli/internal/simulation/service"
 	"github.com/nitrictech/suga/cli/internal/style"
@@ -35,9 +37,11 @@ type SimulationServer struct {
 	storagepb.UnimplementedStorageServer
 	pubsubpb.UnimplementedPubsubServer
 
-	apiPort        netx.ReservedPort
-	fileServerPort int
-	services       map[string]*service.ServiceSimulation
+	apiPort         netx.ReservedPort
+	fileServerPort  int
+	services        map[string]*service.ServiceSimulation
+	databaseManager *database.DatabaseManager
+	servicesWg      sync.WaitGroup
 }
 
 const (
@@ -90,6 +94,43 @@ func (s *SimulationServer) startSugaApis() error {
 			log.Fatalf("failed to serve listener")
 		}
 	}()
+
+	return nil
+}
+
+func (s *SimulationServer) startDatabases(output io.Writer) error {
+	databaseIntents := s.appSpec.DatabaseIntents
+
+	// Create and start a single PostgreSQL instance
+	dbManager, err := database.NewDatabaseManager(s.appSpec.Name, s.appDir)
+	if err != nil {
+		return err
+	}
+
+	err = dbManager.Start()
+	if err != nil {
+		return err
+	}
+
+	s.databaseManager = dbManager
+
+	fmt.Fprintf(output, "%s\n\n", style.Purple("Databases"))
+
+	// Create all databases in the PostgreSQL instance
+	for dbName, dbIntent := range databaseIntents {
+		err = dbManager.CreateDatabase(dbName, *dbIntent)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(output, "%s Starting %s postgresql://localhost:%d/%s\n",
+			greenCheck,
+			styledName(dbName, style.Purple),
+			dbManager.GetPort(),
+			dbName)
+	}
+
+	fmt.Fprint(output, "\n")
 
 	return nil
 }
@@ -242,7 +283,30 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 			return nil, err
 		}
 
-		simulatedService, eventChan, err := service.NewServiceSimulation(serviceName, *serviceIntent, port, s.apiPort)
+		// Clone the service intent to add database connection strings
+		intentCopy := *serviceIntent
+		if intentCopy.Env == nil {
+			intentCopy.Env = make(map[string]string)
+		}
+
+		// Inject database connection strings for databases this service has access to
+		if s.databaseManager != nil {
+			for dbName, dbIntent := range s.appSpec.DatabaseIntents {
+				// Check if this service has access to this database
+				if dbIntent.Access != nil {
+					if _, hasAccess := dbIntent.Access[serviceName]; hasAccess {
+						envKey := s.databaseManager.GetEnvVarKey(dbName)
+						if envKey == "" {
+							return nil, fmt.Errorf("database %s is missing env_var_key but is accessed by service %s", dbName, serviceName)
+						}
+						connStr := s.databaseManager.GetConnectionString(dbName)
+						intentCopy.Env[envKey] = connStr
+					}
+				}
+			}
+		}
+
+		simulatedService, eventChan, err := service.NewServiceSimulation(serviceName, intentCopy, port, s.apiPort)
 		if err != nil {
 			return nil, err
 		}
@@ -254,12 +318,14 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 	}
 
 	for _, simulatedService := range s.services {
-		go func() {
-			err := simulatedService.Start(true)
+		s.servicesWg.Add(1)
+		go func(svc *service.ServiceSimulation) {
+			defer s.servicesWg.Done()
+			err := svc.Start(true)
 			if err != nil {
 				log.Fatalf("failed to start simulated service: %v", err)
 			}
-		}()
+		}(simulatedService)
 	}
 
 	// Combine all of the events
@@ -350,6 +416,14 @@ func (s *SimulationServer) Start(output io.Writer) error {
 		return err
 	}
 
+	// Start databases before services so they can connect
+	if len(s.appSpec.DatabaseIntents) > 0 {
+		err := s.startDatabases(output)
+		if err != nil {
+			return err
+		}
+	}
+
 	var svcEvents <-chan service.ServiceEvent
 
 	if len(s.appSpec.ServiceIntents) > 0 {
@@ -381,6 +455,30 @@ func (s *SimulationServer) Start(output io.Writer) error {
 
 	// block on handling service outputs for now
 	s.handleServiceOutputs(output, svcEvents)
+
+	return nil
+}
+
+// Stop gracefully shuts down the simulation server and cleans up resources
+func (s *SimulationServer) Stop() error {
+	// Stop services first before stopping database
+	for serviceName, svc := range s.services {
+		if svc != nil {
+			fmt.Printf("Stopping service %s...\n", serviceName)
+			svc.Signal(os.Interrupt)
+		}
+	}
+
+	// Wait for all service goroutines to complete
+	s.servicesWg.Wait()
+
+	// Stop the database manager after services have shut down
+	if s.databaseManager != nil {
+		fmt.Println("Stopping database...")
+		if err := s.databaseManager.Stop(); err != nil {
+			return fmt.Errorf("failed to stop database manager: %w", err)
+		}
+	}
 
 	return nil
 }

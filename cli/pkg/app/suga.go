@@ -654,12 +654,32 @@ func Dev() error {
 	}
 
 	simserver := simulation.NewSimulationServer(fs, appSpec)
-	err = simserver.Start(os.Stdout)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Ensure cleanup happens on exit
+	defer func() {
+		if err := simserver.Stop(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error during cleanup: %v\n", err)
+		}
+	}()
+
+	// Start server in a goroutine so we can handle signals
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- simserver.Start(os.Stdout)
+	}()
+
+	// Wait for either completion or interrupt signal
+	select {
+	case err = <-errChan:
+		return err
+	case <-sigChan:
+		fmt.Println("\nShutting down gracefully...")
+		return nil
+	}
 }
 
 // MCP handles the mcp command logic

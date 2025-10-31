@@ -214,6 +214,11 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 			s.updateStatus(Status_Restarting)
 		}
 
+		// Add custom environment variables from service intent
+		for key, value := range s.intent.Env {
+			srvCommand.Env = append(srvCommand.Env, fmt.Sprintf("%s=%s", key, value))
+		}
+
 		srvCommand.Env = append(srvCommand.Env, fmt.Sprintf("PORT=%d", s.port))
 		srvCommand.Env = append(srvCommand.Env, fmt.Sprintf("SUGA_SERVICE_ADDRESS=localhost:%d", s.apiPort))
 
