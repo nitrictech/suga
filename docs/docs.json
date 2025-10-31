@@ -34,6 +34,7 @@
               "guides/cicd-authentication",
               "guides/mcp-integration",
               "guides/build-platform",
+              "guides/plugin-development",
               "guides/database-migration",
               "guides/terraform-backend-config",
               "guides/local-database-setup",
