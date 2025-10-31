@@ -1,0 +1,818 @@
+---
+title: "Plugin Development Guide"
+description: "Learn to build Suga plugins - the building blocks that power platforms with Terraform modules and runtime adapters."
+---
+
+Plugins are the fundamental building blocks of Suga platforms. They're reusable Terraform modules with optional runtime adapters that define how cloud resources get provisioned and accessed. This guide walks through creating, testing, and refining plugins locally before publishing them.
+
+<Note>
+  **New to Suga?** Start with the [Quickstart](/quickstart) to understand how applications work, then read the [Platform Development Guide](/guides/build-platform) to see how platforms compose plugins. This guide assumes you're comfortable with Terraform and your target cloud provider.
+</Note>
+
+## Understanding Plugins
+
+### What Are Plugins?
+
+Plugins are the lowest-level infrastructure building blocks in Suga. Each plugin is a self-contained unit that provides:
+
+1. **Infrastructure Deployment** - Terraform modules that provision cloud resources
+2. **Input Schema** - Configurable properties that platforms can customize
+3. **Runtime Adapters** (optional) - Go code that translates abstract operations into cloud-specific API calls
+
+Platforms compose multiple plugins to create complete deployment targets. For example, an AWS platform might use:
+- `lambda` plugin for serverless compute
+- `s3-bucket` plugin for object storage
+- `cloudfront` plugin for CDN
+- `iam-role` plugin for permissions
+- `rds-postgres-db` plugin for PostgreSQL databases
+
+### Plugin Types
+
+Suga supports different plugin types that correspond to application resources:
+
+- **`service`** - Compute resources (Lambda, Fargate, Cloud Run) - **requires runtime adapter**
+- **`storage`** - Object storage (S3, Cloud Storage) - **requires runtime adapter**
+- **`database`** - Databases (RDS, Neon, Cloud SQL)
+- **`entrypoint`** - HTTP routing (CloudFront, Load Balancers, Cloud CDN)
+- **`identity`** - IAM roles and service accounts
+- **Infrastructure plugins** - Supporting resources (VPCs, security groups, load balancers)
+
+<Warning>
+  **Runtime Adapters Required**: Services and storage plugins **must** provide runtime adapters in Go. These adapters power the generated client libraries that application code uses to interact with cloud resources. Other plugin types are purely infrastructure (Terraform only).
+</Warning>
+
+## Plugin Structure
+
+### Plugin Library Repository
+
+A plugin library is a Git repository containing one or more plugins. The recommended structure follows one module per plugin:
+
+```
+my-plugin-library/
+├── README.md
+├── LICENSE
+├── go.mod                    # Go module for runtime adapters
+├── go.sum
+├── lambda/                   # Service plugin
+│   ├── manifest.yaml
+│   ├── icon.svg
+│   ├── module/              # Terraform module
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── runtime.go           # Runtime adapter (required for services)
+│   └── README.md
+├── s3-bucket/               # Storage plugin
+│   ├── manifest.yaml
+│   ├── icon.svg
+│   ├── module/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   ├── runtime.go           # Runtime adapter (required for storage)
+│   └── README.md
+└── cloudfront/              # Entrypoint plugin (no runtime adapter needed)
+    ├── manifest.yaml
+    ├── icon.svg
+    ├── module/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── README.md
+```
+
+<Info>
+  **Example Repository**: See [nitrictech/plugins-aws](https://github.com/nitrictech/plugins-aws) for a complete, production-ready plugin library with multiple AWS plugins.
+</Info>
+
+### The Plugin Manifest
+
+Every plugin requires a `manifest.yaml` file that describes the plugin and its interface:
+
+```yaml manifest.yaml
+name: lambda          # Plugin name (used in platform definitions)
+type: service         # Plugin type (service, storage, database, entrypoint, identity, infra)
+description: "Deploys Services as containers running on AWS Lambda"
+icon: ./icon.svg      # Visual icon for the Suga editor
+required_identities:
+  - aws:iam:role      # Required identity plugins (for IAM permissions)
+capabilities:
+  - schedules         # Optional capabilities this plugin supports
+deployment:
+  terraform: ./module # Path to Terraform module
+runtime:
+  go_module: github.com/myorg/plugins-aws/lambda # Go module path for runtime adapter
+
+inputs:               # Terraform input variables
+  architecture:
+    type: string
+    description: "Instruction set architecture (e.g. `x86_64`)"
+  timeout:
+    type: number
+    description: "Maximum execution time in seconds 1-900"
+  memory:
+    type: number
+    description: "Amount of memory in MB 128-10240"
+  environment:
+    type: map(string)
+  subnet_ids:
+    type: list(string)
+  security_group_ids:
+    type: list(string)
+    description: "Security groups for VPC deployment"
+
+outputs: {}           # Optional Terraform outputs
+```
+
+### Manifest Fields Explained
+
+- **`name`**: Identifier used in platform definitions (e.g., `plugin: "suga/lambda"`)
+- **`type`**: Determines how the plugin is used in applications
+- **`required_identities`**: Any `identity` plugins this plugin depends on, such as an IAM role
+- **`capabilities`**: Certain features may not be possible to implement with all cloud services. If a plugin implements any of these optional features, like `schedules`, they should be listed under capabilities
+- **`deployment.terraform`**: Path to the Terraform module directory
+- **`runtime.go_module`**: Go import path for the runtime adapter (required for services and storage)
+- **`inputs`**: Schema for configurable properties - these are passed to the resulting Terraform module as variables
+- **`outputs`**: Any Terraform outputs you want to make available to other resources in the platforms that use this plugin
+
+### Terraform Module Structure
+
+The Terraform module follows standard conventions:
+
+```hcl module/variables.tf
+# Input variables matching the manifest
+variable "name" {
+  type        = string
+  description = "Resource name"
+}
+
+variable "timeout" {
+  type        = number
+  description = "Maximum execution time in seconds"
+  default     = 300
+}
+
+variable "memory" {
+  type        = number
+  description = "Memory in MB"
+  default     = 1024
+}
+
+variable "environment" {
+  type        = map(string)
+  description = "Environment variables"
+  default     = {}
+}
+```
+
+```hcl module/main.tf
+# Resource definitions
+resource "aws_ecr_repository" "this" {
+  name = var.name
+  # ... ECR configuration
+}
+
+resource "aws_lambda_function" "this" {
+  function_name = var.name
+  timeout       = var.timeout
+  memory_size   = var.memory
+  environment {
+    variables = var.environment
+  }
+  # ... Lambda configuration
+}
+```
+
+
+```hcl module/outputs.tf
+# Outputs for use by other resources
+output "function_arn" {
+  value = aws_lambda_function.this.arn
+}
+
+output "function_name" {
+  value = aws_lambda_function.this.function_name
+}
+```
+
+## Runtime Adapters
+
+Runtime adapters are **required** for service and storage plugins. They implement the translation layer between Suga's abstract resource operations and cloud-specific APIs.
+
+<Note>
+  **Registration Differences**:
+  - **Service plugins** register **without** a namespace: `service.Register(New)`
+  - **Storage plugins** register **with** a namespace: `storage.Register("team/library/plugin", New)`
+</Note>
+
+### When Runtime Adapters Are Needed
+
+| Plugin Type | Runtime Adapter | Why |
+|-------------|----------------|-----|
+| Service | **Required** | Adapt to standard HTTP requests, e.g. on AWS Lambda it converts Lambda Events into HTTP Requests which are forwarded to application code  |
+| Storage (Bucket) | **Required** | Implements file operations (read, write, delete, list, etc.) |
+| Database | Not needed | Connection strings typically injected via environment variables, SQL is already usable across providers |
+| Entrypoint | Not needed | Pure infrastructure - no runtime operations |
+| Identity | Not needed | Pure infrastructure - no runtime operations |
+
+### Storage Plugin Runtime Adapter Example
+
+Storage plugins must implement the `Storage` interface from `github.com/nitrictech/suga/proto/storage/v2` and register with a namespace.
+
+Here's a complete example of a runtime adapter for an S3 bucket plugin:
+
+```go s3-bucket/runtime.go
+package s3bucket
+
+import (
+    "bytes"
+    "context"
+    "fmt"
+    "io"
+    "os"
+
+    "github.com/aws/aws-sdk-go-v2/aws"
+    "github.com/aws/aws-sdk-go-v2/config"
+    "github.com/aws/aws-sdk-go-v2/service/s3"
+    storagepb "github.com/nitrictech/suga/proto/storage/v2"
+    "github.com/nitrictech/suga/runtime/storage"
+)
+
+// S3StorageService implements the Suga storage interface using protobuf
+type S3StorageService struct {
+    storagepb.UnimplementedStorageServer
+    s3Client   *s3.Client
+    bucketName string
+}
+
+// Read retrieves a file from S3
+func (s *S3StorageService) Read(ctx context.Context, req *storagepb.StorageReadRequest) (*storagepb.StorageReadResponse, error) {
+    result, err := s.s3Client.GetObject(ctx, &s3.GetObjectInput{
+        Bucket: aws.String(req.BucketName),
+        Key:    aws.String(req.Key),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("failed to read object: %w", err)
+    }
+    defer result.Body.Close()
+
+    body, err := io.ReadAll(result.Body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read body: %w", err)
+    }
+
+    return &storagepb.StorageReadResponse{
+        Body: body,
+    }, nil
+}
+
+// Write stores a file in S3
+func (s *S3StorageService) Write(ctx context.Context, req *storagepb.StorageWriteRequest) (*storagepb.StorageWriteResponse, error) {
+    _, err := s.s3Client.PutObject(ctx, &s3.PutObjectInput{
+        Bucket: aws.String(req.BucketName),
+        Key:    aws.String(req.Key),
+        Body:   bytes.NewReader(req.Body),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("failed to write object: %w", err)
+    }
+
+    return &storagepb.StorageWriteResponse{}, nil
+}
+
+// Delete removes a file from S3
+func (s *S3StorageService) Delete(ctx context.Context, req *storagepb.StorageDeleteRequest) (*storagepb.StorageDeleteResponse, error) {
+    _, err := s.s3Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+        Bucket: aws.String(req.BucketName),
+        Key:    aws.String(req.Key),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("failed to delete object: %w", err)
+    }
+
+    return &storagepb.StorageDeleteResponse{}, nil
+}
+
+// Exists checks if a file exists in S3
+func (s *S3StorageService) Exists(ctx context.Context, req *storagepb.StorageExistsRequest) (*storagepb.StorageExistsResponse, error) {
+    _, err := s.s3Client.HeadObject(ctx, &s3.HeadObjectInput{
+        Bucket: aws.String(req.BucketName),
+        Key:    aws.String(req.Key),
+    })
+    if err != nil {
+        // Check if error is NotFound
+        return &storagepb.StorageExistsResponse{Exists: false}, nil
+    }
+
+    return &storagepb.StorageExistsResponse{Exists: true}, nil
+}
+
+// ListBlobs returns files in a bucket with optional prefix
+func (s *S3StorageService) ListBlobs(ctx context.Context, req *storagepb.StorageListBlobsRequest) (*storagepb.StorageListBlobsResponse, error) {
+    result, err := s.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+        Bucket: aws.String(req.BucketName),
+        Prefix: aws.String(req.Prefix),
+    })
+    if err != nil {
+        return nil, fmt.Errorf("failed to list objects: %w", err)
+    }
+
+    blobs := make([]*storagepb.Blob, len(result.Contents))
+    for i, obj := range result.Contents {
+        blobs[i] = &storagepb.Blob{
+            Key: *obj.Key,
+        }
+    }
+
+    return &storagepb.StorageListBlobsResponse{Blobs: blobs}, nil
+}
+
+// PreSignUrl generates a pre-signed URL for direct access
+func (s *S3StorageService) PreSignUrl(ctx context.Context, req *storagepb.StoragePreSignUrlRequest) (*storagepb.StoragePreSignUrlResponse, error) {
+    // Implementation for pre-signed URLs
+    // This would use s3.PresignClient to generate URLs
+    return &storagepb.StoragePreSignUrlResponse{Url: ""}, nil
+}
+
+// New creates a new S3 storage service
+func New() (storage.Storage, error) {
+    bucketName := os.Getenv("SUGA_BUCKET_NAME")
+    if bucketName == "" {
+        return nil, fmt.Errorf("SUGA_BUCKET_NAME not set")
+    }
+
+    cfg, err := config.LoadDefaultConfig(context.Background())
+    if err != nil {
+        return nil, fmt.Errorf("unable to load AWS config: %w", err)
+    }
+
+    return &S3StorageService{
+        s3Client:   s3.NewFromConfig(cfg),
+        bucketName: bucketName,
+    }, nil
+}
+
+// Register with namespace matching your library and plugin name
+// Pattern: "<team>/<library>/<plugin-name>"
+func init() {
+    storage.Register("myorg/myplugins/s3-bucket", New)
+}
+```
+
+<Tip>
+  **AI Assistance for Runtime Adapters**: Writing runtime adapters is relatively easy, with well-defined specs. Making it an ideal task for AI coding agents like Claude Code or Cursor.
+  
+  Adding the [Suga MCP server](/guides/mcp-integration) will help the agent understand how to build Suga Plugins. Allowing the agent to access Suga documentation and existing plugins for reference.
+</Tip>
+
+### Service Plugin Runtime Adapter
+
+Service plugins require runtime adapters that handle incoming requests/events from the underlying cloud compute service and translate them into a common HTTP request format.
+
+#### Service Interface
+
+Service plugins MUST implement the `Service` interface from `github.com/nitrictech/suga/runtime/service`:
+
+```go
+type Service interface {
+    Start(Proxy) error
+}
+
+type Proxy interface {
+    Forward(ctx context.Context, req *http.Request) (*http.Response, error)
+    Host() string
+}
+```
+
+**Key Concepts:**
+- The `Start` method receives a `Proxy` that forwards HTTP requests to the user's application
+- Your runtime code translates cloud-specific events (Lambda events, container requests, etc.) into standard HTTP requests
+- The proxy handles forwarding these requests to the user's application running locally
+- Your runtime code must register itself using `service.Register()` **without a namespace**
+
+#### Example Service Runtime Adapter
+
+Here's a complete example for AWS Lambda:
+
+```go lambda/runtime.go
+package lambdaruntime
+
+import (
+    "context"
+    "net/http"
+
+    "github.com/aws/aws-lambda-go/events"
+    "github.com/aws/aws-lambda-go/lambda"
+    "github.com/nitrictech/suga/runtime/service"
+)
+
+type LambdaService struct{}
+
+func (l *LambdaService) Start(proxy service.Proxy) error {
+    // Start Lambda runtime with a handler that converts Lambda events to HTTP
+    lambda.Start(func(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+        // Convert Lambda event to http.Request
+        req, err := convertEventToRequest(ctx, event, proxy.Host())
+        if err != nil {
+            return events.APIGatewayProxyResponse{StatusCode: 500}, err
+        }
+
+        // Forward to user's application via proxy
+        resp, err := proxy.Forward(ctx, req)
+        if err != nil {
+            return events.APIGatewayProxyResponse{StatusCode: 500}, err
+        }
+
+        // Convert http.Response back to Lambda response
+        return convertResponseToEvent(resp)
+    })
+
+    return nil
+}
+
+func New() (service.Service, error) {
+    return &LambdaService{}, nil
+}
+
+// Register service plugin - NO namespace for service plugins
+func init() {
+    service.Register(New)
+}
+```
+
+**Key Responsibilities:**
+- Initialize the service runtime environment
+- Handle request proxying and routing
+- Convert proprietary request/event types to standard HTTP requests
+
+For example, AWS Lambda uses an event system that must be polled for new events. The [Lambda adapter](https://github.com/nitrictech/plugins-aws/blob/main/lambda/runtime.go) performs the polling and converts those proprietary event formats into standard HTTP Requests, before forwarding them to application code.
+
+As Suga's capabilities expand, these adapters will also be responsible for routing. For example, schedule triggers or pubsub events will need to be routed to specific application paths after identifying the event source.
+
+Compute services that already use HTTP Requests as triggers, such as [Google CloudRun](https://github.com/nitrictech/plugins-gcp/blob/main/cloudrun/gcpcloudrun.go), require very little code in their runtime adapters.
+
+### Go Module Path
+
+The `runtime.go_module` field in the manifest must match your actual Go module path:
+
+```yaml manifest.yaml
+runtime:
+  go_module: github.com/myorg/plugins-aws/lambda
+```
+
+```go go.mod
+module github.com/myorg/plugins-aws
+
+go 1.21
+
+require (
+    github.com/aws/aws-sdk-go-v2 v1.24.0
+    github.com/aws/aws-sdk-go-v2/config v1.26.1
+    github.com/aws/aws-sdk-go-v2/service/s3 v1.47.0
+    // ... other dependencies
+)
+```
+
+The Suga build system will download and integrate your runtime adapter when generating the runtime server added to container images.
+
+## Local Development Workflow
+
+The `suga plugin serve` command and `suga build --replace-library` flag enable rapid plugin development without publishing changes to a registry.
+
+### Why This Matters
+
+Without these tools, every plugin change would require:
+1. Pushing changes to Git
+2. Tagging a new version
+3. Publishing to the Suga platform or GitHub
+4. Updating platform definitions to use the new version
+5. Building applications to test changes
+
+This cycle could take minutes for each iteration. The local development workflow reduces this to seconds.
+
+### Step 1: Set Up Your Plugin Project
+
+Create a new directory for your plugin library:
+
+```bash
+mkdir my-plugins
+cd my-plugins
+
+# Initialize Go module
+go mod init github.com/myorg/my-plugins
+
+# Create your first plugin
+mkdir lambda
+cd lambda
+
+# Create manifest
+cat > manifest.yaml << 'EOF'
+name: lambda
+type: service
+description: "My custom Lambda implementation"
+icon: ./icon.svg
+required_identities:
+  - aws:iam:role
+deployment:
+  terraform: ./module
+runtime:
+  go_module: github.com/myorg/my-plugins/lambda
+
+inputs:
+  timeout:
+    type: number
+    description: "Function timeout in seconds"
+  memory:
+    type: number
+    description: "Memory allocation in MB"
+
+outputs: {}
+EOF
+
+# Create Terraform module
+mkdir module
+cd module
+
+# Create basic Terraform files
+cat > variables.tf << 'EOF'
+variable "name" {
+  type        = string
+  description = "Function name"
+}
+
+variable "timeout" {
+  type        = number
+  description = "Timeout in seconds"
+  default     = 300
+}
+
+variable "memory" {
+  type        = number
+  description = "Memory in MB"
+  default     = 1024
+}
+EOF
+
+cat > main.tf << 'EOF'
+resource "aws_lambda_function" "this" {
+  function_name = var.name
+  timeout       = var.timeout
+  memory_size   = var.memory
+  # ... add your custom Lambda configuration
+}
+EOF
+
+cat > outputs.tf << 'EOF'
+output "function_arn" {
+  value = aws_lambda_function.this.arn
+}
+EOF
+```
+
+### Step 2: Start the Plugin Development Server
+
+From your plugin library root directory:
+
+```bash
+cd my-plugins
+suga plugin serve
+```
+
+You'll see output like:
+
+```
+Suga Plugin Development Server
+Listening on: http://localhost:9000
+
+Discovered Plugins:
+  ✓ lambda (service)
+
+Configuration:
+Add to your platform.yaml:
+  libraries:
+    myorg/myplugins: http://localhost:9000
+
+Press Ctrl+C to stop
+```
+
+The server:
+- Discovers all plugins in subdirectories
+- Validates manifest files
+- Serves plugin manifests over HTTP
+- Implements the Go module proxy protocol for runtime adapters
+- Watches for file changes (restart to pick up new plugins)
+
+### Step 3: Test Your Plugin in an Application
+
+In a separate terminal, navigate to a Suga application that uses a platform with the plugin library you're developing.
+
+Replace the library at build time:
+
+```bash
+cd my-app
+suga build --replace-library suga/aws=http://localhost:9000
+```
+
+This tells Suga to:
+1. Load your platform definition
+2. Replace the `suga/aws` library with your local version at `http://localhost:9000`
+3. Use your local plugin manifests and Terraform modules
+4. Download runtime adapters from your local Go module proxy
+5. Generate Terraform with your changes
+
+<Info>
+  **Multiple Replacements**: You can replace multiple libraries at once:
+  ```bash
+  suga build -r suga/aws=http://localhost:9000 -r suga/gcp=http://localhost:9001
+  ```
+</Info>
+
+### Step 4: Iterate and Refine
+
+The development cycle becomes:
+
+1. **Edit your plugin files** (manifest.yaml, Terraform, or Go code)
+2. **Rebuild your application**: `suga build -r suga/aws=http://localhost:9000`
+3. **Test the generated Terraform**: `cd terraform/stacks/my-app && terraform init --upgrade && terraform plan`
+4. **Repeat**: Make adjustments and rebuild
+
+### Step 5: Using with Custom Platforms
+
+If you're developing both a platform and plugins simultaneously:
+
+**Option 1: Replace in platform definition**
+
+Edit your `platform.yaml` to reference your local server:
+
+```yaml platform.yaml
+name: my-platform
+description: "My custom platform"
+
+libraries:
+  myorg/myplugins: http://localhost:9000  # Local development
+  # myorg/myplugins: v0.0.1              # Production version
+
+resources:
+  services:
+    - name: lambda
+      plugin: myorg/myplugins-lambda
+      # ... configuration
+```
+
+**Option 2: Replace at build time (recommended)**
+
+Keep production URLs in your platform and override during development:
+
+```bash
+suga build --replace-library myorg/myplugins=http://localhost:9000
+```
+
+This approach keeps your platform definition production-ready while allowing local testing.
+
+## Testing Your Plugins
+
+After building, validate the generated Terraform:
+
+```bash
+# Navigate to generated stack
+cd terraform/stacks/my-app
+
+# Initialize Terraform
+# Note: add --upgrade flag to trigger an update of the modules
+terraform init --upgrade
+
+# Validate configuration
+terraform validate
+
+# Preview changes
+terraform plan
+
+# Apply changes
+terraform apply
+```
+
+Look for:
+- ✅ Variables passed correctly from manifest to Terraform
+- ✅ Resources created with proper names and configurations
+- ✅ Outputs available for other resources to reference
+- ✅ No Terraform errors or warnings
+
+## Advanced Topics
+
+### Identity Dependencies
+
+Suga `identity` plugins are a special type of plugin. They're not deployed independently, instead they're attached to `service` plugins, in order to grant that service access to other resources.
+
+Plugins, such as Buckets, can specify that a Service will _require_ a specific identity type before accessing them will be possible. This is specified using the `required_identities` field:
+
+```yaml s3/manifest.yaml
+# Any service accessing an S3 bucket deployed by this plugin, will need an IAM Role to enable that access
+required_identities:
+  - aws:iam:role
+```
+
+An identity plugin specifies which identity type it provides, using the `identity_type` field:
+
+```yaml iamrole/manifest.yaml
+identity_type: aws:iam:role
+```
+
+This allows you to build your own plugins for each identify type to change the way IAM is handled in your platforms.
+
+Platforms must provide these dependencies when using a service plugin:
+
+```yaml platform.yaml
+services:
+  - name: lambda
+    plugin: suga/lambda
+    identity:
+      plugin: suga/iam-role  # Satisfies required_identities
+```
+
+### Using Infrastructure Outputs
+
+Plugins may need to reference outputs from other infrastructure in your platform, this is done by specifying `inputs` for the plugins that need external data and `outputs` from plugins that provide the data:
+
+```yaml fargate/manifest.yaml
+inputs:
+  vpc_id:
+    type: string
+    description: "VPC ID from platform infrastructure"
+```
+
+```yaml vpc/manifest.yaml
+outputs:
+  vpc_id:
+    type: string
+    description: "Unique identifier for the Virtual Private Cloud, used to reference this VPC when creating subnets, security groups, and other network resources"
+```
+
+Platforms wire output to inputs using references, e.g. `${infra.*}`:
+
+```yaml platform.yaml
+infra:
+  - name: aws_vpc
+    source:
+      plugin: vpc
+      library: suga/aws
+
+services:
+  - name: fargate
+    source:
+      plugin: fargate
+      library: suga/aws
+    properties:
+      vpc_id: ${infra.aws_vpc.vpc_id}
+```
+
+See the [Platform Development Guide](/guides/build-platform) for more details.
+
+### Custom Plugin Capabilities
+
+Not all cloud services are equal, some have advanced features, others have a more basic feature set.
+
+Suga faced a few choices to deal with these differences, such as requiring all plugins to cover all advanced features, meaning certain services wouldn't be usable as Suga plugins. Alternatively, we could set a lowest-common-denominator interface (i.e. don't expose any advanced features, to maximize compatibility).
+
+Instead, Suga declares certain features as _optional_ for plugins to implement. We call these optional features `capabilities`. If a plugin chooses to implement one of these capabilities, it should declare it in using the `capabilities` list:
+
+```yaml lambda/manifest.yaml
+capabilities:
+  - schedules # Supports scheduled execution
+```
+
+Applications can then use these capabilities, if they include a resource using a plugin of that type.
+
+## Next Steps
+
+Once you've developed and tested your plugins locally:
+
+1. **Commit your changes** to your plugin library repository
+2. **Tag a version** following semantic versioning (v0.0.1, v0.1.0, etc.)
+3. **Push to Git** so it's accessible
+4. **Publish to Suga** using the Plugin Libraries UI
+5. **Update platforms** to use your published plugins
+6. **Share with your team** or the Suga community
+
+### Reference Implementation
+
+Study the official Suga plugin libraries for best practices:
+
+- **AWS Plugins**: [github.com/nitrictech/plugins-aws](https://github.com/nitrictech/plugins-aws)
+- **GCP Plugins**: [github.com/nitrictech/plugins-gcp](https://github.com/nitrictech/plugins-gcp)
+
+### Using AI Agents for Plugin Development
+
+When writing plugins or runtime adapters consider using AI coding agents like Claude Code or Cursor with the [Suga MCP integration](/guides/mcp-integration).
+
+This is particularly valuable when writing runtime adapters if you're more familiar with cloud infrastructure than Go programming.
+
+## Additional Resources
+
+- [Platform Development Guide](/guides/build-platform) - Learn how platforms compose plugins
+- [Suga MCP Integration](/guides/mcp-integration) - Use AI agents to help build plugins
+- [Platforms Overview](/platforms) - Understand how plugins fit into the architecture
+- [Suga CLI Reference](/cli) - Complete CLI documentation
+
+<Info>
+  **Need Help?** Get in touch with the [Suga Team](mailto://support@addsuga.com) or check the [GitHub Discussions](https://github.com/nitrictech/suga/discussions) for plugin development questions.
+</Info>
