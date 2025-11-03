@@ -127,39 +127,41 @@ func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Write
 	for _, schedule := range s.intent.Schedules {
 		cronExpression := strings.TrimSpace(schedule.Cron)
 
-		if cronExpression != "" {
-			url := url.URL{
-				Scheme: "http",
-				Host:   fmt.Sprintf("localhost:%d", s.port),
-				Path:   schedule.Path,
-			}
+		if cronExpression == "" {
+			return nil, fmt.Errorf("service %s has a schedule with an empty cron expression", style.Teal(fmt.Sprintf("[%s]", s.name)))
+		}
 
-			_, err := cron.AddFunc(cronExpression, func() {
-				fmt.Printf("%s -> %s POST %s\n", style.Purple(fmt.Sprintf("[schedule.%s] (%s)", s.name, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), schedule.Path)
-				req, err := http.NewRequest(http.MethodPost, url.String(), nil)
-				if err != nil {
-					// log the error
-					fmt.Fprint(stderrorWriter, "error creating request for schedule", err)
-					return
-				}
+		url := url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("localhost:%d", s.port),
+			Path:   schedule.Path,
+		}
 
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					fmt.Fprint(stderrorWriter, "error sending request for schedule", err)
-					return
-				}
-
-				defer resp.Body.Close()
-
-				if resp.StatusCode != http.StatusOK {
-					fmt.Fprint(stderrorWriter, "error sending request for schedule", resp.StatusCode)
-					return
-				}
-			})
-
+		_, err := cron.AddFunc(cronExpression, func() {
+			fmt.Printf("%s -> %s POST %s\n", style.Purple(fmt.Sprintf("[schedule.%s] (%s)", s.name, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), schedule.Path)
+			req, err := http.NewRequest(http.MethodPost, url.String(), nil)
 			if err != nil {
-				return nil, err
+				// log the error
+				fmt.Fprint(stderrorWriter, "error creating request for schedule", err)
+				return
 			}
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Fprint(stderrorWriter, "error sending request for schedule", err)
+				return
+			}
+
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Fprint(stderrorWriter, "error sending request for schedule", resp.StatusCode)
+				return
+			}
+		})
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
