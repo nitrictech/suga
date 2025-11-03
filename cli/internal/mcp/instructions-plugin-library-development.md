@@ -540,7 +540,7 @@ The development cycle becomes:
 
 If you're developing both a platform and plugins simultaneously:
 
-**Option 1: Replace in platform definition**
+#### Option 1: Replace in platform definition
 
 Edit your `platform.yaml` to reference your local server:
 
@@ -551,7 +551,7 @@ libraries:
   # myorg/myplugins: v0.0.1              # Production version
 ```
 
-**Option 2: Replace at build time (recommended)**
+#### Option 2: Replace at build time (recommended)
 
 Keep production URLs in your platform and override during development:
 
