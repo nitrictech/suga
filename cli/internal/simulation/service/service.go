@@ -122,21 +122,20 @@ func (s *ServiceSimulation) hasExceededFailureLimit() bool {
 }
 
 func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Writer) (*cron.Cron, error) {
-	triggers := s.intent.Triggers
 	cron := cron.New()
 
-	for triggerName, trigger := range triggers {
-		cronExpression := strings.TrimSpace(trigger.Cron)
+	for _, schedule := range s.intent.Schedules {
+		cronExpression := strings.TrimSpace(schedule.Cron)
 
 		if cronExpression != "" {
 			url := url.URL{
 				Scheme: "http",
 				Host:   fmt.Sprintf("localhost:%d", s.port),
-				Path:   trigger.Path,
+				Path:   schedule.Path,
 			}
 
 			_, err := cron.AddFunc(cronExpression, func() {
-				fmt.Printf("%s triggering %s POST %s\n", style.Purple(fmt.Sprintf("[%s.%s] cron:%s", s.name, triggerName, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), trigger.Path)
+				fmt.Printf("%s -> %s POST %s\n", style.Purple(fmt.Sprintf("[schedule.%s] (%s)", s.name, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), schedule.Path)
 				req, err := http.NewRequest(http.MethodPost, url.String(), nil)
 				if err != nil {
 					// log the error
@@ -156,8 +155,6 @@ func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Write
 					fmt.Fprint(stderrorWriter, "error sending request for schedule", resp.StatusCode)
 					return
 				}
-
-				fmt.Fprintf(stdoutWriter, "schedule [%s] triggered on %s", triggerName, trigger.Path)
 			})
 
 			if err != nil {

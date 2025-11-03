@@ -171,25 +171,26 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 		return nil, err
 	}
 
-	var schedules map[string]SugaServiceSchedule = nil
-	if len(schedules) > 0 && !slices.Contains(plug.Capabilities, "schedules") {
+	var schedules map[string]SugaServiceSchedule = make(map[string]SugaServiceSchedule)
+
+	if len(spec.Schedules) > 0 && !slices.Contains(plug.Capabilities, "schedules") {
 		return nil, fmt.Errorf("service %s has schedules but the plugin %s does not support schedules", name, plug.Name)
-	} else {
-		schedules = map[string]SugaServiceSchedule{}
 	}
 
-	for triggerName, trigger := range spec.Triggers {
-		cronExpression := strings.TrimSpace(trigger.Cron)
+	if len(spec.Schedules) > 0 {
+		fmt.Printf("⚠️  This project defines schedules for service '%s'. Schedules are in preview and may change in the future.\n", name)
+	}
 
-		if cronExpression == "" {
-			continue
+	for i, schedule := range spec.Schedules {
+		schedule.Cron = strings.TrimSpace(schedule.Cron)
+
+		if schedule.Cron == "" {
+			return nil, fmt.Errorf("service %s has a schedule with an empty cron expression", name)
 		}
 
-		fmt.Printf("⚠️  This project defines a schedule for service '%s'. Schedule triggers are in preview and may change in the future.\n", name)
-
-		schedules[triggerName] = SugaServiceSchedule{
-			CronExpression: jsii.String(cronExpression),
-			Path:           jsii.String(trigger.Path),
+		schedules[fmt.Sprintf("%d", i)] = SugaServiceSchedule{
+			CronExpression: jsii.String(schedule.Cron),
+			Path:           jsii.String(schedule.Path),
 		}
 	}
 
