@@ -185,6 +185,8 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 			continue
 		}
 
+		fmt.Printf("⚠️  This project defines a schedule for service '%s'. Schedule triggers are in preview and may change in the future.\n", name)
+
 		schedules[triggerName] = SugaServiceSchedule{
 			CronExpression: jsii.String(cronExpression),
 			Path:           jsii.String(trigger.Path),
