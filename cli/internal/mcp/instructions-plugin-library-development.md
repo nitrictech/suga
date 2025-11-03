@@ -2,6 +2,8 @@
 
 This guide covers how to create and maintain Suga plugin libraries, which provide the building blocks that platforms compose together.
 
+**Note for AI Agents**: This is a technical reference for precise implementation details. For user-facing documentation with more conceptual explanations and getting started guides, refer users to the [Plugin Development Guide](/guides/plugin-development) in the Suga docs.
+
 ## Overview
 
 A **plugin library** is a collection of reusable Terraform modules that implement infrastructure components. Each plugin in the library is a self-contained unit that:
@@ -63,7 +65,7 @@ Plugins typically fall into these categories:
 
 ### What Is Runtime Code?
 
-Runtime code is **Go code that gets embedded into your Suga application** to facilitate communication between your app and the deployed cloud infrastructure. This is NOT an SDK or library - it is **necessary runtime code** that your application requires to function.
+Runtime code (also called "runtime adapters" in user-facing documentation) is **Go code that gets embedded into your Suga application** to facilitate communication between your app and the deployed cloud infrastructure. This is NOT an SDK or library - it is **necessary runtime code** that your application requires to function.
 
 **Currently, runtime code is ONLY written in Go.**
 
@@ -452,6 +454,112 @@ terraform {
   }
 }
 ```
+
+## Local Development Workflow
+
+The `suga plugin serve` command and `suga build --replace-library` flag enable rapid plugin development without publishing changes to a registry.
+
+### Why This Matters
+
+Without these tools, every plugin change would require:
+1. Pushing changes to Git
+2. Tagging a new version
+3. Publishing to the Suga platform
+4. Updating platform definitions to use the new version
+5. Building applications to test changes
+
+This cycle could take minutes for each iteration. The local development workflow reduces this to seconds.
+
+### Step 1: Start the Plugin Development Server
+
+From your plugin library root directory:
+
+```bash
+cd my-plugins
+suga plugin serve
+```
+
+You'll see output like:
+
+```
+Suga Plugin Development Server
+Listening on: http://localhost:9000
+
+Discovered Plugins:
+  ✓ lambda (service)
+  ✓ s3-bucket (bucket)
+
+Configuration:
+Add to your platform.yaml:
+  libraries:
+    myorg/myplugins: http://localhost:9000
+
+Press Ctrl+C to stop
+```
+
+The server:
+- Discovers all plugins in subdirectories
+- Validates manifest files
+- Serves plugin manifests over HTTP
+- Implements the Go module proxy protocol for runtime code
+- Watches for file changes (restart to pick up new plugins)
+
+### Step 2: Test Your Plugin in an Application
+
+In a separate terminal, navigate to a Suga application that uses a platform with the plugin library you're developing.
+
+Replace the library at build time:
+
+```bash
+cd my-app
+suga build --replace-library suga/aws=http://localhost:9000
+```
+
+This tells Suga to:
+1. Load your platform definition
+2. Replace the `suga/aws` library with your local version at `http://localhost:9000`
+3. Use your local plugin manifests and Terraform modules
+4. Download runtime code from your local Go module proxy
+5. Generate Terraform with your changes
+
+**Multiple Replacements**: You can replace multiple libraries at once:
+```bash
+suga build -r suga/aws=http://localhost:9000 -r suga/gcp=http://localhost:9001
+```
+
+### Step 3: Iterate and Refine
+
+The development cycle becomes:
+
+1. **Edit your plugin files** (manifest.yaml, Terraform, or Go code)
+2. **Rebuild your application**: `suga build -r suga/aws=http://localhost:9000`
+3. **Test the generated Terraform**: `cd terraform/stacks/my-app && terraform init --upgrade && terraform plan`
+4. **Repeat**: Make adjustments and rebuild
+
+### Step 4: Using with Custom Platforms
+
+If you're developing both a platform and plugins simultaneously:
+
+**Option 1: Replace in platform definition**
+
+Edit your `platform.yaml` to reference your local server:
+
+```yaml
+name: my-platform
+libraries:
+  myorg/myplugins: http://localhost:9000  # Local development
+  # myorg/myplugins: v0.0.1              # Production version
+```
+
+**Option 2: Replace at build time (recommended)**
+
+Keep production URLs in your platform and override during development:
+
+```bash
+suga build --replace-library myorg/myplugins=http://localhost:9000
+```
+
+This keeps your platform definition production-ready while allowing local testing.
 
 ## Development Workflow
 
