@@ -25,6 +25,9 @@ rollout
 VPCs
 fmt
 gcloud
+namespace
+proxying
+pubsub
 dynamodb_table
 gcs
 azurerm
