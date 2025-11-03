@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/netx"
+	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/robfig/cron/v3"
 )
@@ -135,6 +136,7 @@ func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Write
 			}
 
 			_, err := cron.AddFunc(cronExpression, func() {
+				fmt.Printf("%s triggering %s POST %s\n", style.Purple(fmt.Sprintf("[%s.%s] cron:%s", s.name, triggerName, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), trigger.Path)
 				req, err := http.NewRequest(http.MethodPost, url.String(), nil)
 				if err != nil {
 					// log the error
