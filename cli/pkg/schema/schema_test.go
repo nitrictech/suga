@@ -154,10 +154,8 @@ services:
     container:
       docker:
         dockerfile: Dockerfile
-    triggers:
-      scheduled:
-        schedule:
-          cron_expression: "0 0 * * *"
+    schedules:
+      - cron: "0 0 * * *"
         path: /scheduled
 `
 
@@ -167,12 +165,11 @@ services:
 
 	service, exists := app.ServiceIntents["worker"]
 	assert.True(t, exists, "Expected service 'worker' to exist")
-	assert.Len(t, service.Triggers, 1)
+	assert.Len(t, service.Schedules, 1)
 
-	trigger, exists := service.Triggers["scheduled"]
-	assert.True(t, exists, "Expected trigger 'scheduled' to exist")
-	assert.NotNil(t, trigger.Schedule, "Expected trigger to have schedule configuration")
-	assert.Equal(t, "0 0 * * *", trigger.Schedule.CronExpression)
+	trigger := service.Schedules[0]
+	assert.NotNil(t, trigger, "Expected trigger 'scheduled' to exist")
+	assert.Equal(t, "0 0 * * *", trigger.Cron)
 	assert.Equal(t, "/scheduled", trigger.Path)
 }
 

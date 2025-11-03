@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/nitrictech/suga/cli/internal/netx"
+	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/pkg/schema"
 	"github.com/robfig/cron/v3"
 )
@@ -121,44 +122,46 @@ func (s *ServiceSimulation) hasExceededFailureLimit() bool {
 }
 
 func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Writer) (*cron.Cron, error) {
-	triggers := s.intent.Triggers
 	cron := cron.New()
 
-	for triggerName, trigger := range triggers {
-		if trigger.Schedule != nil {
-			url := url.URL{
-				Scheme: "http",
-				Host:   fmt.Sprintf("localhost:%d", s.port),
-				Path:   trigger.Path,
-			}
+	for _, schedule := range s.intent.Schedules {
+		cronExpression := strings.TrimSpace(schedule.Cron)
 
-			_, err := cron.AddFunc(trigger.Schedule.CronExpression, func() {
-				req, err := http.NewRequest(http.MethodPost, url.String(), nil)
-				if err != nil {
-					// log the error
-					fmt.Fprint(stderrorWriter, "error creating request for schedule", err)
-					return
-				}
+		if cronExpression == "" {
+			return nil, fmt.Errorf("service %s has a schedule with an empty cron expression", style.Teal(fmt.Sprintf("[%s]", s.name)))
+		}
 
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					fmt.Fprint(stderrorWriter, "error sending request for schedule", err)
-					return
-				}
+		url := url.URL{
+			Scheme: "http",
+			Host:   fmt.Sprintf("localhost:%d", s.port),
+			Path:   schedule.Path,
+		}
 
-				defer resp.Body.Close()
-
-				if resp.StatusCode != http.StatusOK {
-					fmt.Fprint(stderrorWriter, "error sending request for schedule", resp.StatusCode)
-					return
-				}
-
-				fmt.Fprintf(stdoutWriter, "schedule [%s] triggered on %s", triggerName, trigger.Path)
-			})
-
+		_, err := cron.AddFunc(cronExpression, func() {
+			fmt.Printf("%s -> %s POST %s\n", style.Purple(fmt.Sprintf("[schedule.%s] (%s)", s.name, cronExpression)), style.Teal(fmt.Sprintf("[%s]", s.name)), schedule.Path)
+			req, err := http.NewRequest(http.MethodPost, url.String(), nil)
 			if err != nil {
-				return nil, err
+				// log the error
+				fmt.Fprint(stderrorWriter, "error creating request for schedule", err)
+				return
 			}
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Fprint(stderrorWriter, "error sending request for schedule", err)
+				return
+			}
+
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				fmt.Fprint(stderrorWriter, "error sending request for schedule", resp.StatusCode)
+				return
+			}
+		})
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
