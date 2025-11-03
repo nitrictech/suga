@@ -85,6 +85,12 @@ func (s *ServiceSimulation) Signal(sig os.Signal) {
 		s.autoRestart = false
 		s.updateStatus(Status_Stopping)
 	}
+
+	// Check if the service has started (and can therefore be stopped)
+	if s.cmd == nil || s.cmd.Process == nil {
+		return
+	}
+
 	// If windows, it will always Kill 🔪... (signals are not supported on windows)
 	err := s.cmd.Process.Signal(sig)
 	if err != nil {
