@@ -125,14 +125,16 @@ func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Write
 	cron := cron.New()
 
 	for triggerName, trigger := range triggers {
-		if trigger.Schedule != nil {
+		cronExpression := strings.TrimSpace(trigger.Cron)
+
+		if cronExpression != "" {
 			url := url.URL{
 				Scheme: "http",
 				Host:   fmt.Sprintf("localhost:%d", s.port),
 				Path:   trigger.Path,
 			}
 
-			_, err := cron.AddFunc(trigger.Schedule.CronExpression, func() {
+			_, err := cron.AddFunc(cronExpression, func() {
 				req, err := http.NewRequest(http.MethodPost, url.String(), nil)
 				if err != nil {
 					// log the error

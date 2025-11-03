@@ -156,8 +156,7 @@ services:
         dockerfile: Dockerfile
     triggers:
       scheduled:
-        schedule:
-          cron_expression: "0 0 * * *"
+        cron: "0 0 * * *"
         path: /scheduled
 `
 
@@ -171,8 +170,7 @@ services:
 
 	trigger, exists := service.Triggers["scheduled"]
 	assert.True(t, exists, "Expected trigger 'scheduled' to exist")
-	assert.NotNil(t, trigger.Schedule, "Expected trigger to have schedule configuration")
-	assert.Equal(t, "0 0 * * *", trigger.Schedule.CronExpression)
+	assert.Equal(t, "0 0 * * *", trigger.Cron)
 	assert.Equal(t, "/scheduled", trigger.Path)
 }
 

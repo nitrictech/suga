@@ -18,16 +18,12 @@ func (s *ServiceIntent) GetType() string {
 }
 
 type ServiceTrigger struct {
-	Schedule *Schedule `json:"schedule,omitempty" yaml:"schedule,omitempty" jsonschema:"oneof_required=schedule"`
+	Cron string `json:"cron,omitempty" yaml:"schedule,omitempty" jsonschema:"oneof_required=schedule"`
 	// TODO: Add additional trigger types
 	// Topic    *TopicTrigger  `json:"topic,omitempty" yaml:"topic,omitempty" jsonschema:"oneof_required=topic"`
 	// Bucket   *BucketTrigger `json:"bucket,omitempty" yaml:"bucket,omitempty" jsonschema:"oneof_required=bucket"`
 
 	Path string `json:"path" yaml:"path" jsonschema:"required"`
-}
-
-type Schedule struct {
-	CronExpression string `json:"cron_expression,omitempty" yaml:"cron_expression,omitempty" jsonschema:"oneof_required=cron_expression"`
 }
 
 type Dev struct {

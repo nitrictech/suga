@@ -6,6 +6,7 @@ import (
 	"maps"
 	"path"
 	"slices"
+	"strings"
 
 	"github.com/aws/jsii-runtime-go"
 	random "github.com/cdktf/cdktf-provider-random-go/random/v11/provider"
@@ -178,12 +179,14 @@ func (td *TerraformDeployment) resolveService(name string, spec *app_spec_schema
 	}
 
 	for triggerName, trigger := range spec.Triggers {
-		if trigger.Schedule == nil {
+		cronExpression := strings.TrimSpace(trigger.Cron)
+
+		if cronExpression == "" {
 			continue
 		}
 
 		schedules[triggerName] = SugaServiceSchedule{
-			CronExpression: jsii.String(trigger.Schedule.CronExpression),
+			CronExpression: jsii.String(cronExpression),
 			Path:           jsii.String(trigger.Path),
 		}
 	}
