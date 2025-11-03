@@ -41,9 +41,34 @@ func (a *Application) IsValid(options ...ValidationOption) []gojsonschema.Result
 	violations = append(violations, a.checkNoEnvVarCollisions()...)
 	violations = append(violations, a.checkAccessPermissions()...)
 	violations = append(violations, a.checkNoRedundantEntrypointRoutes()...)
+	violations = append(violations, a.checkEntrypointTargetsExist()...)
 
 	if opts.RequireSubtypes {
 		violations = append(violations, a.checkSubtypesRequired()...)
+	}
+
+	return violations
+}
+
+func (a *Application) checkEntrypointTargetsExist() []gojsonschema.ResultError {
+	violations := []gojsonschema.ResultError{}
+
+	for entrypointName, intent := range a.EntrypointIntents {
+		for routePath, route := range intent.Routes {
+			_, serviceExists := a.ServiceIntents[route.TargetName]
+			_, bucketExists := a.BucketIntents[route.TargetName]
+			_, resourceExists := a.GetResourceIntent(route.TargetName)
+
+			if !serviceExists && !bucketExists {
+				key := fmt.Sprintf("entrypoints.%s.routes.%s.name", entrypointName, routePath)
+				var err = fmt.Sprintf("Route %s targets non-existent resource %s", routePath, route.TargetName)
+				if resourceExists {
+					err = fmt.Sprintf("Route %s targets resource %s which is not a service or bucket", routePath, route.TargetName)
+				}
+
+				violations = append(violations, newValidationError(key, err))
+			}
+		}
 	}
 
 	return violations
