@@ -82,6 +82,11 @@ var stopSignals = []os.Signal{
 
 // Signal - sends a signal to the service process
 func (s *ServiceSimulation) Signal(sig os.Signal) {
+	// Check if command was ever started
+	if s.cmd == nil || s.cmd.Process == nil {
+		return
+	}
+
 	if slices.Contains(stopSignals, sig) {
 		s.autoRestart = false
 		s.updateStatus(Status_Stopping)
