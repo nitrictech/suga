@@ -116,7 +116,6 @@ func (s *SimulationServer) startDatabases(output io.Writer) error {
 
 	fmt.Fprintf(output, "%s\n\n", style.Purple("Databases"))
 
-	// Create all databases in the PostgreSQL instance
 	for dbName, dbIntent := range databaseIntents {
 		err = dbManager.CreateDatabase(dbName, *dbIntent)
 		if err != nil {
@@ -292,7 +291,6 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 		// Inject database connection strings for databases this service has access to
 		if s.databaseManager != nil {
 			for dbName, dbIntent := range s.appSpec.DatabaseIntents {
-				// Check if this service has access to this database
 				if dbIntent.Access != nil {
 					if _, hasAccess := dbIntent.Access[serviceName]; hasAccess {
 						envKey := s.databaseManager.GetEnvVarKey(dbName)
@@ -469,7 +467,6 @@ func (s *SimulationServer) Stop() error {
 		}
 	}
 
-	// Wait for all service goroutines to complete
 	s.servicesWg.Wait()
 
 	// Stop the database manager after services have shut down

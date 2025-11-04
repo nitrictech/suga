@@ -48,24 +48,19 @@ type DatabaseInfo struct {
 func NewDatabaseManager(projectName, dataDir string) (*DatabaseManager, error) {
 	ctx := context.Background()
 
-	// Create Docker client
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}
 
-	// Try to use standard PostgreSQL port (5432), fall back to random if unavailable
 	port, err := netx.ReservePort(5432)
 	if err != nil {
-		// Port 5432 is taken, get a random available port
-		port, err = netx.GetNextPort(netx.MinPort(5432), netx.MaxPort(6000))
+		port, err = netx.GetNextPort(netx.MinPort(5433), netx.MaxPort(6000))
 		if err != nil {
 			return nil, fmt.Errorf("failed to allocate port for PostgreSQL: %w", err)
 		}
 	}
 
-	// Generate a consistent volume name for this project
-	// Sanitize project name for Docker volume naming (alphanumeric, hyphens, underscores only)
 	sanitizedName := sanitizeVolumeName(projectName)
 	volumeName := fmt.Sprintf("suga-%s-postgres-data", sanitizedName)
 
@@ -80,10 +75,8 @@ func NewDatabaseManager(projectName, dataDir string) (*DatabaseManager, error) {
 
 // Start initializes and starts the PostgreSQL Docker container
 func (m *DatabaseManager) Start() error {
-	// Create or verify the Docker volume exists
 	_, err := m.dockerClient.VolumeInspect(m.ctx, m.volumeName)
 	if err != nil {
-		// Volume doesn't exist, create it
 		_, err = m.dockerClient.VolumeCreate(m.ctx, volume.CreateOptions{
 			Name: m.volumeName,
 			Labels: map[string]string{
@@ -96,7 +89,6 @@ func (m *DatabaseManager) Start() error {
 		}
 	}
 
-	// Pull the PostgreSQL image
 	fmt.Printf("Pulling PostgreSQL image %s (this may take some time on first run)...\n\n",
 		style.Cyan(postgresImage))
 	reader, err := m.dockerClient.ImagePull(m.ctx, postgresImage, image.PullOptions{})
@@ -108,7 +100,6 @@ func (m *DatabaseManager) Start() error {
 	// Wait for image pull to complete
 	_, _ = io.Copy(io.Discard, reader)
 
-	// Create container configuration
 	containerConfig := &container.Config{
 		Image: postgresImage,
 		Env: []string{
@@ -140,7 +131,6 @@ func (m *DatabaseManager) Start() error {
 		AutoRemove: true,
 	}
 
-	// Create the container
 	resp, err := m.dockerClient.ContainerCreate(
 		m.ctx,
 		containerConfig,
@@ -155,12 +145,10 @@ func (m *DatabaseManager) Start() error {
 
 	m.containerID = resp.ID
 
-	// Start the container
 	if err := m.dockerClient.ContainerStart(m.ctx, m.containerID, container.StartOptions{}); err != nil {
 		return fmt.Errorf("failed to start PostgreSQL container: %w", err)
 	}
 
-	// Wait for PostgreSQL to be ready
 	if err := m.waitForPostgres(); err != nil {
 		return fmt.Errorf("PostgreSQL failed to become ready: %w", err)
 	}
@@ -196,7 +184,6 @@ func (m *DatabaseManager) waitForPostgres() error {
 
 // CreateDatabase creates a new database in the PostgreSQL instance if it doesn't exist
 func (m *DatabaseManager) CreateDatabase(name string, intent schema.DatabaseIntent) error {
-	// Connect to the default postgres database
 	connStr := fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s sslmode=disable",
 		m.port, postgresUser, postgresPassword, postgresDB)
 
@@ -219,7 +206,6 @@ func (m *DatabaseManager) CreateDatabase(name string, intent schema.DatabaseInte
 		// Database already exists, continue
 	}
 
-	// Store database info
 	m.databases[name] = &DatabaseInfo{
 		name:   name,
 		intent: intent,
@@ -286,19 +272,15 @@ func (m *DatabaseManager) GetDatabases() []string {
 // sanitizeVolumeName sanitizes a project name for use in Docker volume names
 // Docker volume names must match: [a-zA-Z0-9][a-zA-Z0-9_.-]+
 func sanitizeVolumeName(name string) string {
-	// Convert to lowercase
 	result := strings.ToLower(name)
 
-	// Replace invalid characters with hyphens
 	invalidChars := regexp.MustCompile(`[^a-z0-9_.-]`)
 	result = invalidChars.ReplaceAllString(result, "-")
 
-	// Ensure it doesn't start with a hyphen or dot
 	if len(result) > 0 && (result[0] == '-' || result[0] == '.') {
 		result = "app" + result
 	}
 
-	// Fallback if empty
 	if result == "" {
 		result = "app"
 	}

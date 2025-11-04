@@ -672,7 +672,6 @@ func Dev() error {
 		errChan <- simserver.Start(os.Stdout)
 	}()
 
-	// Wait for either completion or interrupt signal
 	select {
 	case err = <-errChan:
 		return err
