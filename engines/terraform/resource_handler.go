@@ -152,6 +152,15 @@ func (td *TerraformDeployment) processBucketResources(appSpec *app_spec_schema.A
 					return nil, fmt.Errorf("could not give access to bucket %s: service %s not found", intentName, serviceName)
 				}
 
+				// Validate that this service subtype is allowed to access the bucket
+				serviceIntent, ok := appSpec.ServiceIntents[serviceName]
+				if !ok {
+					return nil, fmt.Errorf("could not validate access to bucket %s: service %s not found in application spec", intentName, serviceName)
+				}
+				if err := spec.ValidateServiceAccess(serviceIntent.GetSubType(), intentName, "bucket"); err != nil {
+					return nil, err
+				}
+
 				servicesInput[serviceName] = map[string]interface{}{
 					"actions":    jsii.Strings(expandedActions...),
 					"identities": idMap,
@@ -235,6 +244,15 @@ func (td *TerraformDeployment) processDatabaseResources(appSpec *app_spec_schema
 				idMap, ok := td.serviceIdentities[serviceName]
 				if !ok {
 					return nil, fmt.Errorf("could not give access to database %s: service %s not found", intentName, serviceName)
+				}
+
+				// Validate that this service subtype is allowed to access the database
+				serviceIntent, ok := appSpec.ServiceIntents[serviceName]
+				if !ok {
+					return nil, fmt.Errorf("could not validate access to database %s: service %s not found in application spec", intentName, serviceName)
+				}
+				if err := spec.ValidateServiceAccess(serviceIntent.GetSubType(), intentName, "database"); err != nil {
+					return nil, err
 				}
 
 				servicesInput[serviceName] = map[string]interface{}{
