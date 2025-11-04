@@ -37,7 +37,6 @@
               "guides/plugin-development",
               "guides/database-migration",
               "guides/terraform-backend-config",
-              "guides/local-database-setup",
               "guides/aws/environment-management"
             ]
           },
