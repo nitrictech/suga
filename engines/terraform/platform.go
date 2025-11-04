@@ -51,7 +51,7 @@ type PlatformSpec struct {
 	TopicBlueprints      map[string]*ResourceBlueprint `json:"topics,omitempty" yaml:"topics,omitempty"`
 	DatabaseBlueprints   map[string]*ResourceBlueprint `json:"databases,omitempty" yaml:"databases,omitempty"`
 	EntrypointBlueprints map[string]*ResourceBlueprint `json:"entrypoints" yaml:"entrypoints"`
-	InfraSpecs map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
+	InfraSpecs           map[string]*ResourceBlueprint `json:"infra" yaml:"infra"`
 
 	libraryReplacements map[libraryID]libraryVersion
 }
@@ -371,6 +371,7 @@ type ResourceBlueprint struct {
 	Properties map[string]interface{} `json:"properties" yaml:"properties"`
 	DependsOn  []string               `json:"depends_on" yaml:"depends_on,omitempty"`
 	Variables  map[string]Variable    `json:"variables" yaml:"variables,omitempty"`
+	UsableBy   []string               `json:"usable_by,omitempty" yaml:"usable_by,omitempty"`
 }
 
 func (r *ResourceBlueprint) ResolvePlugin(platform *PlatformSpec) (*Plugin, error) {
@@ -391,6 +392,22 @@ func (r *ResourceBlueprint) ResolvePlugin(platform *PlatformSpec) (*Plugin, erro
 	}
 
 	return &Plugin{Library: *lib, Name: r.Source.Plugin}, nil
+}
+
+func (r *ResourceBlueprint) ValidateServiceAccess(serviceSubtype, resourceName, resourceType string) error {
+	// All service types are allowed if useable_by is empty (backward compatible)
+	if len(r.UsableBy) == 0 {
+		return nil
+	}
+
+	if !slices.Contains(r.UsableBy, serviceSubtype) {
+		return fmt.Errorf(
+			"%s '%s' cannot be accessed by service subtype '%s': this %s blueprint is only usable by service types: %v",
+			resourceType, resourceName, serviceSubtype, resourceType, r.UsableBy,
+		)
+	}
+
+	return nil
 }
 
 type IdentitiesBlueprint struct {
