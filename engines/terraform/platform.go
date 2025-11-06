@@ -414,13 +414,6 @@ type IdentitiesBlueprint struct {
 	Identities []ResourceBlueprint `json:"identities" yaml:"identities"`
 }
 
-func (i IdentitiesBlueprint) GetIdentities() []ResourceBlueprint {
-	if i.Identities == nil {
-		return []ResourceBlueprint{}
-	}
-	return i.Identities
-}
-
 type Identifiable interface {
 	GetIdentity(string) (*ResourceBlueprint, error)
 	GetIdentities() map[string]ResourceBlueprint
@@ -429,4 +422,11 @@ type Identifiable interface {
 type ServiceBlueprint struct {
 	*ResourceBlueprint   `json:",inline" yaml:",inline"`
 	*IdentitiesBlueprint `json:",inline" yaml:",inline"`
+}
+
+func (s ServiceBlueprint) GetIdentities() []ResourceBlueprint {
+	if s.IdentitiesBlueprint == nil || s.Identities == nil {
+		return []ResourceBlueprint{}
+	}
+	return s.Identities
 }
