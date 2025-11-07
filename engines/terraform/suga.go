@@ -9,6 +9,7 @@ type SugaServiceVariables struct {
 	ImageId       *string                         `json:"image_id"`
 	Env           interface{}                     `json:"env"`
 	Identities    *map[string]interface{}         `json:"identities"`
+	Services      map[string]interface{}          `json:"services,omitempty"`
 	Schedules     *map[string]SugaServiceSchedule `json:"schedules,omitempty"`
 	StackId       *string                         `json:"stack_id"`
 }

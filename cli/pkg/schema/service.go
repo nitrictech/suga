@@ -11,10 +11,16 @@ type ServiceIntent struct {
 	Dev *Dev `json:"dev,omitempty" yaml:"dev,omitempty"`
 
 	Schedules []*Schedule `json:"schedules,omitempty" yaml:"schedules,omitempty"`
+
+	Access map[string][]string `json:"access,omitempty" yaml:"access,omitempty"`
 }
 
 func (s *ServiceIntent) GetType() string {
 	return "service"
+}
+
+func (s *ServiceIntent) GetAccess() (map[string][]string, bool) {
+	return s.Access, true
 }
 
 type Schedule struct {

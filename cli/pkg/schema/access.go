@@ -7,6 +7,7 @@ type ResourceType string
 const (
 	Database ResourceType = "database"
 	Bucket   ResourceType = "bucket"
+	Service  ResourceType = "service"
 )
 
 const allAccess = "all"
@@ -14,6 +15,7 @@ const allAccess = "all"
 var validActions = map[ResourceType][]string{
 	Database: {"query", "mutate"},
 	Bucket:   {"read", "write", "delete"},
+	Service:  {"invoke"},
 }
 
 func GetValidActions(resourceType ResourceType) []string {

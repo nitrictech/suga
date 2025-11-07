@@ -274,6 +274,7 @@ func (s *SimulationServer) CopyDir(dst, src string) error {
 func (s *SimulationServer) startServices(output io.Writer) (<-chan service.ServiceEvent, error) {
 	serviceIntents := s.appSpec.ServiceIntents
 
+	servicePorts := make(map[string]netx.ReservedPort)
 	eventChans := []<-chan service.ServiceEvent{}
 
 	for serviceName, serviceIntent := range serviceIntents {
@@ -281,6 +282,7 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 		if err != nil {
 			return nil, err
 		}
+		servicePorts[serviceName] = port
 
 		// Clone the service intent to add database connection strings
 		intentCopy := *serviceIntent
@@ -300,6 +302,16 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 						connStr := s.databaseManager.GetConnectionString(dbName)
 						intentCopy.Env[envKey] = connStr
 					}
+				}
+			}
+		}
+
+		// Inject URLs for services this service depends on
+		if access, ok := intentCopy.GetAccess(); ok {
+			for targetServiceName := range access {
+				if targetPort, exists := servicePorts[targetServiceName]; exists {
+					envVarName := fmt.Sprintf("%s_URL", strings.ToUpper(targetServiceName))
+					intentCopy.Env[envVarName] = fmt.Sprintf("http://localhost:%d", targetPort)
 				}
 			}
 		}

@@ -93,7 +93,44 @@ func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema
 	return serviceInputs, nil
 }
 
+func (td *TerraformDeployment) collectServiceAccessors(appSpec *app_spec_schema.Application) map[string]map[string]interface{} {
+	serviceAccessors := make(map[string]map[string]interface{})
+
+	for targetServiceName := range appSpec.ServiceIntents {
+		accessors := map[string]interface{}{}
+
+		for sourceServiceName, sourceServiceIntent := range appSpec.ServiceIntents {
+			if access, ok := sourceServiceIntent.GetAccess(); ok {
+				if actions, needsAccess := access[targetServiceName]; needsAccess {
+					expandedActions := app_spec_schema.ExpandActions(actions, app_spec_schema.Service)
+					idMap := td.serviceIdentities[sourceServiceName]
+
+					accessors[sourceServiceName] = map[string]interface{}{
+						"actions":    jsii.Strings(expandedActions...),
+						"identities": idMap,
+					}
+				}
+			}
+		}
+
+		if len(accessors) > 0 {
+			serviceAccessors[targetServiceName] = accessors
+		}
+	}
+
+	return serviceAccessors
+}
+
 func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.Application, serviceInputs map[string]*SugaServiceVariables, serviceEnvs map[string][]interface{}) error {
+	serviceAccessors := td.collectServiceAccessors(appSpec)
+
+	// Track original env values before modification
+	originalEnvs := make(map[string]interface{})
+	for intentName := range appSpec.ServiceIntents {
+		sugaVar := serviceInputs[intentName]
+		originalEnvs[intentName] = sugaVar.Env
+	}
+
 	for intentName, serviceIntent := range appSpec.ServiceIntents {
 		spec, err := td.engine.platform.GetResourceBlueprint(serviceIntent.GetType(), serviceIntent.GetSubType())
 		if err != nil {
@@ -105,11 +142,10 @@ func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.
 		}
 
 		sugaVar := serviceInputs[intentName]
-		origEnv := sugaVar.Env
 
-		mergedEnv := serviceEnvs[intentName]
-		allEnv := append(mergedEnv, origEnv)
-		sugaVar.Env = cdktf.Fn_Merge(&allEnv)
+		if accessors, ok := serviceAccessors[intentName]; ok {
+			sugaVar.Services = accessors
+		}
 
 		td.createVariablesForIntent(intentName, spec)
 
@@ -119,6 +155,26 @@ func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.
 				"suga": sugaVar,
 			},
 		})
+	}
+
+	// Add service to service urls
+	for intentName, serviceIntent := range appSpec.ServiceIntents {
+		if access, ok := serviceIntent.GetAccess(); ok {
+			for targetServiceName := range access {
+				if targetResource, ok := td.terraformResources[targetServiceName]; ok {
+					envVarName := fmt.Sprintf("%s_URL", strings.ToUpper(targetServiceName))
+					httpEndpoint := targetResource.Get(jsii.String("suga.http_endpoint"))
+					serviceEnvs[intentName] = append(serviceEnvs[intentName], map[string]interface{}{
+						envVarName: httpEndpoint,
+					})
+				}
+			}
+		}
+
+		sugaVar := serviceInputs[intentName]
+		mergedEnv := serviceEnvs[intentName]
+		allEnv := append(mergedEnv, originalEnvs[intentName])
+		sugaVar.Env = cdktf.Fn_Merge(&allEnv)
 	}
 
 	return nil
