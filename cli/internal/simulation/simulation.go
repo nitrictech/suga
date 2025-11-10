@@ -277,12 +277,24 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 	servicePorts := make(map[string]netx.ReservedPort)
 	eventChans := []<-chan service.ServiceEvent{}
 
-	for serviceName, serviceIntent := range serviceIntents {
+	// Helper function for lazy port allocation
+	getOrAllocatePort := func(serviceName string) (netx.ReservedPort, error) {
+		if port, exists := servicePorts[serviceName]; exists {
+			return port, nil
+		}
 		port, err := netx.GetNextPort()
+		if err != nil {
+			return 0, err
+		}
+		servicePorts[serviceName] = port
+		return port, nil
+	}
+
+	for serviceName, serviceIntent := range serviceIntents {
+		port, err := getOrAllocatePort(serviceName)
 		if err != nil {
 			return nil, err
 		}
-		servicePorts[serviceName] = port
 
 		// Clone the service intent to add database connection strings
 		intentCopy := *serviceIntent
@@ -306,10 +318,15 @@ func (s *SimulationServer) startServices(output io.Writer) (<-chan service.Servi
 			}
 		}
 
-		// Inject URLs for services this service depends on
-		if access, ok := intentCopy.GetAccess(); ok {
-			for targetServiceName := range access {
-				if targetPort, exists := servicePorts[targetServiceName]; exists {
+		// Inject URLs for services this service can access
+		// Check which services grant access to this service and lazily allocate their ports
+		for targetServiceName, targetServiceIntent := range serviceIntents {
+			if access, ok := targetServiceIntent.GetAccess(); ok {
+				if _, hasAccess := access[serviceName]; hasAccess {
+					targetPort, err := getOrAllocatePort(targetServiceName)
+					if err != nil {
+						return nil, err
+					}
 					envVarName := fmt.Sprintf("%s_URL", strings.ToUpper(targetServiceName))
 					intentCopy.Env[envVarName] = fmt.Sprintf("http://localhost:%d", targetPort)
 				}

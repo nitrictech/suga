@@ -101,19 +101,19 @@ func (a *Application) checkAccessPermissions() []gojsonschema.ResultError {
 
 	for name, intent := range a.ServiceIntents {
 		if access, ok := intent.GetAccess(); ok {
-			for targetServiceName, actions := range access {
+			for accessorServiceName, actions := range access {
 				// Validate actions
 				invalidActions, ok := ValidateActions(actions, Service)
 				if !ok {
-					key := fmt.Sprintf("services.%s.access.%s", name, targetServiceName)
+					key := fmt.Sprintf("services.%s.access.%s", name, accessorServiceName)
 					err := fmt.Sprintf("Invalid service %s: %s. Valid actions are: %s", pluralise("action", len(invalidActions)), strings.Join(invalidActions, ", "), strings.Join(GetValidActions(Service), ", "))
 					violations = append(violations, newValidationError(key, err))
 				}
 
-				// Validate that the target service exists
-				if _, exists := a.ServiceIntents[targetServiceName]; !exists {
-					key := fmt.Sprintf("services.%s.access.%s", name, targetServiceName)
-					err := fmt.Sprintf("Service %s requires access to non-existent service %s", name, targetServiceName)
+				// Validate that the accessor service exists
+				if _, exists := a.ServiceIntents[accessorServiceName]; !exists {
+					key := fmt.Sprintf("services.%s.access.%s", name, accessorServiceName)
+					err := fmt.Sprintf("Service %s grants access to non-existent service %s", name, accessorServiceName)
 					violations = append(violations, newValidationError(key, err))
 				}
 			}

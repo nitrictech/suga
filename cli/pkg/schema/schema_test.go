@@ -597,3 +597,129 @@ func TestApplication_IsValid_WithSubtypes(t *testing.T) {
 	violations = app.IsValid(WithRequireSubtypes())
 	assert.Len(t, violations, 0, "Expected no violations with RequireSubtypes option, got: %v", violations)
 }
+
+func TestApplication_IsValid_ServiceAccess_Valid(t *testing.T) {
+	app := &Application{
+		Name:   "test-app",
+		Target: "team/platform@1",
+		ServiceIntents: map[string]*ServiceIntent{
+			"api": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+			},
+			"user_service": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+				Access: map[string][]string{
+					"api": {"invoke"}, // user_service grants api access to invoke it
+				},
+			},
+		},
+	}
+
+	violations := app.IsValid()
+	assert.Len(t, violations, 0, "Expected no violations for valid service access, got: %v", violations)
+}
+
+func TestApplication_IsValid_ServiceAccess_InvalidAction(t *testing.T) {
+	app := &Application{
+		Name:   "test-app",
+		Target: "team/platform@1",
+		ServiceIntents: map[string]*ServiceIntent{
+			"api": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+			},
+			"user_service": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+				Access: map[string][]string{
+					"api": {"read", "write"}, // Invalid actions for service
+				},
+			},
+		},
+	}
+
+	violations := app.IsValid()
+	assert.NotEmpty(t, violations, "Expected violations for invalid service actions")
+
+	errString := FormatValidationErrors(GetSchemaValidationErrors(violations))
+	assert.Contains(t, errString, "user_service:")
+	assert.Contains(t, errString, "Invalid service actions: read, write")
+	assert.Contains(t, errString, "Valid actions are: invoke")
+}
+
+func TestApplication_IsValid_ServiceAccess_NonExistentAccessor(t *testing.T) {
+	app := &Application{
+		Name:   "test-app",
+		Target: "team/platform@1",
+		ServiceIntents: map[string]*ServiceIntent{
+			"user_service": {
+				Container: Container{
+					Docker: &Docker{Dockerfile: "Dockerfile"},
+				},
+				Access: map[string][]string{
+					"non_existent": {"invoke"}, // Accessor service doesn't exist
+				},
+			},
+		},
+	}
+
+	violations := app.IsValid()
+	assert.NotEmpty(t, violations, "Expected violations for non-existent accessor service")
+
+	errString := FormatValidationErrors(GetSchemaValidationErrors(violations))
+	assert.Contains(t, errString, "user_service:")
+	assert.Contains(t, errString, "grants access to non-existent service non_existent")
+}
+
+func TestApplicationFromYaml_ServiceAccess_TargetBased(t *testing.T) {
+	yaml := `
+name: test-app
+description: A test application with service access
+target: team/platform@1
+services:
+  api:
+    container:
+      docker:
+        dockerfile: Dockerfile
+  user_service:
+    container:
+      docker:
+        dockerfile: Dockerfile
+    access:
+      api:
+        - invoke
+  payment_service:
+    container:
+      docker:
+        dockerfile: Dockerfile
+    access:
+      api:
+        - invoke
+      user_service:
+        - invoke
+`
+
+	app, result, err := ApplicationFromYaml(yaml)
+	assert.NoError(t, err)
+	assert.True(t, result.Valid(), "Expected valid result, got validation errors: %v", result.Errors())
+
+	violations := app.IsValid()
+	assert.Len(t, violations, 0, "Expected no violations for valid target-based service access, got: %v", violations)
+
+	// Verify the access configuration
+	userService := app.ServiceIntents["user_service"]
+	assert.NotNil(t, userService.Access)
+	assert.Contains(t, userService.Access, "api")
+	assert.Equal(t, []string{"invoke"}, userService.Access["api"])
+
+	paymentService := app.ServiceIntents["payment_service"]
+	assert.NotNil(t, paymentService.Access)
+	assert.Contains(t, paymentService.Access, "api")
+	assert.Contains(t, paymentService.Access, "user_service")
+}

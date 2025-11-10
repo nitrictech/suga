@@ -96,25 +96,23 @@ func (td *TerraformDeployment) processServiceIdentities(appSpec *app_spec_schema
 func (td *TerraformDeployment) collectServiceAccessors(appSpec *app_spec_schema.Application) map[string]map[string]interface{} {
 	serviceAccessors := make(map[string]map[string]interface{})
 
-	for targetServiceName := range appSpec.ServiceIntents {
-		accessors := map[string]interface{}{}
+	for targetServiceName, targetServiceIntent := range appSpec.ServiceIntents {
+		if access, ok := targetServiceIntent.GetAccess(); ok {
+			accessors := map[string]interface{}{}
 
-		for sourceServiceName, sourceServiceIntent := range appSpec.ServiceIntents {
-			if access, ok := sourceServiceIntent.GetAccess(); ok {
-				if actions, needsAccess := access[targetServiceName]; needsAccess {
-					expandedActions := app_spec_schema.ExpandActions(actions, app_spec_schema.Service)
-					idMap := td.serviceIdentities[sourceServiceName]
+			for accessorServiceName, actions := range access {
+				expandedActions := app_spec_schema.ExpandActions(actions, app_spec_schema.Service)
+				idMap := td.serviceIdentities[accessorServiceName]
 
-					accessors[sourceServiceName] = map[string]interface{}{
-						"actions":    jsii.Strings(expandedActions...),
-						"identities": idMap,
-					}
+				accessors[accessorServiceName] = map[string]interface{}{
+					"actions":    jsii.Strings(expandedActions...),
+					"identities": idMap,
 				}
 			}
-		}
 
-		if len(accessors) > 0 {
-			serviceAccessors[targetServiceName] = accessors
+			if len(accessors) > 0 {
+				serviceAccessors[targetServiceName] = accessors
+			}
 		}
 	}
 
@@ -158,19 +156,25 @@ func (td *TerraformDeployment) processServiceResources(appSpec *app_spec_schema.
 	}
 
 	// Add service to service urls
-	for intentName, serviceIntent := range appSpec.ServiceIntents {
-		if access, ok := serviceIntent.GetAccess(); ok {
-			for targetServiceName := range access {
-				if targetResource, ok := td.terraformResources[targetServiceName]; ok {
-					envVarName := fmt.Sprintf("%s_URL", strings.ToUpper(targetServiceName))
-					httpEndpoint := targetResource.Get(jsii.String("suga.http_endpoint"))
-					serviceEnvs[intentName] = append(serviceEnvs[intentName], map[string]interface{}{
-						envVarName: httpEndpoint,
-					})
+	// Build reverse index: for each accessor service, find which targets grant it access
+	for accessorServiceName := range appSpec.ServiceIntents {
+		for targetServiceName, targetServiceIntent := range appSpec.ServiceIntents {
+			if access, ok := targetServiceIntent.GetAccess(); ok {
+				if _, hasAccess := access[accessorServiceName]; hasAccess {
+					if targetResource, ok := td.terraformResources[targetServiceName]; ok {
+						envVarName := fmt.Sprintf("%s_URL", strings.ToUpper(targetServiceName))
+						httpEndpoint := targetResource.Get(jsii.String("suga.http_endpoint"))
+						serviceEnvs[accessorServiceName] = append(serviceEnvs[accessorServiceName], map[string]interface{}{
+							envVarName: httpEndpoint,
+						})
+					}
 				}
 			}
 		}
+	}
 
+	// Merge environment variables for all services
+	for intentName := range appSpec.ServiceIntents {
 		sugaVar := serviceInputs[intentName]
 		mergedEnv := serviceEnvs[intentName]
 		allEnv := append(mergedEnv, originalEnvs[intentName])
