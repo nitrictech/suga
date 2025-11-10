@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/nitrictech/suga/cli/internal/api"
+	"github.com/nitrictech/suga/cli/internal/config"
 	"github.com/nitrictech/suga/cli/internal/style"
 	"github.com/nitrictech/suga/cli/internal/style/colors"
 	"github.com/nitrictech/suga/cli/internal/style/icons"
@@ -19,6 +21,7 @@ import (
 )
 
 type TeamApp struct {
+	config    *config.Config
 	apiClient *api.SugaApiClient
 	// auth uses WorkOSAuth directly because team switching requires
 	// WorkOS-specific organization ID during token refresh
@@ -27,6 +30,7 @@ type TeamApp struct {
 }
 
 func NewTeamApp(injector do.Injector) (*TeamApp, error) {
+	config := do.MustInvoke[*config.Config](injector)
 	apiClient, err := api.NewSugaApiClient(injector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
@@ -38,6 +42,7 @@ func NewTeamApp(injector do.Injector) (*TeamApp, error) {
 	styles := tui.NewAppStyles()
 
 	return &TeamApp{
+		config:    config,
 		apiClient: apiClient,
 		auth:      auth,
 		styles:    styles,
@@ -56,7 +61,11 @@ func (t *TeamApp) SwitchTeam(teamSlug string) error {
 	}
 
 	if len(allTeams) == 0 {
-		fmt.Println("No teams found. Create a team first to continue.")
+		url := "the Suga dashboard"
+		if t.config != nil && strings.TrimSpace(t.config.Url) != "" {
+			url = t.config.Url
+		}
+		fmt.Printf("No teams found. Navigate to %s in your browser to create your first team.\n", style.Teal(url))
 		return nil
 	}
 
