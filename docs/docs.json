@@ -22,15 +22,15 @@
             "pages": ["introduction", "why-suga", "installation", "quickstart"]
           },
           {
-            "group": "Foundations",
+            "group": "Core Concepts",
             "pages": [
-              "foundations/overview",
-              "foundations/projects",
-              "foundations/platforms",
-              "foundations/plugins",
-              "foundations/infrastructure-generation",
-              "foundations/local-development",
-              "foundations/deployment"
+              "core/overview",
+              "core/projects",
+              "core/platforms",
+              "core/plugins",
+              "core/infrastructure-generation",
+              "core/local-development",
+              "core/deployment"
             ]
           },
           {
@@ -42,7 +42,6 @@
               "develop/buckets",
               "develop/databases",
               "develop/suga-client",
-              "develop/environment-variables",
               "develop/access-control"
             ]
           },
@@ -211,11 +210,11 @@
   "redirects": [
     {
       "source": "/projects",
-      "destination": "/foundations/projects"
+      "destination": "/core/projects"
     },
     {
       "source": "/platforms",
-      "destination": "/foundations/platforms"
+      "destination": "/core/platforms"
     }
   ]
 }

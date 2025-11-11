@@ -1,9 +1,9 @@
 ---
-title: "Foundations Overview"
+title: "Core Concepts Overview"
 description: "Understanding Suga's architecture and core concepts"
 ---
 
-Suga is built on a clear separation of concerns that enables both developer productivity and platform governance. Understanding these foundations will help you make the most of the platform.
+Suga is built on a clear separation of concerns that enables both developer productivity and platform governance. Understanding these core concepts will help you make the most of the platform.
 
 ## The Suga Architecture
 
@@ -23,7 +23,7 @@ graph TB
 
 ### 1. Projects: What You Want
 
-[Projects](/foundations/projects) are your application specifications - declarative YAML files that describe what your application needs:
+[Projects](/core/projects) are your application specifications - declarative YAML files that describe what your application needs:
 
 - **Services** - Application containers that run your code
 - **Buckets** - Cloud storage for files and assets
@@ -54,7 +54,7 @@ entrypoints:
 
 ### 2. Platforms: How to Build It
 
-[Platforms](/foundations/platforms) are blueprints that map your project's abstract resources to specific cloud implementations. They define:
+[Platforms](/core/platforms) are blueprints that map your project's abstract resources to specific cloud implementations. They define:
 
 - Which cloud services to use (Lambda vs Fargate, S3 vs Cloud Storage)
 - How to configure those services (memory, CPU, networking)
@@ -65,7 +65,7 @@ Platform teams create and publish platforms to enforce organizational standards 
 
 ### 3. Plugins: Cloud Resources
 
-[Plugins](/foundations/plugins) are the lowest-level building blocks - reusable Terraform modules that provision specific cloud resources. Each plugin contains:
+[Plugins](/core/plugins) are the lowest-level building blocks - reusable Terraform modules that provision specific cloud resources. Each plugin contains:
 
 - **Terraform module** - Infrastructure-as-code for a specific cloud service
 - **Input schema** - Configuration properties the module accepts
@@ -263,30 +263,30 @@ Enable teams to work independently while maintaining consistency:
 
 ## Next Steps
 
-Now that you understand Suga's foundations, dive deeper into each component:
+Now that you understand Suga's core concepts, dive deeper into each component:
 
 <CardGroup cols={2}>
-  <Card title="Projects" icon="file-code" href="/foundations/projects">
+  <Card title="Projects" icon="file-code" href="/core/projects">
     Learn how to define application requirements
   </Card>
 
-  <Card title="Platforms" icon="layers" href="/foundations/platforms">
+  <Card title="Platforms" icon="layers" href="/core/platforms">
     Understand platform blueprints and governance
   </Card>
 
-  <Card title="Plugins" icon="puzzle" href="/foundations/plugins">
+  <Card title="Plugins" icon="puzzle" href="/core/plugins">
     Explore the building blocks of infrastructure
   </Card>
 
-  <Card title="Infrastructure Generation" icon="cog" href="/foundations/infrastructure-generation">
+  <Card title="Infrastructure Generation" icon="cog" href="/core/infrastructure-generation">
     See how Suga transforms projects into Terraform
   </Card>
 
-  <Card title="Local Development" icon="laptop" href="/foundations/local-development">
+  <Card title="Local Development" icon="laptop" href="/core/local-development">
     Master local development workflow
   </Card>
 
-  <Card title="Deployment" icon="rocket" href="/foundations/deployment">
+  <Card title="Deployment" icon="rocket" href="/core/deployment">
     Understand deployment and operations
   </Card>
 </CardGroup>
