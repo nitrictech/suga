@@ -1,0 +1,198 @@
+---
+title: "Development Overview"
+description: "Understanding Suga's resource types and how to define your application architecture"
+---
+
+Suga applications are built from several core resource types that work together to create complete cloud applications. This page introduces these resources and explains how they interact.
+
+## Suga Resources
+
+Every Suga application can use these resource types:
+
+<CardGroup cols={2}>
+  <Card title="Services" icon="server" href="/develop/services">
+    Application containers that run your code
+  </Card>
+
+  <Card title="Entrypoints" icon="network" href="/develop/entrypoints">
+    HTTP routing and CDN configuration
+  </Card>
+
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Object storage for files and assets
+  </Card>
+
+  <Card title="Databases" icon="database" href="/develop/databases">
+    PostgreSQL databases for structured data
+  </Card>
+</CardGroup>
+
+## Resource Relationships
+
+Resources connect to form your application architecture:
+
+![Project Editor Diagram Example](/images/develop/app-diagram-example.png)
+
+## Defining Resources
+
+Resources are defined in `suga.yaml`:
+
+```yaml title="suga.yaml"
+target: suga/aws@1
+name: my-app
+description: My cloud application
+
+services:
+  # Define services here
+
+buckets:
+  # Define buckets here
+
+databases:
+  # Define databases here
+
+entrypoints:
+  # Define entrypoints here
+```
+
+### Using the Visual Editor
+
+The easiest way to define resources is with the visual editor, by running the `edit` command in your project directory:
+
+```bash
+suga edit
+```
+
+The visual editor provides:
+- **Drag-and-drop** resource creation, using the available resource from your chosen platform
+- **Visual connections** to establish relationships and access
+- **Property editors** for configurations of resources
+- **Real-time validation** of your architecture and configuration
+- **Automatic YAML sync** with bidirectional live update to your project's suga.yaml file
+- **AI Assistant** that can collaborate with you on your design
+
+### Editing YAML Directly
+
+You can also edit `suga.yaml` directly:
+
+```yaml title="suga.yaml"
+services:
+  api:
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    dev:
+      script: npm run dev
+```
+
+## Resource Naming
+
+Resource names must follow these rules:
+
+- **Lowercase letters and numbers** - `api`, `api2`, `frontend`
+- **Underscores allowed** - `api_service`, `user_uploads`
+- **Start with letter** - `api` (not `2api`)
+- **No special characters** - Avoid `-`, `.`, `/`, etc.
+
+<Warning>
+  Resource names typically become part of cloud resource identifiers. Choose names that are descriptive and unlikely to change.
+</Warning>
+
+## Resource Configuration
+
+Each resource type has unique configuration options; however, there are some common configuration options.
+
+### Subtypes
+
+Cloud provider like AWS provide many container and compute runtime options including EC2, ECS and Fargate, Lambda, EKS, and more. The list gets longer as you look to other cloud providers.
+
+The same is true for other resources like Buckets, which might use S3 on AWS, Cloud Storage on GCP, Blob Storage on Azure or another option like self-hosted Minio on Kubernetes.
+
+Suga helps you build applications that work well on any of these services without significant modifications to your application code. Reducing vendor lock-in and the cost of change. This allows you to migrate between services during development or as you better understand the performance, cost and other needs of your applications.
+
+The resource subtype in the `suga.yaml` file is how you tell Suga which specific service you want to use:
+
+```yaml title="Choose specific cloud service"
+services:
+  api:
+    subtype: lambda       # AWS Lambda (serverless)
+  worker:
+    subtype: fargate      # AWS Fargate (containers)
+
+buckets:
+  uploads:
+    subtype: s3           # AWS S3
+
+entrypoints:
+  web:
+    subtype: cloudfront   # AWS CloudFront
+```
+
+The available subtypes depend on your target [platform](/foundations/platforms):
+- `suga/aws@1` - Lambda, Fargate, S3, CloudFront
+- `suga/gcp@1` - Cloud Run, Cloud Storage, Cloud CDN
+- `you/custom@1` - Any other cloud or resources you like, including cross-cloud deployments
+
+### Access Control
+
+Resources can grant access to services:
+
+```yaml title="Grant service access to resources"
+buckets:
+  uploads:
+    access:
+      api: [read, write, delete]   # API service can read/write/delete
+      frontend: [read]             # Frontend can only read
+
+databases:
+  main:
+    access:
+      api: [query]                 # API can query the database
+```
+
+This generates appropriate IAM policies or service account permissions.
+
+<Card title="Access Control Guide" icon="shield" href="/develop/access-control" horizontal>
+  Learn more about access control patterns
+</Card>
+
+
+
+## Accessing Resources from Code
+
+Once you've defined resources in your `suga.yaml`, Suga provides generated client libraries for cloud-agnostic resource access. The same code works locally with `suga dev` and in production across any cloud provider.
+
+<Card title="Suga Client Libraries" icon="code" href="/develop/suga-client" horizontal>
+  Learn about generated client libraries for buckets and resource access patterns
+</Card>
+
+## Learn More
+
+Dive deeper into each resource type:
+
+<CardGroup cols={2}>
+  <Card title="Services" icon="server" href="/develop/services">
+    Application containers and compute
+  </Card>
+
+  <Card title="Entrypoints" icon="network" href="/develop/entrypoints">
+    HTTP routing and CDN
+  </Card>
+
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Object storage and file management
+  </Card>
+
+  <Card title="Databases" icon="database" href="/develop/databases">
+    PostgreSQL databases
+  </Card>
+
+  <Card title="Access Control" icon="shield" href="/develop/access-control">
+    Security and permissions
+  </Card>
+
+  <Card title="Deployment" icon="cloud" href="/deploy/overview">
+    How Suga deploys applications
+  </Card>
+</CardGroup>

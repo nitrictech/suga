@@ -1,0 +1,335 @@
+---
+title: "Static Website Hosting"
+description: "Deploy static websites and single-page applications with Suga"
+---
+
+Host static websites and single-page applications (React, Vue, Angular, Svelte) with Suga using buckets and entrypoints for CDN-backed delivery.
+
+## How It Works
+
+Static website hosting in Suga combines two resources:
+
+1. **Bucket** - Stores your static files (HTML, CSS, JavaScript, images)
+2. **Entrypoint** - Routes traffic to the bucket through a CDN
+
+```yaml title="Basic static site"
+buckets:
+  frontend:
+    content_path: ./build  # Your build output directory
+
+entrypoints:
+  web:
+    routes:
+      /: frontend  # Serve files from bucket
+```
+
+When you deploy:
+1. Files from `./build` are uploaded to the bucket
+2. The entrypoint (CDN) serves files from the bucket
+3. Users access your site via HTTPS with automatic SSL
+
+## Single Page Applications (SPAs)
+
+Deploy React, Vue, Angular, or Svelte applications:
+
+```yaml title="suga.yaml"
+target: suga/aws@1
+name: my-app
+
+buckets:
+  frontend:
+    content_path: ./dist  # Vite/Vue/Angular build output
+
+entrypoints:
+  web:
+    routes:
+      /: frontend
+```
+
+**Build your app, then deploy:**
+
+```bash
+# Build your frontend
+npm run build
+
+# Generate infrastructure
+suga build
+
+# Deploy
+cd terraform/stacks/my-app
+terraform init
+terraform apply
+```
+
+Your SPA is now live with CDN delivery and HTTPS!
+
+## Static Site + API
+
+Most applications need both frontend and backend. Route different paths to different destinations:
+
+```yaml title="Frontend + Backend"
+services:
+  api:
+    dev:
+      script: npm run dev
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+
+buckets:
+  frontend:
+    content_path: ./frontend/build
+
+entrypoints:
+  web:
+    routes:
+      /api/: api      # API requests go to service
+      /: frontend     # Everything else goes to static files
+```
+
+**How routing works:**
+- `https://yoursite.com/` → Static files from bucket
+- `https://yoursite.com/about` → Static files from bucket
+- `https://yoursite.com/api/users` → API service
+- `https://yoursite.com/api/products` → API service
+
+## Multi-Page Applications
+
+Deploy traditional multi-page websites:
+
+```yaml
+buckets:
+  website:
+    content_path: ./public
+
+entrypoints:
+  web:
+    routes:
+      /: website
+```
+
+**Directory structure:**
+
+```
+public/
+├── index.html
+├── about.html
+├── contact.html
+├── css/
+│   └── style.css
+├── js/
+│   └── script.js
+└── images/
+    └── logo.png
+```
+
+All files are uploaded to the bucket and served via CDN.
+
+## Build Process Integration
+
+Integrate with your existing build tools:
+
+### React (Create React App / Vite)
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./build  # CRA output
+    # OR
+    content_path: ./dist   # Vite output
+```
+
+```bash
+npm run build
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+### Vue.js
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./dist
+```
+
+```bash
+npm run build
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+### Angular
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./dist/my-app  # Angular outputs to dist/project-name
+```
+
+```bash
+ng build --configuration production
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+### Next.js (Static Export)
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./out
+```
+
+```json title="package.json"
+{
+  "scripts": {
+    "build": "next build && next export"
+  }
+}
+```
+
+```bash
+npm run build
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+### Svelte/SvelteKit
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./build
+```
+
+```bash
+npm run build
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+## Custom Domains
+
+Most platforms support custom domains through Terraform variables:
+
+<Tabs>
+  <Tab title="AWS">
+    After running `suga build`, configure your domain:
+
+    ```hcl title="terraform/stacks/my-app/terraform.tfvars"
+    entrypoint_web_domain = "www.example.com"
+    entrypoint_web_certificate_arn = "arn:aws:acm:us-east-1:..."
+    ```
+
+    Then apply:
+
+    ```bash
+    terraform apply
+    ```
+
+    <Note>
+      AWS requires ACM certificates in `us-east-1` for CloudFront. Create your certificate in ACM first.
+    </Note>
+  </Tab>
+
+  <Tab title="GCP">
+    After running `suga build`, configure your domain:
+
+    ```hcl title="terraform/stacks/my-app/terraform.tfvars"
+    entrypoint_web_domain = "www.example.com"
+    ```
+
+    Then apply:
+
+    ```bash
+    terraform apply
+    ```
+  </Tab>
+</Tabs>
+
+## Environment Variables in Frontend
+
+Frontend applications often need runtime configuration (API URLs, feature flags, etc.):
+
+### Build-time Variables
+
+```yaml title="suga.yaml"
+services:
+  api:
+    dev:
+      script: npm run dev
+
+buckets:
+  frontend:
+    content_path: ./build
+
+entrypoints:
+  web:
+    routes:
+      /api/: api
+      /: frontend
+```
+
+```javascript title=".env.production"
+REACT_APP_API_URL=/api
+VITE_API_URL=/api
+```
+
+Build and deploy:
+
+```bash
+npm run build  # Variables baked into bundle
+suga build
+cd terraform/stacks/my-app && terraform apply
+```
+
+## Local Development
+
+During `suga dev`:
+
+```bash
+suga dev
+```
+
+- Buckets are emulated in `.suga/buckets/`
+- Static files are served from the local filesystem
+- Changes to files in `content_path` require rebuild and re-upload in production
+
+**Development workflow:**
+
+```bash
+# Terminal 1: Run Suga dev server
+suga dev
+
+# Terminal 2: Run frontend dev server separately
+cd frontend
+npm run dev  # Usually runs on :3000 or :5173
+```
+
+During development, use your framework's dev server (with hot reload) rather than the production build.
+
+<Card title="Local Development Guide" icon="laptop" href="/foundations/local-development" horizontal>
+  Learn more about local development workflow
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Object storage configuration
+  </Card>
+
+  <Card title="Entrypoints" icon="network" href="/develop/entrypoints">
+    HTTP routing and CDN
+  </Card>
+
+  <Card title="Deployment" icon="rocket" href="/foundations/deployment">
+    Deployment workflow
+  </Card>
+
+  <Card title="CI/CD Authentication" icon="key" href="/guides/cicd-authentication">
+    Automate deployments
+  </Card>
+</CardGroup>

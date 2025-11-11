@@ -1,0 +1,164 @@
+---
+title: "Buckets"
+description: "Object storage for files, images, and assets"
+---
+
+Buckets provide cloud object storage for your application - think files, images, videos, documents, and other unstructured data.
+
+## What is a Bucket?
+
+A bucket is object storage that:
+- **Stores files** - Any file type, any size
+- **Provides access** - Read, write, delete operations
+- **Scales automatically** - No capacity planning needed
+- **Works everywhere** - Same interface locally and in production
+
+```yaml title="Basic bucket definition"
+buckets:
+  uploads:
+    access:
+      api: [read, write, delete]
+  profile-images:
+    access:
+      api: [read, write]
+      frontend: [read]
+```
+
+## Bucket Configuration
+
+### Access Control
+
+Grant services access to buckets:
+
+```yaml
+buckets:
+  uploads:
+    access:
+      api: [read, write, delete]  # Full access
+      worker: [read, delete]       # Read and delete only
+      frontend: [read]             # Read-only
+```
+
+**Permission Types:**
+- `read` - Download/read files
+- `write` - Upload/write files  
+- `delete` - Delete files
+- `all` - Shorthand for read, write, delete
+
+### Content Path (Static Files)
+
+Deploy static files to a bucket:
+
+```yaml
+buckets:
+  frontend:
+    content_path: ./build  # Deploy React/Vue/Angular build
+
+entrypoints:
+  web:
+    routes:
+      /: frontend  # Serve static files from bucket
+```
+
+When you deploy, files from `./build` are uploaded to the bucket.
+
+## Using Buckets in Code
+
+With Suga's generated SDK:
+
+<Tabs>
+  <Tab title="Node.js">
+    ```typescript
+    import { SugaClient } from './suga/client';
+
+    const suga = new SugaClient();
+
+    // Write file
+    await suga.uploads.write('path/to/file.txt', Buffer.from('data'));
+
+    // Read file
+    const data = await suga.uploads.read('path/to/file.txt');
+
+    // Delete file
+    await suga.uploads.delete('path/to/file.txt');
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    from suga.client import SugaClient
+
+    suga = SugaClient()
+
+    # Write file
+    suga.uploads.write('path/to/file.txt', b'data')
+
+    # Read file
+    data = suga.uploads.read('path/to/file.txt')
+
+    # Delete file
+    suga.uploads.delete('path/to/file.txt')
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    import "myapp/suga"
+
+    client, _ := suga.NewClient()
+
+    // Write file
+    client.Uploads.Write("path/to/file.txt", []byte("data"))
+
+    // Read file
+    data, _ := client.Uploads.Read("path/to/file.txt")
+
+    // Delete file
+    client.Uploads.Delete("path/to/file.txt")
+    ```
+  </Tab>
+</Tabs>
+
+<Card title="Suga Client Libraries" icon="code" href="/develop/suga-client" horizontal>
+  Learn how to access resources from your service code
+</Card>
+
+## Local Development
+
+During `suga dev`, buckets are emulated using the filesystem:
+
+```
+.suga/
+└── buckets/
+    └── uploads/
+        └── file.txt
+```
+
+You can:
+- View files in `.suga/buckets/{bucket-name}/`
+- Seed buckets by placing files there
+- Test bucket operations without cloud access
+
+<Card title="Local Development" icon="laptop" href="/foundations/local-development" horizontal>
+  Learn how to develop applications locally with Suga
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Storage SDK" icon="code" href="/sdks/node/storage">
+    Complete API reference
+  </Card>
+
+  <Card title="Access Control" icon="shield" href="/develop/access-control">
+    Permission management
+  </Card>
+
+  <Card title="Static Site Hosting" icon="globe" href="/guides/static-website-hosting">
+    Deploy static websites
+  </Card>
+
+  <Card title="Local Development" icon="laptop" href="/foundations/local-development">
+    Test buckets locally
+  </Card>
+</CardGroup>

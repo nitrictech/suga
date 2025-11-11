@@ -1,0 +1,279 @@
+---
+title: "Plugins"
+description: "Understanding Suga's plugin system - the building blocks of cloud infrastructure"
+---
+
+Plugins are the fundamental building blocks of Suga platforms. Each plugin is a self-contained, reusable unit that knows how to provision and manage a specific type of cloud resource. Platforms compose multiple plugins to create complete deployment targets.
+
+## What is a Plugin?
+
+A plugin is a package containing:
+
+1. **Terraform Module** - Infrastructure-as-code that provisions cloud resources
+2. **Manifest** - Schema defining configuration properties and outputs
+3. **Runtime Adapter** (optional) - Go code that translates abstract SDK operations into cloud-specific API calls
+
+```
+plugin-directory/
+├── manifest.yaml        # Plugin schema and metadata
+├── main.tf             # Terraform resources
+├── variables.tf        # Input variables
+├── outputs.tf          # Output values
+└── runtime/            # Optional runtime adapters
+    ├── client.go       # SDK client implementation
+    └── operations.go   # Cloud-specific operations
+```
+
+## Plugin Types
+
+Suga uses plugins for different types of infrastructure:
+
+### Resource Plugins
+
+Map to application resources defined in projects:
+
+- **Service plugins** - Compute resources (Lambda, Fargate, Cloud Run)
+- **Bucket plugins** - Object storage (S3, Cloud Storage)
+- **Database plugins** - SQL databases (RDS, Cloud SQL, Neon)
+- **Entrypoint plugins** - CDN and routing (CloudFront, Cloud CDN)
+
+### Identity Plugins
+
+Provide authentication and authorization:
+
+- **IAM role plugins** - AWS IAM roles
+- **Service account plugins** - GCP service accounts
+- Auto-generated based on resource access patterns
+
+### Infrastructure Plugins
+
+Provide foundational cloud resources:
+
+- **VPC plugins** - Network configuration
+- **Load balancer plugins** - Traffic distribution
+- **Security group plugins** - Firewall rules
+
+## How Platforms Use Plugins
+
+Platforms reference plugins in their resource blueprints:
+
+```yaml title="Platform blueprint using plugins"
+services:
+  lambda:
+    source:
+      library: suga/aws
+      plugin: lambda
+    properties:
+      memory: ${self.memory}
+      timeout: ${self.timeout}
+    variables:
+      memory:
+        type: number
+        default: 512
+      timeout:
+        type: number
+        default: 10
+    identities:
+      - source:
+          library: suga/aws
+          plugin: iam-role
+```
+
+When you run `suga build`, the platform:
+
+1. Maps your project resources to plugin blueprints
+2. Resolves property values and variables
+3. Generates Terraform module calls
+4. Configures dependencies and outputs
+
+## Official Plugin Libraries
+
+Suga maintains official plugin libraries for major cloud providers:
+
+### AWS Plugin Library (`suga/aws`)
+
+| Plugin | Purpose | Provisions |
+|--------|---------|-----------|
+| `lambda` | Serverless compute | AWS Lambda function + ECR repository |
+| `fargate` | Container compute | ECS Fargate service + ECR + ALB target |
+| `s3-bucket` | Object storage | S3 bucket with encryption and policies |
+| `cloudfront` | CDN and routing | CloudFront distribution + WAF (optional) |
+| `iam-role` | Service identity | IAM role with policies |
+| `vpc` | Network foundation | VPC with subnets and NAT gateway |
+| `loadbalancer` | Traffic distribution | Application Load Balancer |
+| `security-group-rule` | Network security | Security group rules |
+
+### GCP Plugin Library (`suga/gcp`)
+
+| Plugin | Purpose | Provisions |
+|--------|---------|-----------|
+| `cloudrun` | Serverless containers | Cloud Run service + Artifact Registry |
+| `storage-bucket` | Object storage | Cloud Storage bucket with policies |
+| `cdn` | CDN and routing | Cloud Load Balancer + Cloud CDN |
+| `service-account` | Service identity | Service account with IAM bindings |
+
+### Neon Plugin Library (`suga/neon`)
+
+| Plugin | Purpose | Provisions |
+|--------|---------|-----------|
+| `database` | PostgreSQL database | Neon database with branch support |
+
+## Plugin Configuration
+
+Plugins accept configuration through properties defined in their manifests:
+
+### Input Properties
+
+Configure how resources are provisioned:
+
+```yaml title="Lambda plugin properties"
+properties:
+  memory: 512              # Memory allocation in MB
+  timeout: 10              # Execution timeout in seconds
+  ephemeral_storage: 512   # /tmp directory size in MB
+```
+
+These map directly to Terraform module variables.
+
+### Property Types
+
+Plugins support various property types:
+
+- **Primitives** - `string`, `number`, `bool`
+- **Collections** - `list(string)`, `map(string)`
+- **Objects** - Complex nested structures
+- **References** - `${var.name}`, `${self.property}`, `${infra.component.output}`
+
+### Variable References
+
+Properties can reference platform or blueprint variables:
+
+```yaml title="Using variable references"
+properties:
+  memory: ${self.memory}                    # Blueprint variable
+  project_id: ${var.project_id}             # Platform variable
+  vpc_id: ${infra.aws_vpc.vpc_id}          # Infrastructure output
+```
+
+## Plugin Outputs
+
+Plugins expose outputs that other resources can reference:
+
+```hcl title="Lambda plugin outputs"
+output "function_arn" {
+  description = "ARN of the Lambda function"
+  value       = aws_lambda_function.main.arn
+}
+
+output "function_name" {
+  description = "Name of the Lambda function"
+  value       = aws_lambda_function.main.function_name
+}
+```
+
+These outputs are available to:
+- Identity plugins (for IAM policy generation)
+- Other infrastructure components
+- Platform routing configuration
+
+## Runtime Adapters
+
+For plugins that provide SDK functionality (services, buckets), runtime adapters translate abstract operations into cloud-specific API calls.
+
+### Adapter Structure
+
+```go title="Example runtime adapter"
+package runtime
+
+// Client provides cloud-specific implementations
+type Client struct {
+    s3Client *s3.Client
+}
+
+// Write implements the bucket write operation
+func (c *Client) Write(ctx context.Context, key string, data []byte) error {
+    _, err := c.s3Client.PutObject(ctx, &s3.PutObjectInput{
+        Bucket: aws.String(c.bucketName),
+        Key:    aws.String(key),
+        Body:   bytes.NewReader(data),
+    })
+    return err
+}
+```
+
+### How Adapters Work
+
+When you use Suga's generated SDK:
+
+```typescript title="Application code"
+await suga.uploads.write('file.txt', data);
+```
+
+The runtime:
+1. Identifies the plugin used for the `uploads` bucket
+2. Loads the plugin's runtime adapter
+3. Calls the adapter's `Write` method with cloud credentials
+4. Adapter translates to cloud-specific API call (S3, Cloud Storage, etc.)
+
+## Plugin Versioning
+
+Plugins are versioned and distributed through plugin libraries:
+
+```yaml title="Platform specifies plugin versions"
+libraries:
+  suga/aws: v0.0.4
+  suga/neon: v0.0.2
+```
+
+When you build your application:
+- Suga fetches the specified plugin versions
+- Generates Terraform using those plugin modules
+- Ensures consistent deployments across environments
+
+## Plugin Discovery
+
+Browse available plugins:
+
+<Card title="Platform Browser" icon="globe" href="https://app.addsuga.com/browse/platforms" horizontal>
+  Explore official and community plugins in the platform browser
+</Card>
+
+## Creating Custom Plugins
+
+Organizations can create custom plugins for:
+
+- **Proprietary services** - Internal APIs and systems
+- **Specialized configurations** - Custom cloud resource setups
+- **Third-party integrations** - SaaS services and external APIs
+
+<Card title="Plugin Development Guide" icon="code" href="/guides/plugin-development" horizontal>
+  Learn how to create custom plugins for your organization
+</Card>
+
+### Plugin Development Workflow
+
+1. **Create Terraform module** - Define cloud resources
+2. **Write manifest** - Specify schema and metadata
+3. **Add runtime adapter** (optional) - Implement SDK operations
+4. **Test locally** - Use with local projects
+5. **Publish** - Share within your organization
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Platform Development" icon="layers" href="/guides/build-platform">
+    Learn how platforms compose plugins
+  </Card>
+
+  <Card title="Plugin Development" icon="code" href="/guides/plugin-development">
+    Create custom plugins for your needs
+  </Card>
+
+  <Card title="Infrastructure Generation" icon="cog" href="/foundations/infrastructure-generation">
+    See how plugins generate Terraform
+  </Card>
+
+  <Card title="Browse Plugins" icon="globe" href="https://app.addsuga.com/browse/platforms">
+    Explore available plugins
+  </Card>
+</CardGroup>

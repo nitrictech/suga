@@ -1,0 +1,40 @@
+---
+title: "GCP Deployment"
+description: "Deploy Suga applications to Google Cloud Platform"
+---
+
+Deploy Suga applications to GCP using Cloud Run, Cloud Storage, and Cloud CDN.
+
+## Prerequisites
+
+- Google Cloud account
+- gcloud CLI configured
+- Terraform installed
+
+## Quick Start
+
+```bash
+# Build your application
+suga build
+
+# Navigate to generated stack
+cd terraform/stacks/my-app
+```
+
+Configure required variables:
+
+```hcl title="terraform.tfvars"
+project_id = "my-gcp-project"
+region = "us-central1"
+```
+
+Deploy:
+
+```bash
+terraform init
+terraform apply
+```
+
+<Card title="Complete Deployment Guide" icon="rocket" href="/foundations/deployment" horizontal>
+  See the full deployment workflow
+</Card>

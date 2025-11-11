@@ -1,0 +1,225 @@
+---
+title: "Services"
+description: "Application containers that run your code"
+---
+
+Services are the compute layer of your Suga application - containers that run your application code and handle business logic.
+
+## What is a Service?
+
+A service is an application container that:
+- **Runs your code** - Node.js, Python, Go, or any containerized application
+- **Handles requests** - HTTP requests, background jobs, scheduled tasks
+- **Accesses resources** - Buckets, databases, other services
+- **Scales automatically** - Based on traffic (Lambda, Cloud Run) or configuration (Fargate)
+
+```yaml title="Basic service definition"
+services:
+  api:
+    dev:
+      script: npm run dev
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    env:
+      EXT_URL: "https://example.com/api"
+```
+
+## Service Configuration
+
+### Development Script
+
+The `dev.script` tells Suga how to run your service locally:
+
+```yaml
+services:
+  api:
+    dev:
+      script: npm run dev  # Node.js
+  worker:
+    dev:
+      script: python main.py  # Python
+  processor:
+    dev:
+      script: go run main.go  # Go
+```
+
+During `suga dev`, this script runs and can automatically restart on code changes.
+
+### Container Configuration
+
+For production deployment, services need container configuration:
+
+**Using Dockerfile:**
+```yaml
+services:
+  api:
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+```
+
+**Using Pre-built Image:**
+```yaml
+services:
+  api:
+    container:
+      image:
+        id: "my-registry/api:latest"
+```
+
+### Environment Variables
+
+Configure services with environment variables:
+
+```yaml
+services:
+  api:
+    env:
+      DATABASE_URL: postgresql://...
+      REDIS_URL: redis://...
+      LOG_LEVEL: info
+      FEATURE_XYZ: "true"
+```
+
+#### PORT environment variable
+
+In order to establish HTTP routes/requests Suga will automatically inject a `PORT` env var into each of your services, indicating which port it should start on.
+
+```typescript index.ts
+const port = process.env.PORT || 8000;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+```
+
+### Working Directory
+
+The `working_directory` property sets the base directory for the service. All other paths in the service configuration are resolved relative to this directory:
+
+```yaml title="Service with working directory"
+services:
+  api:
+    working_directory: ./api
+    dev:
+      script: npm run dev  # Runs from ./api directory
+    container:
+      docker:
+        dockerfile: Dockerfile  # Resolves to ./api/Dockerfile
+        context: .              # Resolves to ./api
+```
+
+**If not specified**, the project root (where `suga.yaml` is located) is used as the working directory.
+
+#### Monorepo Example
+
+Working directories are particularly useful in monorepo structures:
+
+```yaml title="Monorepo with multiple services"
+services:
+  api:
+    working_directory: ./services/api
+    dev:
+      script: npm run dev
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    env:
+      SERVICE_NAME: api
+
+  frontend:
+    working_directory: ./services/frontend
+    dev:
+      script: npm run dev
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    env:
+      SERVICE_NAME: frontend
+
+  worker:
+    working_directory: ./services/worker
+    dev:
+      script: python main.py
+    container:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+```
+
+Project structure:
+```
+my-app/
+├── suga.yaml
+└── services/
+    ├── api/
+    │   ├── Dockerfile
+    │   ├── package.json
+    │   └── src/
+    ├── frontend/
+    │   ├── Dockerfile
+    │   ├── package.json
+    │   └── src/
+    └── worker/
+        ├── Dockerfile
+        ├── requirements.txt
+        └── main.py
+```
+
+## Service Access Control
+
+Services can access other resources:
+
+```yaml
+services:
+  api:
+    # Access granted through bucket configuration
+
+buckets:
+  uploads:
+    access:
+      api: [read, write, delete]
+
+databases:
+  main:
+    access:
+      api: [query]
+```
+
+This automatically generates IAM policies or service account permissions.
+
+<Card title="Access Control Guide" icon="shield" href="/develop/access-control" horizontal>
+  Learn more about access control patterns
+</Card>
+
+## Accessing Resources from Services
+
+Services interact with resources like buckets using generated Suga client libraries. For databases, services receive connection strings via environment variables.
+
+<Card title="Suga Client Libraries" icon="code" href="/develop/suga-client" horizontal>
+  Learn how to access resources from your service code
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Access Control" icon="shield" href="/develop/access-control">
+    Grant resource access
+  </Card>
+
+  <Card title="Local Development" icon="laptop" href="/foundations/local-development">
+    Test services locally
+  </Card>
+
+  <Card title="Suga Client Libraries" icon="code" href="/develop/suga-client">
+    Generated client libraries for resources
+  </Card>
+
+  <Card title="Databases" icon="database" href="/develop/databases">
+    Configure database access
+  </Card>
+</CardGroup>

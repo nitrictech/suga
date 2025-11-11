@@ -1,0 +1,39 @@
+---
+title: "Suga Client (Node.js)"
+description: "SugaClient initialization and configuration for Node.js/TypeScript"
+---
+
+Initialize and configure the Suga client in Node.js and TypeScript applications.
+
+## Installation
+
+Generated client is part of your project after running:
+
+```bash
+suga generate --node --node-out ./suga
+```
+
+## Basic Usage
+
+```typescript
+import { SugaClient } from './suga/client';
+
+// Initialize client
+const suga = new SugaClient();
+
+// Access resources
+await suga.uploads.write('file.txt', Buffer.from('data'));
+const data = await suga.uploads.read('file.txt');
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Storage SDK" icon="box" href="/sdks/node/storage">
+    Bucket operations
+  </Card>
+
+  <Card title="Database SDK" icon="database" href="/sdks/node/databases">
+    Database operations
+  </Card>
+</CardGroup>

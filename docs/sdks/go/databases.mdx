@@ -1,0 +1,229 @@
+---
+title: "Databases"
+description: "Accessing PostgreSQL databases from Go applications"
+---
+
+Access PostgreSQL databases from Go applications using standard PostgreSQL libraries with automatically injected connection strings.
+
+## Connection String Injection
+
+Suga automatically injects database connection strings as environment variables for services with database access:
+
+```yaml title="suga.yaml"
+databases:
+  main:
+    subtype: neon
+    access:
+      api: [query]
+    env_var_key: DATABASE_URL
+```
+
+The `api` service automatically receives `DATABASE_URL` containing the full connection string.
+
+## Using pgx
+
+```bash
+go get github.com/jackc/pgx/v5/pgxpool
+```
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "github.com/jackc/pgx/v5/pgxpool"
+)
+
+func main() {
+    // Connection string automatically injected by Suga
+    pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+    if err != nil {
+        panic(err)
+    }
+    defer pool.Close()
+
+    // Query with parameters
+    rows, err := pool.Query(context.Background(),
+        "SELECT * FROM users WHERE active = $1", true)
+    if err != nil {
+        panic(err)
+    }
+    defer rows.Close()
+
+    // Insert data
+    _, err = pool.Exec(context.Background(),
+        "INSERT INTO users (name, email) VALUES ($1, $2)",
+        "Alice", "alice@example.com")
+
+    // Update data
+    _, err = pool.Exec(context.Background(),
+        "UPDATE users SET name = $1 WHERE id = $2",
+        "Bob", 1)
+
+    // Delete data
+    _, err = pool.Exec(context.Background(),
+        "DELETE FROM users WHERE id = $1", 1)
+}
+```
+
+## Using GORM
+
+```bash
+go get gorm.io/gorm
+go get gorm.io/driver/postgres
+```
+
+```go
+package main
+
+import (
+    "os"
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+)
+
+type User struct {
+    ID     uint
+    Name   string
+    Email  string `gorm:"unique"`
+    Active bool   `gorm:"default:true"`
+}
+
+func main() {
+    // Connection string automatically injected by Suga
+    db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
+    if err != nil {
+        panic(err)
+    }
+
+    // Query
+    var users []User
+    db.Where("active = ?", true).Find(&users)
+
+    // Insert
+    db.Create(&User{
+        Name:  "Alice",
+        Email: "alice@example.com",
+    })
+
+    // Update
+    db.Model(&User{}).Where("id = ?", 1).Update("name", "Bob")
+
+    // Delete
+    db.Delete(&User{}, 1)
+}
+```
+
+## Using sqlx
+
+```bash
+go get github.com/jmoiron/sqlx
+go get github.com/lib/pq
+```
+
+```go
+package main
+
+import (
+    "os"
+    "github.com/jmoiron/sqlx"
+    _ "github.com/lib/pq"
+)
+
+type User struct {
+    ID     int    `db:"id"`
+    Name   string `db:"name"`
+    Email  string `db:"email"`
+    Active bool   `db:"active"`
+}
+
+func main() {
+    // Connection string automatically injected by Suga
+    db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+    if err != nil {
+        panic(err)
+    }
+    defer db.Close()
+
+    // Query
+    users := []User{}
+    db.Select(&users, "SELECT * FROM users WHERE active = $1", true)
+
+    // Insert
+    db.Exec("INSERT INTO users (name, email) VALUES ($1, $2)",
+        "Alice", "alice@example.com")
+
+    // Update
+    db.Exec("UPDATE users SET name = $1 WHERE id = $2", "Bob", 1)
+}
+```
+
+## Multiple Databases
+
+When accessing multiple databases, each has a unique environment variable:
+
+```yaml title="suga.yaml"
+databases:
+  users:
+    access:
+      api: [query]
+    env_var_key: USERS_DATABASE_URL
+
+  products:
+    access:
+      api: [query]
+    env_var_key: PRODUCTS_DATABASE_URL
+```
+
+```go
+import (
+    "context"
+    "os"
+    "github.com/jackc/pgx/v5/pgxpool"
+)
+
+// Connect to different databases
+usersPool, _ := pgxpool.New(context.Background(), os.Getenv("USERS_DATABASE_URL"))
+productsPool, _ := pgxpool.New(context.Background(), os.Getenv("PRODUCTS_DATABASE_URL"))
+
+// Query different databases
+usersRows, _ := usersPool.Query(context.Background(), "SELECT * FROM users")
+productsRows, _ := productsPool.Query(context.Background(), "SELECT * FROM products")
+```
+
+## Connection Pooling
+
+pgxpool provides automatic connection pooling:
+
+```go
+import (
+    "context"
+    "os"
+    "github.com/jackc/pgx/v5/pgxpool"
+)
+
+// Create pool with custom configuration
+config, _ := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+config.MaxConns = 20
+config.MinConns = 5
+
+pool, _ := pgxpool.NewWithConfig(context.Background(), config)
+defer pool.Close()
+
+// Pool automatically manages connections
+rows, _ := pool.Query(context.Background(), "SELECT * FROM users")
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Database Configuration" icon="database" href="/develop/databases">
+    Learn about database setup
+  </Card>
+
+  <Card title="Database Migrations" icon="arrow-right" href="/guides/database-migration">
+    Manage schema changes
+  </Card>
+</CardGroup>

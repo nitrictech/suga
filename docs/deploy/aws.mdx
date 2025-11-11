@@ -1,0 +1,41 @@
+---
+title: "AWS Deployment"
+description: "Deploy Suga applications to Amazon Web Services"
+---
+
+Deploy Suga applications to AWS using Lambda, Fargate, S3, and CloudFront.
+
+## Prerequisites
+
+- AWS account
+- AWS CLI configured
+- Terraform installed
+
+## Quick Start
+
+```bash
+# Build your application
+suga build
+
+# Navigate to generated stack
+cd terraform/stacks/my-app
+```
+
+Create provider configuration:
+
+```hcl title="provider.tf"
+provider "aws" {
+  region = "us-west-2"
+}
+```
+
+Deploy:
+
+```bash
+terraform init
+terraform apply
+```
+
+<Card title="Complete Deployment Guide" icon="rocket" href="/foundations/deployment" horizontal>
+  See the full deployment workflow
+</Card>

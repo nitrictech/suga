@@ -1,0 +1,99 @@
+---
+title: "Entrypoints"
+description: "HTTP routing and CDN configuration for exposing your application"
+---
+
+Entrypoints provide HTTP access to your application through CDN and routing configuration. They act as the front door to your services and static assets.
+
+## What is an Entrypoint?
+
+An entrypoint is a CDN + router that:
+- **Routes HTTP requests** - To services or buckets based on URL paths
+- **Provides HTTPS** - Automatic SSL/TLS termination
+- **Caches responses** - CDN caching for performance
+- **Handles scaling** - Automatically scales with traffic
+
+```yaml title="Basic entrypoint"
+entrypoints:
+  web:
+    routes:
+      /api/: api          # Route /api/* to api service
+      /: frontend         # Route /* to frontend service
+```
+
+## Route Configuration
+
+Routes map URL paths to destinations:
+
+```yaml
+entrypoints:
+  web:
+    routes:
+      /api/: api-service      # Service destination
+      /static/: assets        # Bucket destination
+      /: frontend             # Service destination
+```
+
+**Path Matching:**
+- `/api/` - Matches `/api/*` (with trailing content)
+- `/` - Matches all remaining paths
+
+Routes are evaluated in order - most specific first.
+
+## Custom Domains
+
+<Note>
+  Most entrypoints support custom domains, however, this functionality is [platform](/foundations/platforms.mdx) specific.
+
+  For example, the `suga/aws` platform will generate Terraform Variables during `suga build`, which allow you to specify a custom domain per entrypoint.
+</Note>
+
+## Common Patterns
+
+**API + Frontend:**
+```yaml
+entrypoints:
+  web:
+    routes:
+      /api/: api
+      /: frontend
+```
+
+**Microservices Gateway:**
+```yaml
+entrypoints:
+  gateway:
+    routes:
+      /users/: users-service
+      /products/: products-service
+      /orders/: orders-service
+```
+
+**Static Site with API:**
+```yaml
+entrypoints:
+  web:
+    routes:
+      /api/: api
+      /: static-assets  # Bucket with static files
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Static Websites" icon="globe" href="/guides/static-website-hosting">
+    Static website hosting
+  </Card>
+
+  <Card title="AWS Deployment" icon="aws" href="/deploy/aws">
+    CloudFront configuration
+  </Card>
+
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Route to static files in buckets
+  </Card>
+
+  <Card title="Services" icon="server" href="/develop/services">
+    Configure routing destinations
+  </Card>
+</CardGroup>

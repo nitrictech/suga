@@ -19,30 +19,62 @@
         "groups": [
           {
             "group": "Getting Started",
-            "pages": ["introduction", "installation", "quickstart"]
+            "pages": ["introduction", "why-suga", "installation", "quickstart"]
           },
           {
-            "group": "Core Concepts",
-            "pages": ["projects", "platforms"]
+            "group": "Foundations",
+            "pages": [
+              "foundations/overview",
+              "foundations/projects",
+              "foundations/platforms",
+              "foundations/plugins",
+              "foundations/infrastructure-generation",
+              "foundations/local-development",
+              "foundations/deployment"
+            ]
+          },
+          {
+            "group": "Develop",
+            "pages": [
+              "develop/overview",
+              "develop/services",
+              "develop/entrypoints",
+              "develop/buckets",
+              "develop/databases",
+              "develop/suga-client",
+              "develop/environment-variables",
+              "develop/access-control"
+            ]
+          },
+          {
+            "group": "Deploy",
+            "pages": [
+              "deploy/overview",
+              "deploy/aws",
+              "deploy/gcp",
+              "deploy/azure",
+              "deploy/terraform-configuration",
+              "deploy/environment-management"
+            ]
           },
           {
             "group": "Guides",
             "pages": [
               "guides",
               "guides/add-suga",
+              "guides/static-website-hosting",
               "guides/personal-access-tokens",
               "guides/cicd-authentication",
               "guides/mcp-integration",
               "guides/build-platform",
               "guides/plugin-development",
               "guides/database-migration",
-              "guides/terraform-backend-config",
-              "guides/aws/environment-management"
+              "guides/terraform-backend-config"
             ]
           },
           {
             "group": "Resources",
-            "pages": ["registry"]
+            "pages": ["registry", "faq", "support"]
           }
         ]
       },
@@ -88,17 +120,32 @@
               {
                 "group": "Python",
                 "icon": "python",
-                "pages": ["sdks/python", "sdks/python/storage"]
+                "pages": [
+                  "sdks/python",
+                  "sdks/python/client",
+                  "sdks/python/storage",
+                  "sdks/python/databases"
+                ]
               },
               {
                 "group": "Node.js",
                 "icon": "node-js",
-                "pages": ["sdks/node", "sdks/node/storage"]
+                "pages": [
+                  "sdks/node",
+                  "sdks/node/client",
+                  "sdks/node/storage",
+                  "sdks/node/databases"
+                ]
               },
               {
                 "group": "Go",
                 "icon": "golang",
-                "pages": ["sdks/go", "sdks/go/storage"]
+                "pages": [
+                  "sdks/go",
+                  "sdks/go/client",
+                  "sdks/go/storage",
+                  "sdks/go/databases"
+                ]
               }
             ]
           }
@@ -160,5 +207,15 @@
     "posthog": {
       "apiKey": "phc_XwujEojDf0Qq5EeBqOTo0Xf9ZAi7NZZIrIvvLGr8sZ6"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/projects",
+      "destination": "/foundations/projects"
+    },
+    {
+      "source": "/platforms",
+      "destination": "/foundations/platforms"
+    }
+  ]
 }

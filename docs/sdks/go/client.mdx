@@ -1,0 +1,56 @@
+---
+title: "Suga Client (Go)"
+description: "Suga client initialization and configuration for Go"
+---
+
+Initialize and configure the Suga client in Go applications.
+
+## Installation
+
+Generated client is part of your project after running:
+
+```bash
+suga generate --go --go-out ./suga --go-package-name suga
+```
+
+## Basic Usage
+
+```go
+package main
+
+import (
+    "myapp/suga"
+    "log"
+)
+
+func main() {
+    // Initialize client
+    client, err := suga.NewClient()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Access resources
+    err = client.Uploads.Write("file.txt", []byte("data"))
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    data, err := client.Uploads.Read("file.txt")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Storage SDK" icon="box" href="/sdks/go/storage">
+    Bucket operations
+  </Card>
+
+  <Card title="Database SDK" icon="database" href="/sdks/go/databases">
+    Database operations
+  </Card>
+</CardGroup>

@@ -1,0 +1,198 @@
+---
+title: "Infrastructure Generation"
+description: "How Suga transforms projects into production-ready Terraform"
+---
+
+When you run `suga build`, Suga transforms your high-level project specification into production-ready Terraform code. This page explains how this transformation works, what gets generated, and how to customize the output.
+
+## The Build Process
+
+The `suga build` command orchestrates a multi-step process:
+
+<Steps>
+  <Step title="Load Project">
+    Suga reads your `suga.yaml` file and validates the configuration:
+
+    ```yaml title="suga.yaml"
+    target: suga/aws@1
+    name: my-app
+
+    services:
+      api:
+        dev:
+          script: npm run dev
+
+    buckets:
+      uploads:
+        access:
+          api: [read, write]
+    ```
+  </Step>
+
+  <Step title="Fetch Platform">
+    Suga retrieves the target platform specification from the registry:
+
+    ```bash
+    # Platform: suga/aws@1
+    - Services: lambda, fargate
+    - Buckets: s3
+    - Databases: neon
+    - Entrypoints: cloudfront
+    - Infrastructure: vpc, loadbalancer, security-groups
+    ```
+  </Step>
+
+  <Step title="Map Resources">
+    Each project resource is mapped to a platform blueprint, by the selected subtype:
+
+    ```yaml suga.yaml
+    services:
+      api:
+        subtype: fargate
+
+    buckets:
+      uploads:
+        subtype: s3
+    ```
+
+    ```
+    Project           Platform Blueprint     Plugin
+    -------           ------------------     ------
+    service "api"  →  services.fargate    →   suga/aws/fargate
+    bucket "uploads" → buckets.s3        →   suga/aws/s3-bucket
+    ```
+
+  </Step>
+
+  <Step title="Generate Terraform Output">
+    Suga then uses Terraform CDK to resolve the modules, variables and other configuration and produce a functional Terraform stack.
+
+    ```
+    terraform/stacks/my-app/
+    ├── cdk.tf.json          # Main Terraform Entrypoint
+    └── .terraform/             # Plugin Terraform modules
+        └── modules/
+            ├── api/
+            ├── api_image/
+            ├── uploads_bucket/
+            └── ...
+    ```
+  </Step>
+</Steps>
+
+## Module Naming
+
+Suga generates consistent module names for application resources:
+
+### Terraform Module Names
+
+Pattern: `{resource_name}[_{submodule_name}]`
+
+```hcl
+module "api"       # Service named "api"
+module "api_image" # Container image submodule for the "api" service
+module "uploads"   # Bucket named "uploads"
+```
+
+## Dependency Management
+
+Suga automatically manages resource dependencies:
+
+### Explicit Dependencies
+
+Defined by platform:
+
+```yaml title="Platform blueprint"
+services:
+  fargate:
+    depends_on:
+      - ${infra.aws_vpc}
+      - ${infra.aws_lb}
+```
+
+Results in:
+
+```hcl title="Generated Terraform"
+module "service_api" {
+  # ...
+  depends_on = [
+    module.aws_vpc,
+    module.aws_lb
+  ]
+}
+```
+
+### Implicit Dependencies
+
+Created by resource references:
+
+```hcl title="Automatic dependency"
+module "service_api" {
+  vpc_id = module.aws_vpc.vpc_id  # Creates implicit dependency
+}
+```
+
+## Multi-Environment Support
+
+The same generated Terraform can deploy to multiple environments using Terraform workspaces and environment-specific variable files. This allows you to maintain a single infrastructure definition while customizing configuration for dev, staging, and production.
+
+<Card title="Environment Management Guide" icon="layers" href="/deploy/environment-management" horizontal>
+  Learn best practices for managing multiple environments with Terraform workspaces and variables
+</Card>
+
+See the [CLI reference](/cli/build) for complete options.
+
+## Getting Help
+
+If you encounter issues during build:
+
+1. Review platform documentation in the [platform browser](https://app.addsuga.com/browse/platforms)
+2. Contact [Suga support](/support)
+
+## Best Practices
+
+### 1. Version Control Generated Terraform
+
+Commit generated Terraform to version control:
+
+```bash
+git add terraform/
+git commit -m "Update infrastructure"
+```
+
+Benefits:
+- Track infrastructure changes over time
+- Review Terraform diffs in pull requests
+- Rollback if needed
+
+### 2. Validate Before Deploying
+
+Always validate and preview:
+
+```bash
+suga build
+cd terraform/stacks/my-app
+terraform init
+terraform validate
+terraform plan  # Review before apply
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Deployment Guide" icon="rocket" href="/foundations/deployment">
+    Understand the deployment process
+  </Card>
+
+  <Card title="Build Command" icon="hammer" href="/cli/build">
+    Complete CLI reference for suga build
+  </Card>
+
+  <Card title="Platform Development" icon="layers" href="/guides/build-platform">
+    Learn how platforms define infrastructure
+  </Card>
+
+  <Card title="Terraform Configuration" icon="code" href="/deploy/terraform-configuration">
+    Best practices for Terraform configuration
+  </Card>
+</CardGroup>

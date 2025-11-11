@@ -1,0 +1,195 @@
+---
+title: "Databases"
+description: "Accessing PostgreSQL databases from Node.js/TypeScript applications"
+---
+
+Access PostgreSQL databases from Node.js and TypeScript applications using standard PostgreSQL libraries with automatically injected connection strings.
+
+## Connection String Injection
+
+Suga automatically injects database connection strings as environment variables for services with database access:
+
+```yaml title="suga.yaml"
+databases:
+  main:
+    subtype: neon
+    access:
+      api: [query]
+    env_var_key: DATABASE_URL
+```
+
+The `api` service automatically receives `DATABASE_URL` containing the full connection string.
+
+## Using pg (node-postgres)
+
+```bash
+npm install pg
+```
+
+```typescript
+import { Pool } from 'pg';
+
+// Connection string automatically injected by Suga
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+// Query with parameters
+const result = await pool.query(
+  'SELECT * FROM users WHERE active = $1',
+  [true]
+);
+const users = result.rows;
+
+// Insert data
+await pool.query(
+  'INSERT INTO users (name, email) VALUES ($1, $2)',
+  ['Alice', 'alice@example.com']
+);
+
+// Update data
+await pool.query(
+  'UPDATE users SET name = $1 WHERE id = $2',
+  ['Bob', 1]
+);
+
+// Delete data
+await pool.query('DELETE FROM users WHERE id = $1', [1]);
+```
+
+## Using Prisma ORM
+
+```bash
+npm install prisma @prisma/client
+```
+
+```javascript title="prisma/schema.prisma"
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  name  String
+  email String  @unique
+  active Boolean @default(true)
+}
+```
+
+```typescript
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Query
+const users = await prisma.user.findMany({
+  where: { active: true }
+});
+
+// Insert
+await prisma.user.create({
+  data: { name: 'Alice', email: 'alice@example.com' }
+});
+
+// Update
+await prisma.user.update({
+  where: { id: 1 },
+  data: { name: 'Bob' }
+});
+```
+
+## Using TypeORM
+
+```bash
+npm install typeorm reflect-metadata pg
+```
+
+```typescript
+import { DataSource } from 'typeorm';
+import { User } from './entities/User';
+
+const dataSource = new DataSource({
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+  entities: [User],
+  synchronize: false, // Use migrations in production
+});
+
+await dataSource.initialize();
+
+// Query
+const users = await dataSource.getRepository(User).find({
+  where: { active: true }
+});
+
+// Insert
+await dataSource.getRepository(User).save({
+  name: 'Alice',
+  email: 'alice@example.com'
+});
+```
+
+## Multiple Databases
+
+When accessing multiple databases, each has a unique environment variable:
+
+```yaml title="suga.yaml"
+databases:
+  users:
+    access:
+      api: [query]
+    env_var_key: USERS_DATABASE_URL
+
+  products:
+    access:
+      api: [query]
+    env_var_key: PRODUCTS_DATABASE_URL
+```
+
+```typescript
+import { Pool } from 'pg';
+
+const usersPool = new Pool({
+  connectionString: process.env.USERS_DATABASE_URL
+});
+
+const productsPool = new Pool({
+  connectionString: process.env.PRODUCTS_DATABASE_URL
+});
+
+// Query different databases
+const users = await usersPool.query('SELECT * FROM users');
+const products = await productsPool.query('SELECT * FROM products');
+```
+
+## Connection Pooling
+
+Always use connection pooling for better performance:
+
+```typescript
+import { Pool } from 'pg';
+
+// Create pool once
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Reuse the pool throughout your application
+export default pool;
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Database Configuration" icon="database" href="/develop/databases">
+    Learn about database setup
+  </Card>
+
+  <Card title="Database Migrations" icon="arrow-right" href="/guides/database-migration">
+    Manage schema changes
+  </Card>
+</CardGroup>

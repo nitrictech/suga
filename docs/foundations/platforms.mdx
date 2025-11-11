@@ -1,9 +1,9 @@
 ---
-title: "Platforms Overview"
+title: "Platforms"
 description: "Understanding Suga's platforms and ecosystem"
 ---
 
-Platforms in Suga solve a critical challenge: delivering the seamless developer experience of modern deployment platforms while maintaining enterprise control and flexibility. They're blueprints that transform application specifications ([Projects](/projects)) into deployable infrastructure by generating Terraform HCL and providing runtime adapters that translate abstract resource operations into cloud-specific API calls.
+Platforms in Suga solve a critical challenge: delivering the seamless developer experience of modern deployment platforms while maintaining enterprise control and flexibility. They're blueprints that transform application specifications ([Projects](/foundations/projects)) into deployable infrastructure by generating Terraform HCL and providing runtime adapters that translate abstract resource operations into cloud-specific API calls.
 
 Platform teams can create, customize, and govern these distributed packages to provide developers with instant deployments, automatic scaling, and zero-configuration infrastructure, while maintaining full control over security, compliance, and infrastructure standards.
 
@@ -68,7 +68,7 @@ Platforms operate through two key mechanisms: **Infrastructure Generation** and 
 
 ### Infrastructure Generation
 
-When you run `suga build`, Suga uses your target platform to transform your [Project](/projects) specification into cloud-specific Terraform HCL (called stacks). This process:
+When you run `suga build`, Suga uses your target platform to transform your [Project](/foundations/projects) specification into cloud-specific Terraform HCL (called stacks). This process:
 
 1. **Maps abstract resources** - Takes your high-level resource definitions (services, buckets, databases) and selects appropriate cloud implementations
 2. **Generates Terraform modules** - Creates infrastructure-as-code that provisions actual cloud resources with proper networking, security, and permissions

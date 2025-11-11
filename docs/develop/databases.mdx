@@ -1,0 +1,280 @@
+---
+title: "Databases"
+description: "PostgreSQL databases for structured data"
+---
+
+Databases provide persistent SQL storage for your application's structured data.
+
+## What is a Database?
+
+A database in Suga is a PostgreSQL database that:
+- **Stores structured data** - Tables, relations, indexes
+- **Provides SQL access** - Full PostgreSQL compatibility
+- **Scales automatically** - Managed database service
+- **Integrates with services** - Automatic connection configuration
+
+```yaml title="Basic database"
+databases:
+  main:
+    access:
+      api: [query]
+      worker: [query]
+```
+
+## Database Configuration
+
+### Access Control and Connection Strings
+
+When you grant a service access to a database, Suga automatically injects the database connection string into that service's environment variables:
+
+```yaml title="Database with environment variable injection"
+databases:
+  main:
+    subtype: neon
+    access:
+      api: [query]
+      worker: [query]
+    env_var_key: DATABASE_URL  # Connection string injected as DATABASE_URL
+```
+
+Services with access automatically receive:
+- **Full connection string** - Including host, port, database name, and credentials
+- **Environment variable** - Specified by `env_var_key`
+- **Ready to use** - Works immediately with standard PostgreSQL libraries
+
+**Permission:**
+- `query` - Full read/write SQL access
+
+### Multiple Databases
+
+When using multiple databases, each must have a unique `env_var_key` to avoid conflicts:
+
+```yaml title="Multiple databases with unique env vars"
+databases:
+  users:
+    subtype: neon
+    access:
+      api: [query]
+    env_var_key: USERS_DATABASE_URL
+
+  products:
+    subtype: neon
+    access:
+      api: [query]
+    env_var_key: PRODUCTS_DATABASE_URL
+
+  orders:
+    subtype: neon
+    access:
+      api: [query]
+    env_var_key: ORDERS_DATABASE_URL
+```
+
+Now the `api` service receives three separate connection strings:
+- `USERS_DATABASE_URL`
+- `PRODUCTS_DATABASE_URL`
+- `ORDERS_DATABASE_URL`
+
+<Warning>
+  Each database **must** have a unique `env_var_key` if the same service accesses multiple databases. Using the same key for different databases will cause conflicts.
+</Warning>
+
+## Using Databases in Code
+
+Access databases using standard PostgreSQL libraries with the automatically injected connection string:
+
+<Tabs>
+  <Tab title="Node.js">
+    ```typescript
+    import { Pool } from 'pg';
+
+    // Connection string automatically injected by Suga
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL
+    });
+
+    // Query database
+    const result = await pool.query(
+      'SELECT * FROM users WHERE active = $1',
+      [true]
+    );
+    const users = result.rows;
+
+    // Insert data
+    await pool.query(
+      'INSERT INTO users (name, email) VALUES ($1, $2)',
+      ['Alice', 'alice@example.com']
+    );
+
+    // Update data
+    await pool.query(
+      'UPDATE users SET name = $1 WHERE id = $2',
+      ['Bob', 1]
+    );
+    ```
+
+    Install the PostgreSQL client:
+    ```bash
+    npm install pg
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```python
+    import psycopg2
+    import os
+
+    # Connection string automatically injected by Suga
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cursor = conn.cursor()
+
+    # Query database
+    cursor.execute('SELECT * FROM users WHERE active = %s', [True])
+    users = cursor.fetchall()
+
+    # Insert data
+    cursor.execute(
+      'INSERT INTO users (name, email) VALUES (%s, %s)',
+      ['Alice', 'alice@example.com']
+    )
+    conn.commit()
+
+    # Update data
+    cursor.execute(
+      'UPDATE users SET name = %s WHERE id = %s',
+      ['Bob', 1]
+    )
+    conn.commit()
+    ```
+
+    Install the PostgreSQL client:
+    ```bash
+    pip install psycopg2-binary
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```go
+    import (
+        "context"
+        "os"
+        "github.com/jackc/pgx/v5/pgxpool"
+    )
+
+    // Connection string automatically injected by Suga
+    pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+    if err != nil {
+        panic(err)
+    }
+    defer pool.Close()
+
+    // Query database
+    rows, err := pool.Query(context.Background(),
+      "SELECT * FROM users WHERE active = $1", true)
+
+    // Insert data
+    _, err = pool.Exec(context.Background(),
+      "INSERT INTO users (name, email) VALUES ($1, $2)",
+      "Alice", "alice@example.com")
+
+    // Update data
+    _, err = pool.Exec(context.Background(),
+      "UPDATE users SET name = $1 WHERE id = $2",
+      "Bob", 1)
+    ```
+
+    Install the PostgreSQL client:
+    ```bash
+    go get github.com/jackc/pgx/v5/pgxpool
+    ```
+  </Tab>
+</Tabs>
+
+### Connection String Format
+
+The injected `DATABASE_URL` contains everything needed to connect:
+
+```
+postgresql://username:password@host:port/database?sslmode=require
+```
+
+This works with any PostgreSQL-compatible library or ORM (Prisma, TypeORM, SQLAlchemy, etc.):
+
+<Tabs>
+  <Tab title="Prisma">
+    ```javascript title="prisma/schema.prisma"
+    datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL")
+    }
+    ```
+  </Tab>
+
+  <Tab title="TypeORM">
+    ```typescript
+    import { DataSource } from 'typeorm';
+
+    const dataSource = new DataSource({
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
+      entities: [User],
+    });
+    ```
+  </Tab>
+
+  <Tab title="SQLAlchemy">
+    ```python
+    from sqlalchemy import create_engine
+    import os
+
+    engine = create_engine(os.environ['DATABASE_URL'])
+    ```
+  </Tab>
+</Tabs>
+
+## Database Migrations
+
+Run migrations as part of your deployment:
+
+<Card title="Database Migrations Guide" icon="database" href="/guides/database-migration" horizontal>
+  Learn how to manage database schema changes
+</Card>
+
+## Local Development
+
+During `suga dev`, PostgreSQL databases run automatically with no manual setup required:
+
+- Suga starts a local PostgreSQL instance for each database
+- Connection strings are injected into services via `env_var_key`
+- Data persists in `.suga/databases/` between sessions
+- Use the same PostgreSQL libraries and ORMs as production
+
+```bash
+suga dev
+```
+
+Your services receive `DATABASE_URL` (or your custom `env_var_key`) automatically, making the same code work in both local development and production.
+
+<Card title="Local Development Guide" icon="laptop" href="/foundations/local-development" horizontal>
+  Learn more about local development with databases
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Database SDK" icon="code" href="/sdks/node/databases">
+    Complete API reference
+  </Card>
+
+  <Card title="Migrations" icon="arrow-right" href="/guides/database-migration">
+    Schema management
+  </Card>
+
+  <Card title="Local Development" icon="laptop" href="/foundations/local-development">
+    Local PostgreSQL during suga dev
+  </Card>
+
+  <Card title="Access Control" icon="shield" href="/develop/access-control">
+    Permission management
+  </Card>
+</CardGroup>

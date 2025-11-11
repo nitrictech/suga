@@ -1,0 +1,349 @@
+---
+title: "Local Development"
+description: "Develop and test cloud applications entirely on your local machine"
+---
+
+Suga's local development environment (`suga dev`) lets you build and test cloud applications entirely on your local machine without cloud access, accounts, or costs. This page explains how local development works, what's emulated, and best practices for productive local workflows.
+
+## The Development Server
+
+The `suga dev` command starts a local development server that:
+
+- **Emulates cloud resources** - Buckets, entrypoints, databases
+- **Runs your services** - Using the `dev.script` from your `suga.yaml`
+- **Hot reloads code** - Automatically restarts services when files change
+- **Provides local URLs** - Access your application at `localhost` ports
+
+```bash title="Start local development"
+suga dev
+```
+
+```bash title="Example output"
+⚡ Suga v0.0.1
+   - App: my-app
+   - Addr: :50051
+
+Services
+
+✓ Starting [api]
+
+Entrypoints
+
+✓ Starting [web] http://localhost:3000
+
+Use Ctrl-C to exit
+```
+
+## What Gets Emulated
+
+### Services
+
+Your application services run locally using their `dev.script`:
+
+```yaml title="suga.yaml"
+services:
+  api:
+    dev:
+      script: npm run dev
+  worker:
+    dev:
+      script: python main.py
+```
+
+Each service:
+- Runs as a separate process
+- Gets automatically restarted on code changes
+- Receives environment variables from `suga.yaml`
+- Can communicate with emulated resources
+
+### Buckets (Object Storage)
+
+Buckets are emulated using the local filesystem:
+
+```
+project-root/
+└── .suga/
+    └── buckets/
+        └── uploads/        # Bucket named "uploads"
+            ├── file1.txt
+            └── file2.jpg
+```
+
+**Features:**
+- Read/write/delete operations work like cloud storage
+- Files persist between `suga dev` sessions
+- Pre-seed buckets by placing files in `.suga/buckets/{bucket-name}/`
+- View files directly in the file explorer
+
+**SDK Operations:**
+
+Use the generated Suga client to interact with buckets:
+
+```typescript title="Works locally and in production"
+// Write file
+await suga.uploads.write('file.txt', Buffer.from('Hello!'));
+
+// Read file
+const data = await suga.uploads.read('file.txt');
+
+// Delete file
+await suga.uploads.delete('file.txt');
+```
+
+Local behavior:
+- `write()` creates files in `.suga/buckets/uploads/`
+- `read()` reads from `.suga/buckets/uploads/`
+- `delete()` removes files from `.suga/buckets/uploads/`
+
+<Card title="Suga Client Libraries" icon="code" href="/develop/suga-client" horizontal>
+  Learn about generated client libraries for cloud-agnostic resource access
+</Card>
+
+### Entrypoints (HTTP Routing)
+
+Entrypoints provide local HTTP servers with routing:
+
+```yaml title="suga.yaml"
+entrypoints:
+  web:
+    routes:
+      /api/: api
+      /: frontend
+```
+
+Results in:
+
+```
+http://localhost:3000/api/    →  Routes to 'api' service
+http://localhost:3000/        →  Routes to 'frontend' service
+```
+
+**Features:**
+- Path-based routing like production CDN
+- Request/response logging
+- CORS handling
+
+### Databases
+
+PostgreSQL databases are automatically run locally:
+
+```yaml title="suga.yaml"
+databases:
+  main:
+    access:
+      api: [query]
+    env_var_key: DATABASE_URL
+```
+
+**Features:**
+- Automatic PostgreSQL instance created per database
+- Connection strings injected into services via environment variables
+- Data persists between `suga dev` sessions
+- Full PostgreSQL compatibility for development
+
+**How it works:**
+
+During `suga dev`, Suga:
+1. Starts a local PostgreSQL instance for each database using Docker
+2. Injects connection strings into services with access
+3. Makes databases available on local ports
+
+Services receive the connection string exactly as they would in production:
+
+```typescript title="Works locally and in production"
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+await pool.query('CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name TEXT)');
+await pool.query('INSERT INTO users (name) VALUES ($1)', ['Alice']);
+const result = await pool.query('SELECT * FROM users');
+console.log(result.rows);
+```
+
+## The `.suga` Directory
+
+Suga creates a `.suga` directory in your project for local state:
+
+```
+.suga/
+├── buckets/           # Bucket contents
+│   └── uploads/
+├── logs/              # Service logs
+│   ├── api.log
+│   └── worker.log
+└── dev.json          # Development server state
+```
+
+<Warning>
+  Add `.suga/` to your `.gitignore` - this directory contains local development state and should not be committed.
+</Warning>
+
+## Development Workflow
+
+### Starting Development
+
+```bash
+# Start all services and resources
+suga dev
+```
+
+### Making Code Changes
+
+1. **Edit your service code** - Changes are detected automatically
+2. **Service restarts** - Suga restarts the affected service
+3. **Test immediately** - New code is running
+
+### Debugging Services
+
+Standard debugging tools work normally:
+
+<Tabs>
+  <Tab title="Node.js">
+    ```json title="package.json"
+    {
+      "scripts": {
+        "dev": "node --inspect src/index.js"
+      }
+    }
+    ```
+
+    Then connect Chrome DevTools or VS Code debugger to `localhost:9229`.
+  </Tab>
+
+  <Tab title="Python">
+    ```yaml title="suga.yaml"
+    services:
+      api:
+        dev:
+          script: python -m debugpy --listen 5678 main.py
+    ```
+
+    Then connect VS Code or PyCharm debugger to `localhost:5678`.
+  </Tab>
+
+  <Tab title="Go">
+    ```bash title="Use delve debugger"
+    dlv debug --headless --listen=:2345 --api-version=2
+    ```
+
+    Then connect GoLand or VS Code debugger to `localhost:2345`.
+  </Tab>
+</Tabs>
+
+### Viewing Logs
+
+Service logs are written to `.suga/logs/`:
+
+```bash
+# Tail service logs
+tail -f .suga/logs/api.log
+
+# Or use your preferred log viewer
+cat .suga/logs/api.log | grep ERROR
+```
+
+### Seeding Local Data
+
+Pre-populate buckets for testing:
+
+```bash
+# Create test files
+mkdir -p .suga/buckets/uploads
+echo "Test content" > .suga/buckets/uploads/test.txt
+
+# Start dev server - files are available immediately
+suga dev
+```
+
+```typescript title="Read pre-seeded data"
+const data = await suga.uploads.read('test.txt');
+console.log(data); // "Test content"
+```
+
+## Environment Variables
+
+Services receive environment variables defined in `suga.yaml`:
+
+```yaml title="suga.yaml"
+services:
+  api:
+    env:
+      EXTERNAL_API_KEY: dev-key-12345
+      DEBUG: "true"
+    dev:
+      script: npm run dev
+
+databases:
+  main:
+    access:
+      api: [query]
+    env_var_key: DATABASE_URL  # Automatically injected during dev and production
+```
+
+During `suga dev`:
+- Service receives environment variables from `env` config
+- Database connection strings automatically injected based on `env_var_key`
+- Same variables are available in production (after Terraform deployment)
+- Use for configuration, API keys, feature flags
+
+<Tip>
+  Use different values for local vs production by adding platform-specific overrides or using Terraform variables.
+</Tip>
+
+## Service Communication
+
+<Info>
+  Direct service-to-service communication is coming soon. For now, services can communicate through shared databases, buckets or entrypoint URLs.
+</Info>
+
+## Limitations
+
+Local emulation provides high fidelity but has some limitations:
+
+### Not Emulated
+
+- **Cloud-specific features** - Lambda layers, CloudFront behaviors, CDN caching
+- **Scaling** - Auto-scaling, load balancing across multiple instances
+- **Managed services** - Cloud-specific features like S3 lifecycle policies
+- **Networking** - VPCs, security groups, actual cloud networking
+
+### Performance Differences
+
+- **Cold starts** - Lambda cold starts don't occur locally
+- **Latency** - No network latency between services
+- **Resource limits** - Local resources not limited like Lambda (memory, timeout)
+
+### Workarounds
+
+For features that can't be emulated:
+
+1. **Preview in cloud** - Deploy to dev environment for testing
+2. **Mock externals** - Use mocks for cloud-specific APIs
+3. **Integration tests** - Test cloud features in CI/CD pipelines
+
+<Card title="Deployment Guide" icon="rocket" href="/foundations/deployment" horizontal>
+  Learn how to deploy to cloud environments for testing
+</Card>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get started with local development
+  </Card>
+
+  <Card title="Dev Command" icon="terminal" href="/cli/dev">
+    Complete CLI reference for suga dev
+  </Card>
+
+  <Card title="Databases" icon="database" href="/develop/databases">
+    Configure databases and connection strings
+  </Card>
+
+  <Card title="Deployment" icon="cloud" href="/foundations/deployment">
+    Deploy to cloud after local testing
+  </Card>
+</CardGroup>
