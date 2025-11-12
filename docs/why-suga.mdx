@@ -29,20 +29,26 @@ Design your architecture visually, then generate production-ready Terraform. No 
 </video>
 
 ```yaml title="Design becomes configuration"
-services:
+entrypoints:
   api:
+    routes:
+      /:
+        name: frontend
+      /api/:
+        name: app
+
+services:
+  app:
+    dev:
+      script: npm run dev
+  frontend:
     dev:
       script: npm run dev
 
 buckets:
-  uploads:
+  bucket:
     access:
-      api: [read, write]
-
-entrypoints:
-  web:
-    routes:
-      /api/: api
+      app: [read, write]
 ```
 
 ```bash title="Configuration becomes Terraform"

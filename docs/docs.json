@@ -29,8 +29,7 @@
               "core/platforms",
               "core/plugins",
               "core/infrastructure-generation",
-              "core/local-development",
-              "core/deployment"
+              "core/local-development"
             ]
           },
           {
