@@ -32,11 +32,11 @@ from suga_gen.client import SugaClient
 
 ```python
 # Initialize client
-client = SugaClient()
+suga = SugaClient()
 
 # Access your resources (names from your suga.yaml)
-client.image.write("file.txt", b"data")
-content = client.image.read("file.txt")
+suga.image.write("file.txt", b"data")
+content = suga.image.read("file.txt")
 ```
 
 ## Available Resources
