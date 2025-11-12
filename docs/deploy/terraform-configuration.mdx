@@ -9,14 +9,35 @@ description: "Configure Terraform backends, state management, and variables"
   See the complete backend configuration guide
 </Card>
 
-## Workspaces for Multiple Environments
+## Environment Management
+
+Manage multiple environments using [Terraform workspaces](https://developer.hashicorp.com/terraform/language/state/workspaces) and variable files.
+
+## Using Workspaces
 
 ```bash
+# Create workspaces
 terraform workspace new dev
 terraform workspace new staging
 terraform workspace new prod
+
+# Deploy to dev
+terraform workspace select dev
+terraform apply -var-file=environments/dev.tfvars
+
+# Deploy to prod
+terraform workspace select prod
+terraform apply -var-file=environments/prod.tfvars
 ```
 
-<Card title="Environment Management" icon="layers" href="/deploy/environment-management" horizontal>
-  Learn about managing multiple environments
-</Card>
+## Environment-Specific Configuration
+
+```hcl title="environments/dev.tfvars"
+services_api_memory = 512
+services_api_timeout = 10
+```
+
+```hcl title="environments/prod.tfvars"
+services_api_memory = 2048
+services_api_timeout = 30
+```

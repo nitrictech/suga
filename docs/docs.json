@@ -52,8 +52,7 @@
               "deploy/aws",
               "deploy/gcp",
               "deploy/azure",
-              "deploy/terraform-configuration",
-              "deploy/environment-management"
+              "deploy/terraform-configuration"
             ]
           },
           {
