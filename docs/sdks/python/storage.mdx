@@ -86,7 +86,7 @@ def list(prefix: str = "") -> List[str]
 
 #### Parameters
 
-<ParamField path="prefix" type="str" default='""'>
+<ParamField path="prefix" type="str" default="">
   Filter results to keys starting with this prefix
 </ParamField>
 
@@ -148,7 +148,11 @@ def get_upload_url(key: str, options: Optional[PresignUrlOptions] = None) -> str
   The key/path of the file
 </ParamField>
 
-<ParamField path="options" type="PresignUrlOptions" default="PresignUrlOptions(expiry=300)">
+<ParamField
+  path="options"
+  type="PresignUrlOptions"
+  default="PresignUrlOptions(expiry=300)"
+>
   Configuration with expiry in seconds
 </ParamField>
 
