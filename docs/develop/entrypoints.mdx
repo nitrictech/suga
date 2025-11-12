@@ -17,8 +17,10 @@ An entrypoint is a CDN + router that:
 entrypoints:
   web:
     routes:
-      /api/: api          # Route /api/* to api service
-      /: frontend         # Route /* to frontend service
+      /api/: 
+        name: api          # Route /api/* to api service
+      /: 
+        name: frontend         # Route /* to frontend service
 ```
 
 ## Route Configuration
@@ -29,9 +31,12 @@ Routes map URL paths to destinations:
 entrypoints:
   web:
     routes:
-      /api/: api-service      # Service destination
-      /static/: assets        # Bucket destination
-      /: frontend             # Service destination
+      /api/: 
+        name: api-service      # Service destination
+      /static/: 
+        name: assets        # Bucket destination
+      /: 
+        name: frontend             # Service destination
 ```
 
 **Path Matching:**
@@ -55,8 +60,10 @@ Routes are evaluated in order - most specific first.
 entrypoints:
   web:
     routes:
-      /api/: api
-      /: frontend
+      /api/: 
+        name: api
+      /: 
+        name: frontend
 ```
 
 **Microservices Gateway:**
@@ -64,9 +71,12 @@ entrypoints:
 entrypoints:
   gateway:
     routes:
-      /users/: users-service
-      /products/: products-service
-      /orders/: orders-service
+      /users/: 
+        name: users-service
+      /products/: 
+        name: products-service
+      /orders/: 
+        name: orders-service
 ```
 
 **Static Site with API:**
@@ -74,8 +84,10 @@ entrypoints:
 entrypoints:
   web:
     routes:
-      /api/: api
-      /: static-assets  # Bucket with static files
+      /api/: 
+        name: api
+      /: 
+        name: static-assets  # Bucket with static files
 ```
 
 ## Learn More
@@ -83,10 +95,6 @@ entrypoints:
 <CardGroup cols={2}>
   <Card title="Static Websites" icon="globe" href="/guides/static-website-hosting">
     Static website hosting
-  </Card>
-
-  <Card title="AWS Deployment" icon="aws" href="/deploy/aws">
-    CloudFront configuration
   </Card>
 
   <Card title="Buckets" icon="box" href="/develop/buckets">

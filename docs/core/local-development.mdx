@@ -104,14 +104,20 @@ Local behavior:
 Entrypoints provide local HTTP servers with routing:
 
 ```yaml title="suga.yaml"
+services:
+  api: ...
+buckets:
+  frontend: ...
 entrypoints:
   web:
     routes:
-      /api/: api
-      /: frontend
+      /api/: 
+        name: api
+      /: 
+        name: frontend
 ```
 
-Results in:
+Running `suga dev` will result in:
 
 ```
 http://localhost:3000/api/    →  Routes to 'api' service
@@ -287,7 +293,7 @@ During `suga dev`:
 - Service receives environment variables from `env` config
 - Database connection strings automatically injected based on `env_var_key`
 - Same variables are available in production (after Terraform deployment)
-- Use for configuration, API keys, feature flags
+- Use for configuration, feature flags, etc.
 
 <Tip>
   Use different values for local vs production by adding platform-specific overrides or using Terraform variables.
@@ -312,9 +318,9 @@ Local emulation provides high fidelity but has some limitations:
 
 ### Performance Differences
 
-- **Cold starts** - Lambda cold starts don't occur locally
+- **Cold starts** - Service cold starts don't occur locally
 - **Latency** - No network latency between services
-- **Resource limits** - Local resources not limited like Lambda (memory, timeout)
+- **Resource limits** - Local resources not limited like a deployed service (memory, timeout)
 
 ### Workarounds
 
@@ -336,7 +342,7 @@ For features that can't be emulated:
   </Card>
 
   <Card title="Dev Command" icon="terminal" href="/cli/dev">
-    Complete CLI reference for suga dev
+    Complete CLI reference for `suga dev`
   </Card>
 
   <Card title="Databases" icon="database" href="/develop/databases">

@@ -84,6 +84,8 @@ services:
       FEATURE_XYZ: "true"
 ```
 
+<Warning>There are a few reserved environment variables that should be avoided. These are `PORT` and environment variables with the prefix `SUGA_`.</Warning>
+
 #### PORT environment variable
 
 In order to establish HTTP routes/requests Suga will automatically inject a `PORT` env var into each of your services, indicating which port it should start on.

@@ -9,7 +9,7 @@ Buckets provide cloud object storage for your application - think files, images,
 
 A bucket is object storage that:
 - **Stores files** - Any file type, any size
-- **Provides access** - Read, write, delete operations
+- **Configurable access** - Set read, write, delete permissions
 - **Scales automatically** - No capacity planning needed
 - **Works everywhere** - Same interface locally and in production
 
@@ -34,7 +34,7 @@ Grant services access to buckets:
 buckets:
   uploads:
     access:
-      api: [read, write, delete]  # Full access
+      api: [read, write, delete]   # Full access
       worker: [read, delete]       # Read and delete only
       frontend: [read]             # Read-only
 ```
@@ -139,8 +139,8 @@ You can:
 - Seed buckets by placing files there
 - Test bucket operations without cloud access
 
-<Card title="Local Development" icon="laptop" href="/core/local-development" horizontal>
-  Learn how to develop applications locally with Suga
+<Card title="Local Development" icon="laptop" href="/core/local-development#buckets-object-storage" horizontal>
+  Learn how to develop buckets locally with Suga
 </Card>
 
 ## Learn More

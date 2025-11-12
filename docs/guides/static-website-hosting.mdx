@@ -20,7 +20,8 @@ buckets:
 entrypoints:
   web:
     routes:
-      /: frontend  # Serve files from bucket
+      /: 
+        name: frontend  # Serve files from bucket
 ```
 
 When you deploy:
@@ -43,7 +44,8 @@ buckets:
 entrypoints:
   web:
     routes:
-      /: frontend
+      /: 
+        name: frontend
 ```
 
 **Build your app, then deploy:**
@@ -84,8 +86,10 @@ buckets:
 entrypoints:
   web:
     routes:
-      /api/: api      # API requests go to service
-      /: frontend     # Everything else goes to static files
+      /api/: 
+        name: api      # API requests go to service
+      /: 
+        name: frontend     # Everything else goes to static files
 ```
 
 **How routing works:**
@@ -106,7 +110,8 @@ buckets:
 entrypoints:
   web:
     routes:
-      /: website
+      /: 
+        name: website
 ```
 
 **Directory structure:**
@@ -124,7 +129,7 @@ public/
     └── logo.png
 ```
 
-All files are uploaded to the bucket and served via CDN.
+All files are uploaded to the bucket at deploy time and served via CDN.
 
 ## Build Process Integration
 
@@ -219,8 +224,7 @@ Most platforms support custom domains through Terraform variables:
     After running `suga build`, configure your domain:
 
     ```hcl title="terraform/stacks/my-app/terraform.tfvars"
-    entrypoint_web_domain = "www.example.com"
-    entrypoint_web_certificate_arn = "arn:aws:acm:us-east-1:..."
+    custom_domain = "www.example.com"
     ```
 
     Then apply:
@@ -235,10 +239,11 @@ Most platforms support custom domains through Terraform variables:
   </Tab>
 
   <Tab title="GCP">
-    After running `suga build`, configure your domain:
+    The GCP platform requires that you have a Cloud DNS zone already created. After it's created and you've run `suga build`, you can add the configuration:
 
     ```hcl title="terraform/stacks/my-app/terraform.tfvars"
-    entrypoint_web_domain = "www.example.com"
+    dns_zone_name = "name_of_your_zone"
+    domain_name = "www.example.com"
     ```
 
     Then apply:
@@ -268,8 +273,10 @@ buckets:
 entrypoints:
   web:
     routes:
-      /api/: api
-      /: frontend
+      /api/: 
+        name: api
+      /: 
+        name: frontend
 ```
 
 ```javascript title=".env.production"

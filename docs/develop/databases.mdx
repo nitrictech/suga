@@ -85,6 +85,12 @@ Access databases using standard PostgreSQL libraries with the automatically inje
 
 <Tabs>
   <Tab title="Node.js">
+    Install the PostgreSQL client:
+    ```bash
+    npm install pg
+    ```
+
+    Then develop like you normally would, using the `env_var_key` you defined in your `suga.yaml`.
     ```typescript
     import { Pool } from 'pg';
 
@@ -112,14 +118,15 @@ Access databases using standard PostgreSQL libraries with the automatically inje
       ['Bob', 1]
     );
     ```
-
-    Install the PostgreSQL client:
-    ```bash
-    npm install pg
-    ```
   </Tab>
 
   <Tab title="Python">
+    Install the PostgreSQL client:
+    ```bash
+    pip install psycopg2-binary
+    ```
+
+    Then develop like you normally would, using the `env_var_key` you defined in your `suga.yaml`.
     ```python
     import psycopg2
     import os
@@ -146,14 +153,15 @@ Access databases using standard PostgreSQL libraries with the automatically inje
     )
     conn.commit()
     ```
-
-    Install the PostgreSQL client:
-    ```bash
-    pip install psycopg2-binary
-    ```
   </Tab>
 
   <Tab title="Go">
+    Install the PostgreSQL client:
+    ```bash
+    go get github.com/jackc/pgx/v5/pgxpool
+    ```
+
+    Then develop like you normally would, using the `env_var_key` you defined in your `suga.yaml`. 
     ```go
     import (
         "context"
@@ -181,11 +189,6 @@ Access databases using standard PostgreSQL libraries with the automatically inje
     _, err = pool.Exec(context.Background(),
       "UPDATE users SET name = $1 WHERE id = $2",
       "Bob", 1)
-    ```
-
-    Install the PostgreSQL client:
-    ```bash
-    go get github.com/jackc/pgx/v5/pgxpool
     ```
   </Tab>
 </Tabs>
@@ -271,7 +274,7 @@ Your services receive `DATABASE_URL` (or your custom `env_var_key`) automaticall
   </Card>
 
   <Card title="Local Development" icon="laptop" href="/core/local-development">
-    Local PostgreSQL during suga dev
+    Local PostgreSQL during `suga dev`
   </Card>
 
   <Card title="Access Control" icon="shield" href="/develop/access-control">

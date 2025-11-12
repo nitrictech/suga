@@ -12,16 +12,19 @@ Suga's access control model defines which services can access which resources, a
 Access is granted through the `access` property on resources, which can be modified in your project's `suga.yaml` or through the visual editor with the `suga edit` CLI command.
 
 ```yaml
+services:
+  api: ...
+  worker: ...
 buckets:
   uploads:
     access:
       api: [read, write]      # API service can read and write
-      worker: [read, delete]  # Worker can read and delete
+      worker: [read, delete]  # Worker service can read and delete
 
 databases:
   main:
     access:
-      api: [query]            # API can query database
+      api: [query]            # API service can query database
 ```
 
 When you deploy, Suga generates:
@@ -109,9 +112,5 @@ When using the standard Suga AWS Platforms (`suga/aws`), here is an example of t
 
   <Card title="Databases" icon="database" href="/develop/databases">
     Database access
-  </Card>
-
-  <Card title="AWS Deployment" icon="aws" href="/deploy/aws">
-    AWS IAM details
   </Card>
 </CardGroup>

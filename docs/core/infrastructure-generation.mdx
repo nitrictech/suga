@@ -70,7 +70,7 @@ The `suga build` command orchestrates a multi-step process:
     ```
     terraform/stacks/my-app/
     ├── cdk.tf.json          # Main Terraform Entrypoint
-    └── .terraform/             # Plugin Terraform modules
+    └── .terraform/         # Plugin Terraform modules
         └── modules/
             ├── api/
             ├── api_image/
@@ -86,7 +86,7 @@ Suga generates consistent module names for application resources:
 
 ### Terraform Module Names
 
-Pattern: `{resource_name}[_{submodule_name}]`
+Pattern: `{resource_name}_{submodule_name}`
 
 ```hcl
 module "api"       # Service named "api"
@@ -140,7 +140,7 @@ The same generated Terraform can deploy to multiple environments using Terraform
   Learn best practices for managing multiple environments with Terraform workspaces and variables
 </Card>
 
-See the [CLI reference](/cli/build) for complete options.
+See the [CLI reference](/cli/build) for complete build options.
 
 ## Getting Help
 
@@ -185,7 +185,7 @@ terraform plan  # Review before apply
   </Card>
 
   <Card title="Build Command" icon="hammer" href="/cli/build">
-    Complete CLI reference for suga build
+    Complete CLI reference for `suga build`
   </Card>
 
   <Card title="Platform Development" icon="layers" href="/guides/build-platform">

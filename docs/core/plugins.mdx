@@ -15,7 +15,7 @@ A plugin is a package containing:
 
 ```
 plugin-directory/
-├── manifest.yaml        # Plugin schema and metadata
+├── manifest.yaml       # Plugin schema and metadata
 ├── main.tf             # Terraform resources
 ├── variables.tf        # Input variables
 ├── outputs.tf          # Output values
@@ -152,7 +152,7 @@ Properties can reference platform or blueprint variables:
 properties:
   memory: ${self.memory}                    # Blueprint variable
   project_id: ${var.project_id}             # Platform variable
-  vpc_id: ${infra.aws_vpc.vpc_id}          # Infrastructure output
+  vpc_id: ${infra.aws_vpc.vpc_id}           # Infrastructure output
 ```
 
 ## Plugin Outputs
