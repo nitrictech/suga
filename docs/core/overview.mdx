@@ -33,7 +33,6 @@ graph TB
 Projects are **deployment-agnostic** - they describe requirements without specifying how they're implemented.
 
 ```yaml title="Example: A simple web application"
-target: suga/aws@1
 name: my-app
 
 services:
@@ -96,7 +95,7 @@ Understanding how these pieces work together:
     ```
 
     Local development provides:
-    - Hot reloading for code changes
+    - Hot reloading for code changes, using watcher dev scripts
     - Emulated buckets, entrypoints, and databases
     - Fast iteration without cloud costs
   </Step>

@@ -19,10 +19,12 @@ The `suga build` command orchestrates a multi-step process:
 
     services:
       api:
+        subtype: lambda
         dev:
           script: npm run dev
 
     buckets:
+      subtype: s3
       uploads:
         access:
           api: [read, write]
@@ -65,7 +67,7 @@ The `suga build` command orchestrates a multi-step process:
   </Step>
 
   <Step title="Generate Terraform Output">
-    Suga then uses Terraform CDK to resolve the modules, variables and other configuration and produce a functional Terraform stack.
+    Suga then uses Terraform CDK to resolve the modules, variables and other configuration to produce a Terraform stack.
 
     ```
     terraform/stacks/my-app/
