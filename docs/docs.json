@@ -57,7 +57,7 @@
           {
             "group": "Guides",
             "pages": [
-              "guides",
+              "guides/overview",
               "guides/add-suga",
               "guides/static-website-hosting",
               "guides/personal-access-tokens",
