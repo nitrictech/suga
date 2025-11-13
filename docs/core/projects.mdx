@@ -40,6 +40,7 @@ description: An example web application with storage
 
 services:
   app:
+    subtype: lambda
     dev:
       script: npm run dev
     path: ./app
@@ -50,6 +51,7 @@ services:
 
 buckets:
   bucket:
+    subtype: s3
     access:
       app:
         - read
@@ -57,6 +59,7 @@ buckets:
 
 entrypoints:
   api:
+    subtype: cloudfront
     routes:
       /:
         name: frontend
@@ -100,6 +103,7 @@ Services are your application containers that handle business logic:
 ```yaml title="Service definitions"
 services:
   app:
+    subtype: lambda
     env:
       EXT_URL: https://somewhere.example.com
     container:
@@ -110,6 +114,7 @@ services:
       script: npm run dev
 
   worker:
+    subtype: fargate
     container:
       image:
         id: "my-registry/worker:latest"
