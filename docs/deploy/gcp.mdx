@@ -5,11 +5,21 @@ description: "Deploy Suga applications to Google Cloud Platform"
 
 Deploy Suga applications to GCP using Cloud Run, Cloud Storage, and Cloud CDN.
 
+## Platform-Specific Requirements
+
+The exact setup steps (project creation, API enablement, IAM roles, etc.) depend on which Suga platform you're using. Each platform has specific requirements documented in the platform browser.
+
+<Card title="Browse Platforms" icon="globe" href="https://app.addsuga.com/browse/platforms" horizontal>
+  View available platforms and their setup requirements
+</Card>
+
+Generally, deployments to GCP will require the following.
+
 ## Prerequisites
 
-- Google Cloud account
-- gcloud CLI configured
-- Terraform installed
+- **Google Cloud CLI** - [Installation guide](https://cloud.google.com/sdk/docs/install)
+- **Terraform** - [Installation guide](https://developer.hashicorp.com/terraform/install)
+- **Suga CLI** - See [Installation](/installation)
 
 ## Quick Start
 
@@ -34,7 +44,3 @@ Deploy:
 terraform init
 terraform apply
 ```
-
-<Card title="Complete Deployment Guide" icon="rocket" href="/deploy/overview" horizontal>
-  See the full deployment workflow
-</Card>
