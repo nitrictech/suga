@@ -1,0 +1,39 @@
+---
+title: "Suga Client (Python)"
+description: "SugaClient initialization and configuration for Python"
+---
+
+Initialize and configure the Suga client in Python applications.
+
+## Installation
+
+Generated client is part of your project after running:
+
+```bash
+suga generate --python --python-out ./suga_gen
+```
+
+## Basic Usage
+
+```python
+from suga_gen.client import SugaClient
+
+# Initialize client
+suga = SugaClient()
+
+# Access resources
+suga.uploads.write('file.txt', b'data')
+data = suga.uploads.read('file.txt')
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Storage SDK" icon="box" href="/sdks/python/storage">
+    Bucket operations
+  </Card>
+
+  <Card title="Database SDK" icon="database" href="/sdks/python/databases">
+    Database operations
+  </Card>
+</CardGroup>

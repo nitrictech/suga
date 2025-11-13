@@ -1,0 +1,220 @@
+---
+title: "Frequently Asked Questions"
+description: "Common questions about Suga"
+---
+
+## General
+
+### What is Suga?
+
+Suga is a cloud development platform that combines visual infrastructure design with platform-driven governance. It generates production-ready Terraform from high-level application specifications, enabling developers to deploy instantly while platform teams maintain complete control.
+
+### How is Suga different from other tools?
+
+See our [Why Suga?](/why-suga) page for detailed comparisons with PaaS platforms, raw Terraform/Pulumi, and serverless frameworks.
+
+### Is Suga open source?
+
+The Suga CLI, official platforms and plugins are open-source, including the Terraform generation code (engines).
+
+You can access, review and contribute on [GitHub](https://github.com/nitrictech/suga)
+
+### What cloud providers does Suga support?
+
+- **AWS** - Lambda, Fargate, S3, CloudFront (full support)
+- **GCP** - Cloud Run, Cloud Storage, Cloud CDN (full support)
+- **Azure** - Coming soon
+
+Custom platforms can target any cloud provider, using standard Terraform Modules.
+
+## Getting Started
+
+### Do I need cloud provider experience?
+
+Basic familiarity helps, but Suga abstracts much of the complexity. You can deploy without being a cloud expert.
+
+### Can I use Suga with my existing application?
+
+Yes! See the [Add Suga to Existing Apps](/guides/add-suga) guide.
+
+### Do I need to learn Terraform?
+
+No, but understanding Terraform basics can help when customizing deployments. Suga generates all Terraform for you.
+
+### Can I develop without cloud access?
+
+Yes! `suga dev` provides local emulation of cloud services with no cloud account or internet connection needed.
+
+## Technical
+
+### What languages does Suga support?
+
+Services can be written in any language that runs in a container (Node.js, Python, Go, Java, Ruby, etc.).
+
+The optional SDK client generation currently supports:
+- Node.js/TypeScript
+- Python
+- Go
+
+### Can I use custom cloud configurations?
+
+Yes, you can:
+1. Override platform variables
+2. Add custom Terraform resources
+3. Create custom platforms
+4. Build custom plugins
+
+### How does Suga handle state?
+
+Suga uses standard Terraform state management. Use remote backends (S3, GCS, Terraform Cloud) for team collaboration.
+
+### Can I migrate away from Suga?
+
+Yes. The generated Terraform is standard and can be maintained independently if you decide to stop using Suga.
+
+### Does Suga support Kubernetes?
+
+Not yet, but Kubernetes platform support is planned.
+
+## Deployment
+
+### How much does deployment cost?
+
+Suga is free to get started, you can see complete pricing details on the [pricing page](https://addsuga.com/pricing)
+
+There is no Suga markup on cloud costs.
+
+### How long does deployment take?
+
+First deployment: 5-15 minutes (Terraform provisioning cloud resources)
+Code updates: 1-5 minutes (depends on service type and cloud provider)
+
+### Can I deploy to multiple environments?
+
+Yes! Use Terraform workspaces or separate state files:
+
+```bash
+terraform workspace new prod
+terraform workspace new staging
+terraform workspace new dev
+```
+
+### How do I roll back a deployment?
+
+Revert your code changes, rebuild with `suga build`, and `terraform apply`. Terraform will update to the previous configuration.
+
+### What happens if deployment fails?
+
+Terraform will show the error and leave your infrastructure in a consistent state. Fix the issue and run `terraform apply` again.
+
+## Development
+
+### Can I use my own frameworks?
+
+Yes! Suga works with Express, FastAPI, Django, Go HTTP, and any other framework that runs in a container.
+
+### How do I debug services locally?
+
+Use your language's standard debugger with `suga dev`. See the [Local Development](/core/local-development) guide.
+
+### Can services communicate with each other?
+
+Currently, services communicate through shared databases or buckets. Direct service-to-service communication is coming soon.
+
+### What if I need a resource type that doesn't exist?
+
+You can:
+1. Add custom Terraform resources to your stack
+2. Create a custom plugin for the resource
+3. Request the feature for official platforms
+4. Extend Suga through [open source contributions](https://github.com/nitrictech/suga)
+
+## Platform & Plugin Development
+
+### Who should create platforms?
+
+Platform teams, DevOps/SRE teams, or anyone wanting to standardize infrastructure across an organization.
+
+### Can I customize official platforms?
+
+You can't modify official platforms directly, but you can:
+1. Fork and customize them as your own private or public platforms
+2. Override configurations through Terraform variables
+3. Add custom resources alongside generated ones
+
+### How do I share platforms with my team?
+
+Publish platforms to your organization's Suga account. Team members can then target your custom platforms.
+
+### Do plugins require special permissions?
+
+Plugins are Terraform modules and run with your cloud provider credentials during `terraform apply`. They have the same permissions as any Terraform code.
+
+## Pricing & Licensing
+
+### Is Suga free?
+
+Suga is free to sign-up and has paid offering for teams and enterprise, see the [pricing page](https://addsuga.com/pricing) for complete details.
+
+You only pay your cloud provider for infrastructure resources.
+
+### Do I need a Suga account?
+
+Yes, a Suga account is required. Sign up at [addsuga.com](https://app.addsuga.com/signup).
+
+In the future, some features may work without an account.
+
+### Can I use Suga for commercial projects?
+
+Yes, Suga is designed for production use in commercial applications.
+
+## Support
+
+### How do I get help?
+
+- **Documentation** - [docs.addsuga.com](https://docs.addsuga.com)
+- **Email Support** - [support@addsuga.com](mailto:support@addsuga.com)
+- **GitHub Issues** - [github.com/nitrictech/suga](https://github.com/nitrictech/suga)
+
+### How do I report bugs?
+
+Report bugs via:
+- GitHub Issues for public bugs
+- Email [support@addsuga.com](mailto:support@addsuga.com) for security issues
+
+### Can I request features?
+
+Yes! Submit feature requests through GitHub Issues or email.
+
+### Do you offer paid support?
+
+Enterprise support options are available. Contact [sales@addsuga.com](mailto:sales@addsuga.com).
+
+## Security
+
+### How secure is Suga?
+
+- Suga generates standard Terraform with least-privilege IAM policies
+- Your code and infrastructure remain in your cloud account
+- Suga CLI only communicates with Suga platform services for authentication and platform/plugin retrieval
+- No application code is sent to Suga servers
+
+### Where is my data stored?
+
+- Application data: In your cloud provider account
+- Terraform state: Where you configure it (local, S3, GCS, Terraform Cloud)
+- Suga platform: Stores only account info and platform/plugin definitions
+
+### Does Suga have access to my cloud resources?
+
+No. Suga generates Terraform that you deploy with your own cloud credentials. Suga has no access to your deployed resources.
+
+### How do I handle secrets?
+
+Currently, use your cloud provider's secrets manager and reference via environment variables.
+
+## Still Have Questions?
+
+<Card title="Contact Support" icon="life-buoy" href="mailto:support@addsuga.com" horizontal>
+  Reach out to our team at support@addsuga.com
+</Card>

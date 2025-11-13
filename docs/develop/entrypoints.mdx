@@ -1,0 +1,112 @@
+---
+title: "Entrypoints"
+description: "HTTP routing and CDN configuration for exposing your application"
+---
+
+Entrypoints provide HTTP access to your application through CDN and routing configuration. They act as the front door to your services and static assets.
+
+## What is an Entrypoint?
+
+An entrypoint is a CDN + router that:
+- **Routes HTTP requests** - To services or buckets based on URL paths
+- **Provides HTTPS** - Automatic SSL/TLS termination
+- **Caches responses** - CDN caching for performance
+- **Handles scaling** - Automatically scales with traffic
+
+```yaml title="Basic entrypoint"
+entrypoints:
+  web:
+    subtype: # your choice, from target platform
+    routes:
+      /api/: 
+        name: api          # Route /api/* to api service
+      /: 
+        name: frontend         # Route /* to frontend service
+```
+
+## Route Configuration
+
+Routes map URL paths to destinations:
+
+```yaml
+entrypoints:
+  subtype: # your choice, from target platform
+  web:
+    routes:
+      /api/: 
+        name: api-service      # Service destination
+      /static/: 
+        name: assets        # Bucket destination
+      /: 
+        name: frontend             # Service destination
+```
+
+**Path Matching:**
+- `/api/` - Matches `/api/*` (with trailing content)
+- `/` - Matches all remaining paths
+
+Routes are evaluated in order - most specific first.
+
+## Custom Domains
+
+<Note>
+  Most entrypoints support custom domains, however, this functionality is [platform](/core/platforms.mdx) specific.
+
+  For example, the `suga/aws` platform will generate Terraform Variables during `suga build`, which allow you to specify a custom domain per entrypoint.
+</Note>
+
+## Common Patterns
+
+**API + Frontend:**
+```yaml
+entrypoints:
+  web:
+    subtype: # your choice, from target platform
+    routes:
+      /api/: 
+        name: api
+      /: 
+        name: frontend
+```
+
+**Microservices Gateway:**
+```yaml
+entrypoints:
+  gateway:
+    subtype: # your choice, from target platform
+    routes:
+      /users/: 
+        name: users-service
+      /products/: 
+        name: products-service
+      /orders/: 
+        name: orders-service
+```
+
+**Static Site with API:**
+```yaml
+entrypoints:
+  web:
+    subtype: # your choice, from target platform
+    routes:
+      /api/: 
+        name: api
+      /: 
+        name: static-assets  # Bucket with static files
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Static Websites" icon="globe" href="/guides/static-website-hosting">
+    Static website hosting
+  </Card>
+
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Route to static files in buckets
+  </Card>
+
+  <Card title="Services" icon="server" href="/develop/services">
+    Configure routing destinations
+  </Card>
+</CardGroup>

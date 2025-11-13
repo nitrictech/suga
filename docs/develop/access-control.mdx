@@ -1,0 +1,120 @@
+---
+title: "Access Control"
+description: "Managing permissions and security in Suga applications"
+---
+
+Suga's access control model defines which services can access which resources, automatically generating appropriate IAM policies or service account permissions.
+
+![temp](/images/develop/access-control/service-to-bucket-access-control.png)
+
+## How Access Control Works
+
+Access is granted through the `access` property on resources, which can be modified in your project's `suga.yaml` or through the visual editor with the `suga edit` CLI command.
+
+```yaml
+services:
+  api: ...
+  worker: ...
+buckets:
+  uploads:
+    subtype: s3
+    access:
+      api: [read, write]      # API service can read and write
+      worker: [read, delete]  # Worker service can read and delete
+
+databases:
+  main:
+    subtype: rds
+    access:
+      api: [query]            # API service can query database
+```
+
+When you deploy, Suga generates:
+- **IAM policies** (AWS) with least-privilege permissions
+- **Service account bindings** (GCP) with appropriate roles
+- **Network security rules** allowing service-to-resource communication
+
+## Permission Types
+
+### Bucket Permissions
+
+- `read` - Download/read objects
+- `write` - Upload/write objects
+- `delete` - Delete objects
+- `all` - Shorthand for read, write, delete
+
+```yaml
+buckets:
+  data:
+    subtype: s3
+    access:
+      uploader: [write]
+      processor: [read, delete]
+      api: [read]
+```
+
+### Database Permissions
+
+- `query` - Full SQL access (SELECT, INSERT, UPDATE, DELETE)
+
+```yaml
+databases:
+  main:
+    subtype: rds
+    access:
+      api: [query]
+      analytics: [query]
+```
+
+## Least Privilege
+
+Suga encourages and follows the principle of least privilege:
+- By default, services cannot access other resources
+- Services only get permissions they need
+- No wildcards or overly broad policies
+- Separate identities per service
+
+When using the standard Suga AWS Platforms (`suga/aws`), here is an example of the kind of IAM policy that will be generated:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": "arn:aws:s3:::my-app-uploads/*"
+    }
+  ]
+}
+```
+
+<Note>
+  If you use your own Suga [resource plugins](/core/plugins), you're free to construct the IAM, roles, etc. as you see fit.
+</Note>
+
+## Best Practices
+
+1. **Grant minimum permissions** - Only what each service needs
+2. **Separate services** - Different services for different roles
+3. **Review access patterns** - Regularly audit who accesses what
+4. **Use read-only when possible** - Many services only need read access
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Services" icon="server" href="/develop/services">
+    Service configuration
+  </Card>
+
+  <Card title="Buckets" icon="box" href="/develop/buckets">
+    Bucket permissions
+  </Card>
+
+  <Card title="Databases" icon="database" href="/develop/databases">
+    Database access
+  </Card>
+</CardGroup>

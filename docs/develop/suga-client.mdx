@@ -1,0 +1,250 @@
+---
+title: "Suga Client Libraries"
+description: "Generated client libraries for cloud-agnostic resource access"
+---
+
+Once you've defined resources in your `suga.yaml`, you need a way to interact with them from your application code. Suga provides **generated client libraries** that give you a cloud-agnostic interface to your resources.
+
+## Why Use Generated Clients?
+
+The Suga client generation approach offers several key advantages:
+
+- **Cloud Portability** - Same code works on AWS, GCP, or any platform
+- **Local Development** - Enable `suga dev` with emulated cloud services
+- **Type Safety** - IDE autocomplete and compile-time error checking
+- **Simplified API** - Consistent interface across all cloud providers
+- **Tailored Surface** - Only includes resources and permissions you've defined
+
+## What Resources Support Client Generation?
+
+Currently, Suga generates clients for:
+
+- **Buckets** - Object storage operations (read, write, delete)
+
+For other resources:
+- **Databases** - Use standard PostgreSQL libraries with injected connection strings (see [Database Access](/develop/databases))
+- **Services** - Communicate through entrypoints or shared resources
+
+### Generated Client Libraries
+
+Generate type-safe client libraries using the `suga generate` command:
+
+<Tabs>
+  <Tab title="Node.js">
+    ```bash
+    suga generate --node --node-out ./suga
+    ```
+
+    ```typescript
+    import { SugaClient } from './suga/client';
+    import { Pool } from 'pg';
+
+    const suga = new SugaClient();
+
+    // Access bucket
+    await suga.uploads.write('file.txt', Buffer.from('Hello!'));
+    const data = await suga.uploads.read('file.txt');
+
+    // Access database (using injected connection string)
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const result = await pool.query('SELECT * FROM users WHERE active = $1', [true]);
+    ```
+  </Tab>
+
+  <Tab title="Python">
+    ```bash
+    suga generate --python --python-out ./suga
+    ```
+
+    ```python
+    from suga.client import SugaClient
+    import psycopg2
+    import os
+
+    suga = SugaClient()
+
+    # Access bucket
+    suga.uploads.write('file.txt', b'Hello!')
+    data = suga.uploads.read('file.txt')
+
+    # Access database (using injected connection string)
+    conn = psycopg2.connect(os.environ['DATABASE_URL'])
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE active = %s', [True])
+    users = cursor.fetchall()
+    ```
+  </Tab>
+
+  <Tab title="Go">
+    ```bash
+    suga generate --go --go-out ./suga --go-package-name suga
+    ```
+
+    ```go
+    import (
+        "myapp/suga"
+        "os"
+        "github.com/jackc/pgx/v5/pgxpool"
+    )
+
+    client, _ := suga.NewClient()
+
+    // Access bucket
+    client.Uploads.Write("file.txt", []byte("Hello!"))
+    data, _ := client.Uploads.Read("file.txt")
+
+    // Access database (using injected connection string)
+    pool, _ := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+    rows, _ := pool.Query(context.Background(), "SELECT * FROM users WHERE active = $1", true)
+    ```
+  </Tab>
+</Tabs>
+
+The generated client automatically includes only the resources and permissions defined in your `suga.yaml`, providing a tailored API surface for your application.
+
+### Cloud-Agnostic Portability
+
+The Suga client maximizes portability by abstracting away cloud provider differences. When you use the client to interact with resources, **the same code works regardless of where your application is deployed**:
+
+```typescript title="Write once, run anywhere"
+// This code works identically on:
+// - Local development (file system emulation)
+// - AWS deployment (S3)
+// - GCP deployment (Cloud Storage)
+// - Any custom platform
+
+await suga.uploads.write('user-profile.jpg', imageData);
+```
+
+**Without Suga**, you'd need different code for each cloud provider:
+
+```typescript title="Cloud-specific code (without Suga)"
+// AWS
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+const s3 = new S3Client({ region: 'us-east-1' });
+await s3.send(new PutObjectCommand({ Bucket: 'my-bucket', Key: 'file.txt', Body: data }));
+
+// GCP
+import { Storage } from '@google-cloud/storage';
+const storage = new Storage();
+await storage.bucket('my-bucket').file('file.txt').save(data);
+```
+
+By reducing reliance on cloud-specific SDKs, Suga enables:
+- **True multi-cloud deployment** - Switch providers without changing application code
+- **Simplified codebase** - No conditional logic for different cloud providers
+- **Easier testing** - Mock resources uniformly across environments
+- **Future-proofing** - Platform changes don't require application code updates
+
+### Local Development with `suga dev`
+
+The generated client unlocks powerful local development capabilities. When you run `suga dev`, Suga automatically substitutes real cloud services with local emulations:
+
+```bash
+suga dev
+```
+
+```
+suga dev
+                               
+ ⚡ Suga Pre-release (adb9021) 
+    - App: my_app       
+    - Addr: :50051
+
+Databases
+
+✓ Starting [database] postgresql://localhost:5433/database
+
+Services
+
+✓ Starting [worker]
+✓ Starting [api]
+
+Entrypoints
+
+✓ Starting [ingress] http://localhost:3002
+
+Use Ctrl-C to exit
+```
+
+**Your application code doesn't change** - the same client calls work locally:
+
+```typescript
+// Works both locally and in production
+await suga.uploads.write('file.txt', data);
+// Local: writes to .suga/buckets/uploads/
+// AWS: writes to S3
+// GCP: writes to Cloud Storage
+```
+
+This seamless transition between local and cloud environments means:
+- **No cloud account needed** for development
+- **Zero cloud costs** during development
+- **Fast iteration** - test changes instantly without deployment
+- **Offline development** - work anywhere, no internet required
+- **Consistent behavior** - same resource interactions locally and in production
+
+### How It Works
+
+The Suga client uses runtime adapters provided by your target platform's plugins:
+
+1. **In Production:**
+   ```
+   Application → Suga Client → Platform Runtime Adapter → Cloud Provider SDK → Cloud Service
+   ```
+   Example: `suga.uploads.write()` → S3 Adapter → AWS SDK → S3
+
+2. **During `suga dev`:**
+   ```
+   Application → Suga Client → Local Emulation Adapter → File System
+   ```
+   Example: `suga.uploads.write()` → Local Adapter → `.suga/buckets/uploads/`
+
+The application code remains identical - only the underlying adapter changes based on the environment.
+
+### Type Safety and Auto-Completion
+
+Generated clients provide full type safety and IDE auto-completion:
+
+```typescript
+const suga = new SugaClient();
+
+// IDE knows about all your resources
+suga.uploads.       // ← Auto-complete shows: write, read, delete
+suga.unknownBucket. // ← Compile error: doesn't exist in suga.yaml
+```
+
+This catches errors at development time rather than runtime, and makes exploring the API easier.
+
+### When to Use the Generated Client
+
+**Use the generated Suga client when:**
+- You want cloud-agnostic code
+- You need local development with `suga dev`
+- You're building a multi-cloud application
+- You want simplified resource access
+
+**Use native cloud SDKs directly when:**
+- You need cloud-specific features not exposed by Suga
+- You have deep integration requirements with a specific provider
+- You're gradually migrating an existing application
+
+You can mix both approaches - use Suga clients for common operations and native SDKs for specialized needs.
+
+<CardGroup cols={2}>
+  <Card title="SDK Reference" icon="code" href="/sdks">
+    Complete API documentation
+  </Card>
+
+  <Card title="Local Development" icon="laptop" href="/core/local-development">
+    Learn about local development workflow
+  </Card>
+
+  <Card title="Generate Command" icon="terminal" href="/cli/generate">
+    CLI reference for suga generate
+  </Card>
+
+  <Card title="Access Control" icon="shield" href="/develop/access-control">
+    Configure resource permissions
+  </Card>
+</CardGroup>

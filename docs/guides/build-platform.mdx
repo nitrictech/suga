@@ -3,14 +3,14 @@ title: "Platform Development Guide"
 description: "Learn to build platforms with Suga through a hands-on example."
 ---
 
-Platforms can start simple and evolve as your needs grow. This guide walks through building a single platform that supports multiple deployment strategies using standard [plugin](/platforms#plugins) libraries provided by the Suga team, which include plugins for Lambda, Fargate, CloudFront, S3, VPC, and Neon databases.
+Platforms can start simple and evolve as your needs grow. This guide walks through building a single platform that supports multiple deployment strategies using standard [plugin](/core/platforms#plugins) libraries provided by the Suga team, which include plugins for Lambda, Fargate, CloudFront, S3, VPC, and Neon databases.
 
 **Phase 1: Serverless Platform** - Build a minimal platform with Lambda functions, databases, storage, and CDN.
 
 **Phase 2: Add Stateful Services** - Extend the same platform to support containers running on Amazon ECS Fargate, alongside Lambda by adding VPC infrastructure, load balancers, and security groups.
 
 <Note>
-  **New to Suga platforms?** See the [Platforms Overview](/platforms) to understand how platforms work and why they're useful. Don't want to manage platforms? Use Suga's default platforms and jump to the [Quickstart](/quickstart).
+  **New to Suga platforms?** See the [Platforms Overview](/core/platforms) to understand how platforms work and why they're useful. Don't want to manage platforms? Use Suga's default platforms and jump to the [Quickstart](/quickstart).
 </Note>
 
 ## Phase 1: Build Serverless Platform
@@ -43,8 +43,8 @@ Fill out the platform details and click **"Create Platform"**:
 
 The platform editor has two sections:
 
-- **[Foundations](/platforms#variables)** - Common infrastructure shared by other resources (VPCs, load balancers) and common variables for platform configuration
-- **[Resource Blueprints](/platforms#resource-blueprints)** - Templates that define how to provision application specific resources, such as services, databases, buckets, and entrypoints
+- **[Core Concepts](/core/platforms#variables)** - Common infrastructure shared by other resources (VPCs, load balancers) and common variables for platform configuration
+- **[Resource Blueprints](/core/platforms#resource-blueprints)** - Templates that define how to provision application specific resources, such as services, databases, buckets, and entrypoints
 
 ![Edit Platform Dialog](/images/build-platform/edit-platform.png)
 
@@ -102,7 +102,7 @@ This blueprint maps an application's databases to Neon PostgreSQL with automatic
 
 Expand **Database Blueprints** in Resource Blueprints.
 
-Add platform variable in **Foundations** to specify which Neon project to create databases in:
+Add platform variable in **Core Concepts** to specify which Neon project to create databases in:
 ```yaml
 neon_project_id:
   type: string
@@ -129,7 +129,7 @@ branch_id: ${self.neon_branch_id}
 
 <Info>
   Suga uses three types of references in platform configurations:
-  - `${var.name}` - References platform variables from Foundations
+  - `${var.name}` - References platform variables from Core Concepts
   - `${self.name}` - References resource-specific variables defined in the same resource blueprint
   - `${infra.name.output}` - References outputs from infrastructure components (you'll see this in Phase 2)
 </Info>
@@ -148,7 +148,7 @@ Click "Commit Revision" in the platform editor, add a descriptive commit message
 
 ### Test with an Application
 
-Create an [application](/projects) from the project editor and design your application architecture using the platform you just created.
+Create an [application](/core/projects) from the project editor and design your application architecture using the platform you just created.
 
 <Tip>
   Not familiar with building applications with Suga? Start with the [Quickstart guide](/quickstart).
@@ -172,7 +172,7 @@ This architecture shows CloudFront routing to an Application Load Balancer, whic
 
 To extend the platform with stateful services, the platform will need the following infrastructure and blueprints:
 
-**Shared Infrastructure (Foundations)**:
+**Shared Infrastructure (Core Concepts)**:
 - **VPC** - Private network for Fargate containers
 - **Security Group Rules** - Firewall rules for container traffic
 - **Load Balancer** - Internal ALB for routing to Fargate containers
@@ -188,7 +188,7 @@ To extend the platform with stateful services, the platform will need the follow
 
 This shared infrastructure configures the VPC network foundation with isolated subnets, NAT gateways, and routing for stateful containers. Unlike serverless Lambda functions, Fargate containers require a private network to run securely.
 
-In the **Foundations** section, expand **Infrastructure**.
+In the **Core Concepts** section, expand **Infrastructure**.
 
 Add the `vpc` plugin and apply the following configuration:
 ```yaml
@@ -214,7 +214,7 @@ single_nat_gateway: ${self.single_nat_gateway}
 
 These platform variables configure the network ports for container communication. The `container_port` defines where containers listen for traffic, while `lb_listener_port` defines where the load balancer accepts incoming requests.
 
-Add platform variables in **Foundations**:
+Add platform variables in **Core Concepts**:
 
 ```yaml
 container_port:
@@ -234,7 +234,7 @@ lb_listener_port:
 
 This shared infrastructure configures firewall rules for container network traffic: outbound internet access, health check access, and CDN-only ingress. These rules ensure containers can communicate with external services while blocking unauthorized access.
 
-In the **Foundations** section, expand **Infrastructure**.
+In the **Core Concepts** section, expand **Infrastructure**.
 
 **Outbound Internet Access**
 
@@ -308,7 +308,7 @@ security_group_ids: ["${infra.aws_vpc.default_security_group_id}"]
 
 This shared infrastructure configures an internal Application Load Balancer to route traffic and perform health checks for containers. The load balancer distributes incoming requests across container instances and removes unhealthy containers from rotation.
 
-In the **Foundations** section, expand **Infrastructure**.
+In the **Core Concepts** section, expand **Infrastructure**.
 
 Add the `loadbalancer` plugin and apply the following configuration:
 
@@ -388,7 +388,7 @@ This enables different services within the same application to use different arc
 If you see errors about missing infrastructure references:
 - Verify plugin names match exactly (e.g., `${infra.aws_vpc}` requires a plugin named `aws_vpc`)
 - Check that dependencies are declared before using outputs
-- Ensure infrastructure components are in the Foundations section, not Resource Blueprints
+- Ensure infrastructure components are in the Core Concepts section, not Resource Blueprints
 
 **Platform won't commit**
 
@@ -406,7 +406,7 @@ If building an application produces Terraform errors:
 
 ## Next Steps
 
-- **Test with a real application**: Create an [application](/projects) using this platform, [build the Terraform](/cli/build), and deploy to AWS to verify everything works end-to-end
+- **Test with a real application**: Create an [application](/core/projects) using this platform, [build the Terraform](/cli/build), and deploy to AWS to verify everything works end-to-end
 - **Share with your team**: Make the platform available to your team so they can start building applications
 - **Create environment variants**: Duplicate your platform with environment-specific variables (e.g., smaller instances for dev, larger for prod)
 

@@ -504,9 +504,11 @@ go mod init github.com/myorg/my-plugins
 # Create your first plugin
 mkdir lambda
 cd lambda
+```
 
-# Create manifest
-cat > manifest.yaml << 'EOF'
+Create the plugin manifest:
+
+```yaml title="lambda/manifest.yaml"
 name: lambda
 type: service
 description: "My custom Lambda implementation"
@@ -527,14 +529,16 @@ inputs:
     description: "Memory allocation in MB"
 
 outputs: {}
-EOF
+```
 
-# Create Terraform module
+Create the Terraform module directory and files:
+
+```bash
 mkdir module
 cd module
+```
 
-# Create basic Terraform files
-cat > variables.tf << 'EOF'
+```hcl title="module/variables.tf"
 variable "name" {
   type        = string
   description = "Function name"
@@ -551,22 +555,21 @@ variable "memory" {
   description = "Memory in MB"
   default     = 1024
 }
-EOF
+```
 
-cat > main.tf << 'EOF'
+```hcl title="module/main.tf"
 resource "aws_lambda_function" "this" {
   function_name = var.name
   timeout       = var.timeout
   memory_size   = var.memory
   # ... add your custom Lambda configuration
 }
-EOF
+```
 
-cat > outputs.tf << 'EOF'
+```hcl title="module/outputs.tf"
 output "function_arn" {
   value = aws_lambda_function.this.arn
 }
-EOF
 ```
 
 ### Step 2: Start the Plugin Development Server
@@ -810,7 +813,7 @@ This is particularly valuable when writing runtime adapters if you're more famil
 
 - [Platform Development Guide](/guides/build-platform) - Learn how platforms compose plugins
 - [Suga MCP Integration](/guides/mcp-integration) - Use AI agents to help build plugins
-- [Platforms Overview](/platforms) - Understand how plugins fit into the architecture
+- [Platforms Overview](/core/platforms) - Understand how plugins fit into the architecture
 - [Suga CLI Reference](/cli) - Complete CLI documentation
 
 <Info>

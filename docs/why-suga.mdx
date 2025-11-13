@@ -1,0 +1,176 @@
+---
+title: "Why Suga?"
+description: "Understanding when and why to use Suga for cloud infrastructure"
+---
+
+Suga bridges the gap between developer productivity and enterprise control. It combines visual infrastructure design with platform-driven governance to deliver fast, production-ready deployments while maintaining complete flexibility and control.
+
+## What Makes Suga Different?
+
+Suga takes a unique approach to cloud infrastructure by combining three key capabilities:
+
+**Visual Design with Code Generation**
+- Design your architecture visually in an intuitive editor
+- Generate production-ready Terraform automatically
+- Maintain full control over the generated infrastructure
+
+**Platform-Driven Governance**
+- Platform teams define reusable blueprints and standards
+- Developers get guardrails, not blockers
+- Organizations enforce policies while enabling velocity
+
+### Visual Design + Generated Infrastructure
+
+Design your architecture visually, then generate production-ready Terraform. No more choosing between developer experience and infrastructure control.
+
+<video autoPlay loop muted playsInline poster="/images/project-editor-poster.png" style={{ borderRadius: '0.5rem', width: '100%' }}>
+  <source src="/images/project-editor.webm" type="video/webm" />
+  <img src="/images/edit-design.png" alt="Suga visual editor" />
+</video>
+
+```yaml title="Design becomes configuration"
+entrypoints:
+  api:
+    routes:
+      /:
+        name: frontend
+      /api/:
+        name: app
+
+services:
+  app:
+    dev:
+      script: npm run dev
+  frontend:
+    dev:
+      script: npm run dev
+
+buckets:
+  bucket:
+    access:
+      app: [read, write]
+```
+
+```bash title="Configuration becomes Terraform"
+suga build
+# ✓ Terraform generated successfully
+#   output written to terraform/stacks/my-app
+```
+
+### Platform-Driven Governance
+
+Platform teams create reusable blueprints that enforce organizational standards while delivering seamless developer experiences.
+
+**For Developers:**
+- Visual infrastructure design
+- Local development with emulated cloud services
+- Deploy anywhere without changing code
+- Generated type-safe client libraries (Node.js, Python, Go, etc)
+
+**For Platform Teams:**
+- Enforce security policies and compliance
+- Control cloud resource configurations
+- Standardize architectures across teams
+- Audit and govern all deployments
+
+### True Multi-Cloud
+
+Not just provider-agnostic abstractions - Suga generates native Terraform for each cloud provider while keeping your application code portable.
+
+```yaml title="Same application, different clouds"
+# Deploy to AWS
+target: suga/aws@1
+
+# Or deploy to GCP
+target: suga/gcp@1
+```
+
+The generated Terraform uses native cloud resources (Lambda, Cloud Run, S3, Cloud Storage) with proper networking, IAM, and security configurations.
+
+## How is Suga Different?
+
+### vs. Developer Platforms
+
+Suga provides a similar developer experience to hosted platforms while giving you complete control over the generated infrastructure.
+
+| Aspect | Hosted Platforms | Suga |
+|--------|-----------------|------|
+| **Deployment Speed** | Instant | Instant (after first Terraform apply) |
+| **Infrastructure Control** | Platform-managed | Complete (generated Terraform) |
+| **Cloud Provider** | Platform-specific | Multi-cloud (AWS, GCP, Azure, custom) |
+| **Customization** | Platform-limited | Full platform customization |
+| **Local Development** | Platform-dependent | Full local emulation |
+| **Cost Model** | Platform pricing | Direct cloud provider rates |
+| **Governance** | Platform-dictated | Organization-controlled |
+
+**Use Suga if:** You want great developer experience but need full control, multi-cloud support, or enterprise governance.
+
+### vs. Infrastructure as Code (Terraform/Pulumi)
+
+Suga builds on top of IaC tools rather than replacing them. It generates standard Terraform that you can inspect, modify, and manage with your existing workflows.
+
+| Aspect | Direct Terraform/Pulumi | Suga |
+|--------|------------------------|------|
+| **Approach** | Write infrastructure code | Generate from high-level design |
+| **Visual Design** | External tools | Built-in visual editor |
+| **Local Development** | Manual setup | `suga dev` |
+| **Reusability** | Modules (per-project) | Platforms (organization-wide) |
+| **Standardization** | Code reviews & guidelines | Platform-enforced patterns |
+| **Flexibility** | Complete control | Extensible platforms + direct Terraform access |
+
+**Use Suga if:** You want to maximize reuse across teams, enforce organizational standards, or accelerate delivery with visual design while keeping Terraform's flexibility.
+
+**Use Suga with Terraform if:** You need both platform standardization and custom infrastructure - Suga generates Terraform you can augment with custom resources.
+
+### vs. Nitric (Suga's Inspiration)
+
+Suga is built by the team behind [Nitric](https://nitric.io) and incorporates lessons from years of cloud framework development.
+
+| Aspect | Nitric | Suga |
+|--------|--------|------|
+| **Approach** | Code-first | Configuration-first |
+| **Infrastructure Definition** | Application code annotations | Separate `suga.yaml` + visual editor |
+| **Deployment** | Pulumi or Terraform | Terraform |
+| **Visual Design** | None | Core feature |
+| **Platform System** | Provider plugins | Distributed platform packages |
+| **Target Audience** | Developer-focused | Multi-role teams (platform engineers, SREs, DevOps, developers) |
+
+**Use Suga if:** You work in organizations with multiple roles (platform teams, SREs, DevOps, developers) who need specialized tooling for their responsibilities.
+
+**Use Nitric if:** You're a developer team that prefers defining infrastructure directly in application code.
+
+## When to Use Suga
+
+### ✅ Ideal Use Cases
+
+**Enterprise Development Teams**
+- Need developer velocity without sacrificing governance
+- Want to standardize infrastructure across multiple teams
+- Require audit trails and compliance controls
+
+**Multi-Cloud Strategies**
+- Building portable applications across clouds
+- Avoiding vendor lock-in
+- Testing different cloud providers
+
+**Platform Engineering**
+- Creating internal developer platforms
+- Enforcing organizational standards
+- Providing self-service infrastructure
+
+**Greenfield Projects**
+- Starting new applications with best practices
+- Want rapid iteration with production-ready infrastructure
+- Need local development that matches production
+
+## Getting Started
+
+Ready to try Suga? Start with our [Quickstart Guide](/quickstart) to deploy your first application in minutes.
+
+Want to understand how Suga works? Explore the [Core Concepts](/core/overview) section to learn about projects, platforms, and infrastructure generation.
+
+Building an internal platform? Check out the [Platform Development Guide](/guides/build-platform) to create custom platforms for your organization.
+
+<Note>
+  **Need help deciding?** Contact [support@addsuga.com](mailto:support@addsuga.com) to discuss your use case and whether Suga is a good fit.
+</Note>
