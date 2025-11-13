@@ -16,6 +16,7 @@ A database in Suga is a PostgreSQL database that:
 ```yaml title="Basic database"
 databases:
   main:
+    subtype: # your choice, from target platform
     access:
       api: [query]
       worker: [query]
@@ -30,7 +31,7 @@ When you grant a service access to a database, Suga automatically injects the da
 ```yaml title="Database with environment variable injection"
 databases:
   main:
-    subtype: neon
+    subtype: # your choice, from target platform
     access:
       api: [query]
       worker: [query]
@@ -52,19 +53,19 @@ When using multiple databases, each must have a unique `env_var_key` to avoid co
 ```yaml title="Multiple databases with unique env vars"
 databases:
   users:
-    subtype: neon
+    subtype: # your choice, from target platform
     access:
       api: [query]
     env_var_key: USERS_DATABASE_URL
 
   products:
-    subtype: neon
+    subtype: # your choice, from target platform
     access:
       api: [query]
     env_var_key: PRODUCTS_DATABASE_URL
 
   orders:
-    subtype: neon
+    subtype: # your choice, from target platform
     access:
       api: [query]
     env_var_key: ORDERS_DATABASE_URL

@@ -16,6 +16,7 @@ An entrypoint is a CDN + router that:
 ```yaml title="Basic entrypoint"
 entrypoints:
   web:
+    subtype: # your choice, from target platform
     routes:
       /api/: 
         name: api          # Route /api/* to api service
@@ -29,6 +30,7 @@ Routes map URL paths to destinations:
 
 ```yaml
 entrypoints:
+  subtype: # your choice, from target platform
   web:
     routes:
       /api/: 
@@ -59,6 +61,7 @@ Routes are evaluated in order - most specific first.
 ```yaml
 entrypoints:
   web:
+    subtype: # your choice, from target platform
     routes:
       /api/: 
         name: api
@@ -70,6 +73,7 @@ entrypoints:
 ```yaml
 entrypoints:
   gateway:
+    subtype: # your choice, from target platform
     routes:
       /users/: 
         name: users-service
@@ -83,6 +87,7 @@ entrypoints:
 ```yaml
 entrypoints:
   web:
+    subtype: # your choice, from target platform
     routes:
       /api/: 
         name: api

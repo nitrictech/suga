@@ -16,9 +16,11 @@ A bucket is object storage that:
 ```yaml title="Basic bucket definition"
 buckets:
   uploads:
+    subtype: # your choice, from target platform
     access:
       api: [read, write, delete]
   profile-images:
+    subtype: # your choice, from target platform
     access:
       api: [read, write]
       frontend: [read]
@@ -33,6 +35,7 @@ Grant services access to buckets:
 ```yaml
 buckets:
   uploads:
+    subtype: # your choice, from target platform
     access:
       api: [read, write, delete]   # Full access
       worker: [read, delete]       # Read and delete only
@@ -52,10 +55,12 @@ Deploy static files to a bucket:
 ```yaml
 buckets:
   frontend:
+    subtype: # your choice, from target platform
     content_path: ./build  # Deploy React/Vue/Angular build
 
 entrypoints:
   web:
+    subtype: # your choice, from target platform
     routes:
       /: frontend  # Serve static files from bucket
 ```

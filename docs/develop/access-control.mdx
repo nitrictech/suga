@@ -17,12 +17,14 @@ services:
   worker: ...
 buckets:
   uploads:
+    subtype: s3
     access:
       api: [read, write]      # API service can read and write
       worker: [read, delete]  # Worker service can read and delete
 
 databases:
   main:
+    subtype: rds
     access:
       api: [query]            # API service can query database
 ```
@@ -44,6 +46,7 @@ When you deploy, Suga generates:
 ```yaml
 buckets:
   data:
+    subtype: s3
     access:
       uploader: [write]
       processor: [read, delete]
@@ -57,6 +60,7 @@ buckets:
 ```yaml
 databases:
   main:
+    subtype: rds
     access:
       api: [query]
       analytics: [query]

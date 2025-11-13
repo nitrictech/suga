@@ -78,6 +78,7 @@ You can also edit `suga.yaml` directly:
 ```yaml title="suga.yaml"
 services:
   api:
+    subtype: # your choice, from target platform
     container:
       docker:
         dockerfile: Dockerfile
@@ -141,12 +142,14 @@ Resources can grant access to services:
 ```yaml title="Grant service access to resources"
 buckets:
   uploads:
+    ...
     access:
       api: [read, write, delete]   # API service can read/write/delete
       frontend: [read]             # Frontend can only read
 
 databases:
   main:
+    ...
     access:
       api: [query]                 # API service can query the database
 ```
