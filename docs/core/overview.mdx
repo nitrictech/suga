@@ -34,19 +34,23 @@ Projects are **deployment-agnostic** - they describe requirements without specif
 
 ```yaml title="Example: A simple web application"
 name: my-app
+target: suga/aws@1 # Or any other target you like
 
 services:
   api:
+    subtype: lambda
     dev:
       script: npm run dev
 
 buckets:
   uploads:
+    subtype: s3
     access:
       api: [read, write]
 
 entrypoints:
   web:
+    subtype: cloudfront
     routes:
       /api/: 
         name: api
