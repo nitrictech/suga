@@ -28,35 +28,53 @@ You'll see a confirmation:
 ✓ Logged in as User
 ```
 
-## Create Your Project
+## Getting started with Suga
     
-Create a new project from a template:
+Suga can be initialized into an existing project, a new folder, or you can use the new command to scaffold a starter template.
 
-```bash title="Create New Project" icon="sparkles"
-suga new my-first-app
-```
+<Tabs>
+  <Tab title="Initialize your Project">
+    Initialize Suga in your project directory:
 
-Select any template you prefer:
+    ```bash title="Initialize in Existing Project" icon="folder-plus"
+    cd your-existing-app
+    suga init
+    ```
 
-<Info>
-  You're welcome to use frameworks or tools beyond what's listed in the Templates, consider them a starting point or example.
-</Info>
+    This will create a `suga.yaml` file that describes your application's infrastructure requirements.
+  </Tab>
+  <Tab title="Start from Template">
+    Create a new project from a template:
 
-```bash
-Welcome to Suga, this command will help you create a project from a template.
-If you already have a project, run suga init instead.
+    ```bash title="Create New Project" icon="sparkles"
+    suga new my-first-app
+    ```
 
-Project name: my-first-app
-Template:
-➜ suga/go-standard
-  suga/python-django-pip
-  suga/python-fastapi-uv
-  suga/typescript-express
+    Select any template you prefer:
 
-Template: suga/go-standard
+    <Info>
+      You're welcome to use frameworks or tools beyond what's listed in the Templates, consider them a starting point or example.
+    </Info>
 
-✓ Project created!
-```
+    ```bash
+    Welcome to Suga, this command will help you create a project from a template.
+    If you already have a project, run suga init instead.
+
+    Project name: my-first-app
+    Template:
+    ➜ suga/go-standard
+      suga/python-django-pip
+      suga/python-fastapi-uv
+      suga/typescript-express
+
+    Template: suga/go-standard
+
+    ✓ Project created!
+    ```
+
+    The template includes a pre-configured `suga.yaml` file with example infrastructure resources.
+  </Tab>
+</Tabs>
 
 ## Design Your Application
 
@@ -76,6 +94,9 @@ The editor launches in your browser:
 Opening browser to the editor
 Use Ctrl-C to exit
 ```
+<Note>
+  If you initialized with `suga init`, you'll be prompted to select a target platform (e.g., `suga/aws@1` or `suga/gcp@1`) when opening the editor.
+</Note>
 
 Use the visual editor to design your APIs, databases, storage, and other cloud resources with drag-and-drop simplicity.
 
