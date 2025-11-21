@@ -30,14 +30,27 @@ You'll see a confirmation:
 
 ## Getting started with Suga
     
-Suga can be initialized into an existing project, a new folder, or you can use the new command to scaffold a starter template.
+Suga can be added to an existing project, a new folder, or you can use the Suga cli to start from a template.
 
 <Tabs>
-  <Tab title="Initialize your Project">
+  <Tab title="Add Suga to a Project">
     Initialize Suga in your project directory:
 
     ```bash title="Initialize in Existing Project" icon="folder-plus"
     cd your-existing-app
+    suga init
+    ```
+
+    This will create a `suga.yaml` file that describes your application's infrastructure requirements.
+  </Tab>
+  <Tab title="Start with an Empty Project">
+    Start a new project from scratch with Suga:
+
+    ```bash title="Start with a Blank Project" icon="folder-plus"
+    # Create a new project folder and navigate to it
+    mkdir your-project && cd your-project
+    
+    # Initialize Suga
     suga init
     ```
 
