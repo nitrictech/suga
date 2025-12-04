@@ -49,12 +49,13 @@ func (fs *SugaFileSync) getApplicationFileContents() (*schema.Application, []byt
 	if err != nil {
 		return nil, contents, fmt.Errorf("error parsing application from yaml: %v", err)
 	} else if schemaResult != nil && len(schemaResult.Errors()) > 0 {
-		// Wrap the schema errors in a new error
-		return nil, contents, fmt.Errorf("errors parsing application from yaml: %v", schemaResult.Errors())
+		// Return partial application along with the error so frontend can preserve existing fields
+		return application, contents, fmt.Errorf("errors parsing application from yaml: %v", schemaResult.Errors())
 	}
 
 	if appSpecErrors := application.IsValid(); len(appSpecErrors) > 0 {
-		return nil, contents, fmt.Errorf("application is not valid")
+		// Return partial application along with the error so frontend can preserve existing fields
+		return application, contents, fmt.Errorf("application is not valid")
 	}
 
 	return application, contents, nil
@@ -95,9 +96,17 @@ func validateApplicationSchema(contents []byte) ([]schema.ValidationError, error
 func (fs *SugaFileSync) OnConnect(send SendFunc) {
 	application, contents, err := fs.getApplicationFileContents()
 	if err != nil {
-		validationErrors, err := validateApplicationSchema(contents)
-		if err != nil {
+		validationErrors, validationErr := validateApplicationSchema(contents)
+		if validationErr != nil {
 			return
+		}
+
+		// Send partial application data first so frontend has existing fields to merge with
+		if application != nil {
+			send(Message[any]{
+				Type:    "syncMessage",
+				Payload: *application,
+			})
 		}
 
 		send(Message[any]{
@@ -210,9 +219,17 @@ func (fs *SugaFileSync) watchFile() error {
 
 					fileError = err
 
-					validationErrors, err := validateApplicationSchema(contents)
-					if err != nil {
+					validationErrors, validationErr := validateApplicationSchema(contents)
+					if validationErr != nil {
 						return
+					}
+
+					// Send partial application data first so frontend has existing fields to merge with
+					if application != nil {
+						fs.broadcast(Message[any]{
+							Type:    "syncMessage",
+							Payload: *application,
+						})
 					}
 
 					fs.broadcast(Message[any]{
