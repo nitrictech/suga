@@ -126,7 +126,7 @@ func (s *ServiceSimulation) hasExceededFailureLimit() bool {
 	return len(s.consecutiveFailures) >= s.maxFailures
 }
 
-func (s *ServiceSimulation) startSchedules(stdoutWriter, stderrorWriter io.Writer) (*cron.Cron, error) {
+func (s *ServiceSimulation) startSchedules(stderrorWriter io.Writer) (*cron.Cron, error) {
 	cron := cron.New()
 
 	for _, schedule := range s.intent.Schedules {
@@ -244,7 +244,7 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 		s.cmd = srvCommand
 		s.updateStatus(Status_Running)
 
-		cron, err := s.startSchedules(stdoutWriter, stderrWriter)
+		cron, err := s.startSchedules(stderrWriter)
 		if err != nil {
 			s.updateStatus(Status_Fatal)
 			return err
@@ -275,6 +275,61 @@ func (s *ServiceSimulation) Start(autoRestart bool) error {
 	}
 
 	return nil
+}
+
+// TriggerSchedule manually triggers a schedule by index
+// If async is true, the schedule runs in a goroutine and returns immediately
+// If async is false, waits for the HTTP response
+func (s *ServiceSimulation) TriggerSchedule(index int, async bool) error {
+	// Validate schedule index
+	if index < 0 || index >= len(s.intent.Schedules) {
+		return fmt.Errorf("schedule index %d out of range (service has %d schedules)", index, len(s.intent.Schedules))
+	}
+
+	// Check if service is running
+	if s.currentStatus != Status_Running {
+		return fmt.Errorf("service is not running (current status: %v)", s.currentStatus)
+	}
+
+	schedule := s.intent.Schedules[index]
+
+	// Build the URL
+	url := url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("localhost:%d", s.port),
+		Path:   schedule.Path,
+	}
+
+	// Function to execute the schedule
+	executeSchedule := func() error {
+		req, err := http.NewRequest(http.MethodPost, url.String(), nil)
+		if err != nil {
+			return fmt.Errorf("error creating request: %w", err)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("error sending request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("request returned status %d", resp.StatusCode)
+		}
+
+		return nil
+	}
+
+	if async {
+		// Asynchronous execution
+		go func() {
+			_ = executeSchedule()
+		}()
+		return nil
+	}
+
+	// Synchronous execution
+	return executeSchedule()
 }
 
 func NewServiceSimulation(name string, intent schema.ServiceIntent, port netx.ReservedPort, apiPort netx.ReservedPort) (*ServiceSimulation, <-chan ServiceEvent, error) {

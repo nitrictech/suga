@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/nitrictech/suga/cli/internal/netx"
+	"github.com/nitrictech/suga/cli/internal/scheduleserver"
 	"github.com/nitrictech/suga/cli/internal/simulation/database"
 	"github.com/nitrictech/suga/cli/internal/simulation/middleware"
 	"github.com/nitrictech/suga/cli/internal/simulation/service"
@@ -37,11 +38,12 @@ type SimulationServer struct {
 	storagepb.UnimplementedStorageServer
 	pubsubpb.UnimplementedPubsubServer
 
-	apiPort         netx.ReservedPort
-	fileServerPort  int
-	services        map[string]*service.ServiceSimulation
-	databaseManager *database.DatabaseManager
-	servicesWg      sync.WaitGroup
+	apiPort           netx.ReservedPort
+	fileServerPort    int
+	services          map[string]*service.ServiceSimulation
+	databaseManager   *database.DatabaseManager
+	servicesWg        sync.WaitGroup
+	scheduleTriggerSv *scheduleserver.Server
 }
 
 const (
@@ -408,6 +410,64 @@ func styledName(name string, styleFunc func(...string) string) string {
 	return styledNames[name]
 }
 
+func (s *SimulationServer) startScheduleTriggerServer(output io.Writer) error {
+	// Check if any service has schedules
+	hasSchedules := false
+	for _, serviceIntent := range s.appSpec.ServiceIntents {
+		if len(serviceIntent.Schedules) > 0 {
+			hasSchedules = true
+			break
+		}
+	}
+
+	if !hasSchedules {
+		return nil
+	}
+
+	// Convert services map to interface map for schedule trigger server
+	servicesWithSchedules := make(map[string]scheduleserver.ServiceWithSchedules)
+	for name, svc := range s.services {
+		servicesWithSchedules[name] = svc
+	}
+
+	// Create and start the schedule trigger server
+	triggerServer, err := scheduleserver.NewServer(servicesWithSchedules)
+	if err != nil {
+		return fmt.Errorf("failed to create schedule trigger server: %w", err)
+	}
+
+	err = triggerServer.Start()
+	if err != nil {
+		return fmt.Errorf("failed to start schedule trigger server: %w", err)
+	}
+
+	s.scheduleTriggerSv = triggerServer
+
+	fmt.Fprintf(output, "%s\n\n", style.Purple("Schedule Triggers"))
+
+	// Print clickable trigger URLs for each service's schedules
+	for serviceName, serviceIntent := range s.appSpec.ServiceIntents {
+		if len(serviceIntent.Schedules) == 0 {
+			continue
+		}
+
+		for i, schedule := range serviceIntent.Schedules {
+			triggerURL := fmt.Sprintf("%s/schedules/%s/%d", triggerServer.GetURL(), serviceName, i)
+			fmt.Fprintf(output, "%s %s schedule %d (%s -> %s)\n    Trigger: %s\n",
+				greenCheck,
+				styledName(serviceName, style.Teal),
+				i,
+				style.Gray(schedule.Cron),
+				style.Gray(fmt.Sprintf("POST %s", schedule.Path)),
+				style.Cyan(triggerURL))
+		}
+	}
+
+	fmt.Fprint(output, "\n")
+
+	return nil
+}
+
 func (s *SimulationServer) Start(output io.Writer) error {
 	err := s.startSugaApis()
 	if err != nil {
@@ -449,6 +509,14 @@ func (s *SimulationServer) Start(output io.Writer) error {
 		fmt.Fprint(output, "\n")
 	}
 
+	// Start schedule trigger server after services are running
+	if len(s.services) > 0 {
+		err = s.startScheduleTriggerServer(output)
+		if err != nil {
+			return err
+		}
+	}
+
 	fmt.Println(style.Gray("Use Ctrl-C to exit\n"))
 
 	// block on handling service outputs for now
@@ -459,6 +527,14 @@ func (s *SimulationServer) Start(output io.Writer) error {
 
 // Stop gracefully shuts down the simulation server and cleans up resources
 func (s *SimulationServer) Stop() error {
+	// Stop the schedule trigger server first
+	if s.scheduleTriggerSv != nil {
+		fmt.Println("Stopping schedule trigger server...")
+		if err := s.scheduleTriggerSv.Stop(); err != nil {
+			return fmt.Errorf("failed to stop schedule trigger server: %w", err)
+		}
+	}
+
 	// Stop services first before stopping database
 	for serviceName, svc := range s.services {
 		if svc != nil {
