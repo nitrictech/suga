@@ -231,6 +231,9 @@ func (e *TerraformEngine) Apply(appSpec *app_spec_schema.Application) (result st
 		}
 	}
 
+	// Create outputs for all resources
+	tfDeployment.createOutputs()
+
 	tfDeployment.Synth()
 
 	return filepath.Join(e.outputDir, "stacks", appSpec.Name), nil
