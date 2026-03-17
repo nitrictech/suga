@@ -6,20 +6,8 @@
     </picture>
 </p>
 
+> **This project has been archived and renamed to Monk.** It is no longer under active development. For our next-generation platform, see [Suga](https://suga.app).
 
-<p align="center">
-  <a href="https://docs.addsuga.com">Documentation</a> •
-  <a href="https://github.com/nitrictech/suga/releases">Releases</a>
-</p>
+## Support
 
-## Documentation
-
-Full documentation is available at [docs.addsuga.com](https://docs.addsuga.com).
-
-## Installation
-
-Installation instructions coming soon.
-
-## License
-
-MPL 2.0 - see [LICENSE](LICENSE) for details.
+If you need help with an existing Monk deployment, please [open an issue](https://github.com/nitrictech/monk/issues) and we'll do our best to assist.
