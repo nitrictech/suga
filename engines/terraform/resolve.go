@@ -124,6 +124,26 @@ func (td *TerraformDeployment) resolveToken(intentName string, specRef *SpecRefe
 		}
 		return tfVariable.Value(), nil
 
+	case "suga":
+		if len(specRef.Path) < 1 {
+			return nil, fmt.Errorf("suga reference requires at least 1 path component (e.g., suga.stack_id)")
+		}
+
+		propertyName := specRef.Path[0]
+
+		value, ok := td.sugaProperties[propertyName]
+		if !ok {
+			availableProps := slices.Collect(maps.Keys(td.sugaProperties))
+			return nil, fmt.Errorf("suga property '%s' does not exist. Available properties are: %v", propertyName, availableProps)
+		}
+
+		// If there are nested path components, we don't support that for suga properties currently
+		if len(specRef.Path) > 1 {
+			return nil, fmt.Errorf("nested property access is not supported for suga properties (attempted: suga.%s)", strings.Join(specRef.Path, "."))
+		}
+
+		return value, nil
+
 	default:
 		return nil, fmt.Errorf("unknown reference source '%s'", specRef.Source)
 	}

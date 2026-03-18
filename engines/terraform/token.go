@@ -45,5 +45,5 @@ func isOnlyToken(input string) bool {
 	return strings.TrimSpace(input) == strings.TrimSpace(allTokensPattern.FindString(input))
 }
 
-var tokenPattern = regexp.MustCompile(`((?:infra|var|self)\.[a-zA-Z_\-][a-zA-Z0-9_\-\.]*)`)
-var allTokensPattern = regexp.MustCompile(`((?:infra|var|self)\.[a-zA-Z_\-][a-zA-Z0-9_\-\.]*)`)
+var tokenPattern = regexp.MustCompile(`((?:infra|var|self|suga)\.[a-zA-Z_\-][a-zA-Z0-9_\-\.]*)`)
+var allTokensPattern = regexp.MustCompile(`((?:infra|var|self|suga)\.[a-zA-Z_\-][a-zA-Z0-9_\-\.]*)`)
